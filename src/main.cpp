@@ -1,0 +1,39 @@
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QSurfaceFormat>
+#include "PlexModel.h"
+#include "MpvItem.h"
+
+int main(int argc, char *argv[])
+{
+    // The Holy Grail: Set the OpenGL Core Profile so MPV can use zero-copy VAAPI on Wayland!
+    QSurfaceFormat format;
+    format.setVersion(4, 6);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(format);
+
+    QGuiApplication app(argc, argv);
+
+    // libmpv requires LC_NUMERIC to be "C". 
+    // Must be called AFTER QGuiApplication, as Qt resets it.
+    std::setlocale(LC_NUMERIC, "C");
+    
+    // Register our custom MPV QML Type
+    qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
+    qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
+
+    QQmlApplicationEngine engine;
+
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection);
+        
+    engine.loadFromModule("flex_player", "Main");
+
+    return app.exec();
+}
+

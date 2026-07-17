@@ -1,0 +1,91 @@
+[cplayer] mpv v0.41.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[cplayer] libplacebo version: v7.360.1
+[cplayer] FFmpeg version: 8.1.2
+[cplayer] FFmpeg library versions:
+[cplayer]    libavcodec      62.28.102
+[cplayer]    libavdevice     62.3.102
+[cplayer]    libavfilter     11.14.102
+[cplayer]    libavformat     62.12.102
+[cplayer]    libavutil       60.26.102
+[cplayer]    libswresample   6.3.102
+[cplayer]    libswscale      9.5.102
+[cplayer] Configuration: -Dbuildtype=plain -Db_lto=false -Dlibdir=lib64 -Dlocalstatedir=/var/lib -Dprefix=/usr -Dsysconfdir=/etc -Dwrap_mode=nodownload -Dbuild.pkg_config_path=/var/tmp/portage/media-video/mpv-0.41.0-r2/temp/python3.14/pkgconfig:/var/tmp/portage/media-video/mpv-0.41.0-r2/temp/luajit/pkgconfig:/opt/cuda/pkgconfig:/usr/share/pkgconfig -Dpkg_config_path=/var/tmp/portage/media-video/mpv-0.41.0-r2/temp/python3.14/pkgconfig:/var/tmp/portage/media-video/mpv-0.41.0-r2/temp/luajit/pkgconfig:/opt/cuda/pkgconfig:/usr/share/pkgconfig -Db_pch=false -Dwerror=false -Dcplayer=true -Dlibmpv=true -Dtests=false -Dhtml-build=enabled -Dmanpage-build=enabled -Dpdf-build=disabled -Dbuild-date=false -Dx11-clipboard=disabled -Dlibarchive=disabled -Dlibbluray=disabled -Dcdda=enabled -Dcplugins=enabled -Ddvbin=disabled -Ddvdnav=enabled -Dsdl2-gamepad=disabled -Diconv=enabled -Djavascript=disabled -Dlibavdevice=enabled -Dlcms2=enabled -Dlua=luajit -Drubberband=disabled -Duchardet=enabled -Dvapoursynth=disabled -Dzimg=disabled -Dzlib=enabled -Dalsa=enabled -Dcoreaudio=disabled -Djack=disabled -Dopenal=disabled -Dpipewire=enabled -Dpulse=enabled -Dsdl2-audio=disabled -Dsndio=disabled -Dx11=disabled -Dcocoa=disabled -Ddrm=enabled -Djpeg=enabled -Dcaca=disabled -Dsdl2-video=disabled -Dsixel=disabled -Dwayland=enabled -Dxv=disabled -Dgl=enabled -Degl=enabled -Dplain-gl=enabled -Dgl-x11=disabled -Dvulkan=enabled -Dcuda-hwaccel=enabled -Dv4l2request=disabled -Dvaapi=enabled -Dvdpau=disabled --native-file=/var/tmp/portage/media-video/mpv-0.41.0-r2/temp/meson.x86_64-pc-linux-gnu.ini
+[cplayer] List of enabled features: alsa cdda cplugins cuda-hwaccel cuda-interop dmabuf-interop-gl dmabuf-wayland drm dvdnav egl egl-drm egl-wayland ffmpeg ffnvcodec gbm gl glibc-thread-name glob glob-posix gpl iconv jpeg lcms2 libass libavdevice libdl libplacebo linux-fstatfs luajit memfd-create memrchr pipewire posix posix-shm ppoll pthread-condattr-setclock pulse uchardet vaapi vaapi-drm vaapi-wayland vector vk-khr-display vt.h vulkan wayland wayland-protocols-1-32 wayland-protocols-1-38 wayland-protocols-1-39 wayland-protocols-1-41 wayland-protocols-1-44 wayland-protocols-1-47 zlib
+[cplayer] Built with NDEBUG.
+[cplayer] Reading config file /home/geonix/.config/flex-player/mpv/mpv.conf
+[ifo_dvdnav] Opening /home/geonix/.config/flex-player/mpv/mpv.conf
+[file] Opening /home/geonix/.config/flex-player/mpv/mpv.conf
+[cplayer] Applying profile 'default'...
+[cplayer] Setting option 'target-colorspace-hint' = 'yes' (flags = 4)
+[cplayer] Setting option 'hwdec' = 'auto-safe' (flags = 4)
+[cplayer] Setting option 'profile' = 'high-quality' (flags = 4)
+[cplayer] Applying profile 'high-quality'...
+[cplayer] Setting option 'scale' = 'ewa_lanczossharp' (flags = 4)
+[cplayer] Setting option 'hdr-peak-percentile' = '99.995' (flags = 4)
+[cplayer] Setting option 'hdr-contrast-recovery' = '0.30' (flags = 4)
+[cplayer] Setting option 'vo' = 'libmpv' (flags = 4)
+[clipboard] Initialized vo clipboard backend.
+[cplayer] Waiting for scripts...
+[cplayer] Done loading scripts.
+[cplayer] Running hook: auto_profiles/on_before_start_file
+[cplayer] Failed sending hook command auto_profiles/on_before_start_file. Removing hook.
+[cplayer] Running hook: auto_profiles/on_load
+[cplayer] Failed sending hook command auto_profiles/on_load. Removing hook.
+[cplayer] Running hook: ytdl_hook/on_load
+[cplayer] Running hook: ytdl_hook/on_load
+[ytdl_hook] playlist hook
+[ifo_dvdnav] Opening /home/geonix/Build/flex_player/tests/dummy1.mkv
+[file] Opening /home/geonix/Build/flex_player/tests/dummy1.mkv
+[demux] Trying demuxers for level=normal.
+[mkv] Deferring reading cues.
+[mkv] All headers are parsed!
+[demux] Detected file format: Matroska
+[cplayer] Opening done: /home/geonix/Build/flex_player/tests/dummy1.mkv
+[find_files] Loading external files in /home/geonix/Build/flex_player/tests/
+[cplayer] Running hook: auto_profiles/on_preloaded
+[cplayer] Failed sending hook command auto_profiles/on_preloaded. Removing hook.
+[cplayer] Running hook: ytdl_hook/on_preloaded
+[mkv] select track 0
+[mkv] select track 1
+● Video  --vid=1  (h264 1280x720 30 fps)
+● Audio  --aid=1  (aac 1ch 44100 Hz)
+[vo/libmpv] No render context set.
+Error opening/initializing the selected video_out (--vo) device.
+[mkv] deselect track 0
+Video: no video
+[ad] Codec list:
+[ad]     aac - AAC (Advanced Audio Coding)
+[ad]     aac_fixed (aac) - AAC (Advanced Audio Coding)
+[ad] Opening decoder aac
+[ad] Requesting 1 threads for decoding.
+[ad] Selected decoder: aac - AAC (Advanced Audio Coding)
+[af] User filter list:
+[af]   (empty)
+[cplayer] Starting playback...
+[kde_hdr_toggle] [HDR-TOGGLE] >>> SDR video detected. System HDR remains disabled. <<<
+[af] [in] 44100Hz mono 1ch floatp
+[af] [userspeed] 44100Hz mono 1ch floatp
+[af] [userspeed] (disabled)
+[af] [convert] 44100Hz mono 1ch floatp
+[ao] Trying audio driver 'pipewire'
+[ao/pipewire] requested format: 44100 Hz, mono channels, floatp
+[ao/pipewire] Headers version: 1.6.6
+[ao/pipewire] Library version: 1.6.6
+[ao/pipewire] Could not connect to context '(null)': Host is down
+[ao] Trying audio driver 'pulse'
+[ao/pulse] requested format: 44100 Hz, mono channels, floatp
+[ao/pulse] Library version: 17.0.0
+[ao/pulse] Proto: 35
+[ao] Trying audio driver 'alsa'
+[ao/alsa] requested format: 44100 Hz, mono channels, floatp
+[ao/alsa] using ALSA version: 1.2.16
+[ao/alsa] opening device 'default'
+[ao/alsa] Playback open error: Host is down
+[ao] Failed to initialize audio driver 'alsa'
+Could not open/initialize audio device -> no sound.
+[mkv] deselect track 1
+Audio: no audio
+[cplayer] playback restart complete @ -9223372036854775808.000000, audio=eof, video=eof
+[cplayer] EOF code: 6  
+[cplayer] finished playback, audio output initialization failed (reason 4)
+[cplayer] Running hook: ytdl_hook/on_after_end_file

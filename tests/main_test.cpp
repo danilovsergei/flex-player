@@ -1,0 +1,24 @@
+#include <QtQuickTest/quicktest.h>
+#include <QGuiApplication>
+#include <QQmlEngine>
+#include <QQmlContext>
+#include <QSurfaceFormat>
+#include <clocale>
+#include "../src/PlexModel.h"
+#include "../src/MpvItem.h"
+
+int main(int argc, char **argv) {
+    QSurfaceFormat format;
+    format.setVersion(4, 6);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(format);
+
+    QGuiApplication app(argc, argv);
+    std::setlocale(LC_NUMERIC, "C");
+
+    qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
+    qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
+
+    return quick_test_main(argc, argv, "FlexPlayerTest", QUICK_TEST_SOURCE_DIR);
+}
+
