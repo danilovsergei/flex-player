@@ -360,17 +360,79 @@ Window {
                         visible: continueWatchingList.count > 0
                     }
 
-                    ListView {
-                        id: continueWatchingList
-                        objectName: "continueWatchingList"
+                    Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 330
                         Layout.leftMargin: 20
-                        orientation: ListView.Horizontal
-                        spacing: 20
-                        model: continueWatchingModel
-                        delegate: movieDelegate
                         visible: continueWatchingList.count > 0
+
+                        ListView {
+                            id: continueWatchingList
+                            objectName: "continueWatchingList"
+                            anchors.fill: parent
+                            orientation: ListView.Horizontal
+                            spacing: 20
+                            model: continueWatchingModel
+                            delegate: movieDelegate
+                            clip: true
+                            interactive: false
+                            
+                            Behavior on contentX {
+                                NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+                            }
+                        }
+
+                        HoverHandler { id: continueHover }
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: 50
+                            color: continueLeftHover.hovered ? "#CC000000" : "#80000000"
+                            visible: continueWatchingList.contentX > 0
+                            opacity: continueHover.hovered ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "❮"
+                                color: continueLeftHover.hovered ? plexOrange : "white"
+                                font.pixelSize: 32
+                                font.bold: true
+                            }
+                            
+                            HoverHandler { id: continueLeftHover }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: continueWatchingList.contentX = Math.max(0, continueWatchingList.contentX - 880)
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: 50
+                            color: continueRightHover.hovered ? "#CC000000" : "#80000000"
+                            visible: continueWatchingList.contentWidth > continueWatchingList.width && continueWatchingList.contentX < (continueWatchingList.contentWidth - continueWatchingList.width)
+                            opacity: continueHover.hovered ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "❯"
+                                color: continueRightHover.hovered ? plexOrange : "white"
+                                font.pixelSize: 32
+                                font.bold: true
+                            }
+                            
+                            HoverHandler { id: continueRightHover }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: continueWatchingList.contentX = Math.min(continueWatchingList.contentWidth - continueWatchingList.width, continueWatchingList.contentX + 880)
+                            }
+                        }
                     }
 
                     Text {
@@ -382,17 +444,79 @@ Window {
                         visible: recentlyAddedList.count > 0
                     }
 
-                    ListView {
-                        id: recentlyAddedList
-                        objectName: "recentlyAddedList"
+                    Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 330
                         Layout.leftMargin: 20
-                        orientation: ListView.Horizontal
-                        spacing: 20
-                        model: recentlyAddedModel
-                        delegate: movieDelegate
                         visible: recentlyAddedList.count > 0
+
+                        ListView {
+                            id: recentlyAddedList
+                            objectName: "recentlyAddedList"
+                            anchors.fill: parent
+                            orientation: ListView.Horizontal
+                            spacing: 20
+                            model: recentlyAddedModel
+                            delegate: movieDelegate
+                            clip: true
+                            interactive: false
+                            
+                            Behavior on contentX {
+                                NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+                            }
+                        }
+
+                        HoverHandler { id: recentHover }
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: 50
+                            color: recentLeftHover.hovered ? "#CC000000" : "#80000000"
+                            visible: recentlyAddedList.contentX > 0
+                            opacity: recentHover.hovered ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "❮"
+                                color: recentLeftHover.hovered ? plexOrange : "white"
+                                font.pixelSize: 32
+                                font.bold: true
+                            }
+                            
+                            HoverHandler { id: recentLeftHover }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: recentlyAddedList.contentX = Math.max(0, recentlyAddedList.contentX - 880)
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: 50
+                            color: recentRightHover.hovered ? "#CC000000" : "#80000000"
+                            visible: recentlyAddedList.contentWidth > recentlyAddedList.width && recentlyAddedList.contentX < (recentlyAddedList.contentWidth - recentlyAddedList.width)
+                            opacity: recentHover.hovered ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "❯"
+                                color: recentRightHover.hovered ? plexOrange : "white"
+                                font.pixelSize: 32
+                                font.bold: true
+                            }
+                            
+                            HoverHandler { id: recentRightHover }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: recentlyAddedList.contentX = Math.min(recentlyAddedList.contentWidth - recentlyAddedList.width, recentlyAddedList.contentX + 880)
+                            }
+                        }
                     }
                     
                     Item { Layout.preferredHeight: 20 } // Bottom spacer
