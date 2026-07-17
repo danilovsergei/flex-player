@@ -28,7 +28,7 @@ public:
         setProperty("target-colorspace-hint", "yes");
         
         // Hardware decoding
-        setProperty("hwdec", "auto");
+        setProperty("hwdec", "auto-safe");
 
         QString configDir = QDir::homePath() + "/.config/flex-player/mpv";
         QDir().mkpath(configDir);

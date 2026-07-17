@@ -22,16 +22,23 @@ These Lua scripts can be easily customized to support other desktop environments
 ### UI
 Flex Player uses the Plex server API directly to fetch and display your library. Currently supported features include:
 - **Home Page:**
-  - Recently Added movies
+  - Recently Added items in each library
   - Continue Watching list
-- **Movies Page:**
-  - Full Collections support
+- **Series library:**
+  - Recently Added group by Serie name. 
+  - Count of watched/total episodes groupped by Serie
+  - Number of seasonds for each Serie
+- **Movies library:**
+  - Recently Added movies
+  - Collections tab support
 - **Movie Posters:**
   - Watched progress bars
   - Watched status checkmarks
 - **Playback:** Fully featured embedded playback with auto-hiding controls.
 
 ### Settings and Customization
+- Configurable Plex libraries to display in UI (Movies and Series are supported now)  
+
 Application settings can be configured either through the in-app settings page or directly by editing `~/.config/flex-player/config.ini`.
 
 ### MPV Integration

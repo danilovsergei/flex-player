@@ -38,6 +38,14 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
         return QVariant::fromValue(movie.duration);
     else if (role == IsWatchedRole)
         return QVariant::fromValue(movie.isWatched);
+    else if (role == ParentTitleRole)
+        return movie.parentTitle;
+    else if (role == ChildCountRole)
+        return QVariant::fromValue(movie.childCount);
+    else if (role == LeafCountRole)
+        return QVariant::fromValue(movie.leafCount);
+    else if (role == ViewedLeafCountRole)
+        return QVariant::fromValue(movie.viewedLeafCount);
 
     return QVariant();
 }
@@ -52,6 +60,10 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[ViewOffsetRole] = "viewOffset";
     roles[DurationRole] = "duration";
     roles[IsWatchedRole] = "isWatched";
+    roles[ParentTitleRole] = "parentTitle";
+    roles[ChildCountRole] = "childCount";
+    roles[LeafCountRole] = "leafCount";
+    roles[ViewedLeafCountRole] = "viewedLeafCount";
     return roles;
 }
 
@@ -98,6 +110,9 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
     QJsonObject rootObj = jsonDoc.object();
     QJsonObject mediaContainer = rootObj["MediaContainer"].toObject();
     QJsonArray metadataArray = mediaContainer["Metadata"].toArray();
+    if (metadataArray.isEmpty()) {
+        metadataArray = mediaContainer["Directory"].toArray();
+    }
 
     beginResetModel();
     m_movies.clear();
@@ -106,14 +121,24 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         QJsonObject movieObj = value.toObject();
         Movie movie;
         movie.title = movieObj["title"].toString();
-        movie.ratingKey = movieObj["ratingKey"].toString();
+        movie.ratingKey = movieObj.contains("ratingKey") ? movieObj["ratingKey"].toString() : movieObj["key"].toString();
         movie.type = movieObj["type"].toString();
         
         movie.viewOffset = movieObj.contains("viewOffset") ? movieObj["viewOffset"].toVariant().toLongLong() : 0;
         movie.duration = movieObj.contains("duration") ? movieObj["duration"].toVariant().toLongLong() : 0;
-        movie.isWatched = movieObj.contains("viewCount") && movieObj["viewCount"].toInt() > 0;
         
-        qDebug() << "Parsed movie:" << movie.title << "offset:" << movie.viewOffset << "duration:" << movie.duration << "watched:" << movie.isWatched;
+        movie.parentTitle = movieObj["parentTitle"].toString();
+        movie.childCount = movieObj.contains("childCount") ? movieObj["childCount"].toInt() : 0;
+        movie.leafCount = movieObj.contains("leafCount") ? movieObj["leafCount"].toInt() : 0;
+        movie.viewedLeafCount = movieObj.contains("viewedLeafCount") ? movieObj["viewedLeafCount"].toInt() : 0;
+        
+        if (movie.type == "show" || movie.type == "season") {
+            movie.isWatched = (movie.leafCount > 0 && movie.viewedLeafCount >= movie.leafCount);
+        } else {
+            movie.isWatched = movieObj.contains("viewCount") && movieObj["viewCount"].toInt() > 0;
+        }
+        
+        qDebug() << "Parsed item:" << movie.title << "type:" << movie.type << "leafCount:" << movie.leafCount << "watched:" << movie.isWatched;
 
         // Construct full URL for the thumbnail
         QString thumbPath = movieObj["thumb"].toString();

@@ -20,6 +20,7 @@ Window {
         location: isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property string serverUrl: ""
         property string token: ""
+        property string enabledLibraries: "{}"
     }
 
     property string serverUrl: appSettings.serverUrl
@@ -37,8 +38,62 @@ Window {
     PlexModel { id: continueWatchingModel }
     PlexModel { id: collectionsModel }
     PlexModel { id: collectionMoviesModel }
+    PlexModel { id: allLibrariesModel }
+    
+    property var homeLibrariesList: []
+    property string currentLibraryId: "1"
+    property string currentLibraryTitle: "Movies"
+    
+    function getLibraryIcon(type) {
+        if (type === "show") return "📺"
+        if (type === "artist") return "🎵"
+        if (type === "photo") return "📷"
+        return "🎬"
+    }
+    
+    function parseEnabledLibraries() {
+        try {
+            return JSON.parse(appSettings.enabledLibraries)
+        } catch (e) {
+            return {}
+        }
+    }
+    
+    function setLibraryEnabled(id, enabled, type, title) {
+        var libs = parseEnabledLibraries()
+        if (enabled) {
+            libs[id] = { type: type, title: title }
+        } else {
+            delete libs[id]
+        }
+        appSettings.enabledLibraries = JSON.stringify(libs)
+    }
 
-    function openSettings() {
+    function closeSettings() {
+        settingsWindow.visible = false
+        startupLogic()
+    }
+    
+    function loadLibraryContent(id, title, type) {
+        currentLibraryId = id
+        currentLibraryTitle = title
+        if (!isTestMode) {
+            if (type === "show") {
+                recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/all?type=2&sort=addedAt:desc")
+            } else {
+                recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/recentlyAdded")
+            }
+            continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/onDeck")
+            collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/collections")
+        }
+    }
+
+    function openSettings(tabIndex) {
+        if (tabIndex !== undefined) {
+            settingsSidebarColumn.settingsTab = tabIndex
+        } else {
+            settingsSidebarColumn.settingsTab = 0
+        }
         serverUrlField.text = appSettings.serverUrl
         tokenField.text = appSettings.token
         settingsWindow.connectionState = 0
@@ -52,10 +107,26 @@ Window {
             openSettings()
         } else {
             console.log("Fetching data from " + appSettings.serverUrl);
+            var enabledMap = parseEnabledLibraries()
+            var keys = Object.keys(enabledMap)
+            var libArray = []
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i]
+                libArray.push({
+                    id: key,
+                    title: enabledMap[key].title || "Library",
+                    type: enabledMap[key].type || "movie"
+                })
+            }
+            homeLibrariesList = libArray
+                
             if (!isTestMode) {
-                recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/recentlyAdded")
-                continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/onDeck")
-                collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/collections")
+                allLibrariesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections")
+                if (keys.length > 0) {
+                    continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/onDeck")
+                } else {
+                    continueWatchingModel.loadMockData([], "")
+                }
             }
         }
     }
@@ -94,6 +165,10 @@ Window {
     property var testContinueWatchingModel: continueWatchingModel
     property var testCollectionsModel: collectionsModel
     property var testCollectionMoviesModel: collectionMoviesModel
+    property var testAllLibrariesModel: allLibrariesModel
+    property var testAppSettings: appSettings
+
+
 
     // Movie Poster Delegate
     Component {
@@ -119,20 +194,34 @@ Window {
                 Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
-                    height: 40
+                    height: (type === "show" || type === "season") ? 50 : 40
                     color: "#cc000000"
 
-                    Text {
-                        anchors.fill: parent
-                        anchors.margins: 5
-                        text: title
-                        color: "white"
-                        font.pixelSize: 14
-                        font.bold: true
-                        elide: Text.ElideRight
-                        wrapMode: Text.NoWrap
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
+                    Column {
+                        anchors.centerIn: parent
+                        width: parent.width - 10
+                        
+                        Text {
+                            width: parent.width
+                            text: type === "season" && model.parentTitle ? model.parentTitle : title
+                            color: "white"
+                            font.pixelSize: 14
+                            font.bold: true
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        
+                        Text {
+                            width: parent.width
+                            text: type === "season" ? title : (type === "show" ? model.childCount + " Season" + (model.childCount !== 1 ? "s" : "") : "")
+                            color: "gray"
+                            font.pixelSize: 12
+                            visible: text !== ""
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
                     }
 
                     Rectangle {
@@ -142,6 +231,26 @@ Window {
                         width: (model.duration > 0 && model.viewOffset > 0) ? (model.viewOffset / model.duration) * parent.width : 0
                         color: plexOrange
                         visible: width > 0
+                    }
+                }
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 10
+                    width: episodeCountText.width + 12
+                    height: 24
+                    radius: 4
+                    color: "#b3000000"
+                    visible: (type === "show" || type === "season") && model.leafCount > 0
+
+                    Text {
+                        id: episodeCountText
+                        anchors.centerIn: parent
+                        text: model.viewedLeafCount + "/" + model.leafCount
+                        color: "white"
+                        font.pixelSize: 14
+                        font.bold: true
                     }
                 }
 
@@ -178,7 +287,7 @@ Window {
                         currentTab = 2 // Switch to Collection Movies view
                     } else {
                         console.log("Starting embedded playback for: " + title + " at offset: " + model.viewOffset)
-                        mainLayout.visible = false
+                        rootLayout.visible = false
                         playerView.visible = true
                         if (model.viewOffset > 0) {
                             mpvObject.setProperty("start", (model.viewOffset / 1000).toString())
@@ -201,7 +310,7 @@ Window {
         id: rootLayout
         anchors.fill: parent
         spacing: 0
-        visible: !playerView.visible
+
 
         // UPPER TOOLBAR
         Rectangle {
@@ -313,19 +422,32 @@ Window {
                         onClicked: currentTab = 0
                     }
 
-                    Button {
-                        text: sidebarCollapsed ? "🎬" : "Movies"
-                        objectName: "moviesTabButton"
-                        Layout.fillWidth: true
-                        contentItem: Text {
-                            text: parent.text
-                            color: currentTab === 1 || currentTab === 2 ? plexOrange : "white"
-                            font.pixelSize: 18
-                            font.bold: currentTab === 1 || currentTab === 2
-                            horizontalAlignment: sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
+                    Repeater {
+                        model: allLibrariesModel
+                        delegate: Button {
+                            // Only show if enabled in settings
+                            visible: {
+                                var enabledMap = JSON.parse(appSettings.enabledLibraries || "{}");
+                                return enabledMap[model.ratingKey] !== undefined && enabledMap[model.ratingKey] !== null && enabledMap[model.ratingKey] !== false;
+                            }
+                            Layout.preferredHeight: visible ? 40 : 0
+                            
+                            text: sidebarCollapsed ? getLibraryIcon(model.type) : getLibraryIcon(model.type) + " " + model.title
+                            objectName: "libTabButton_" + model.ratingKey
+                            Layout.fillWidth: true
+                            contentItem: Text {
+                                text: parent.text
+                                color: (currentTab === 1 || currentTab === 2) && currentLibraryId === model.ratingKey ? plexOrange : "white"
+                                font.pixelSize: 18
+                                font.bold: (currentTab === 1 || currentTab === 2) && currentLibraryId === model.ratingKey
+                                horizontalAlignment: sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
+                            }
+                            background: Rectangle { color: "transparent" }
+                            onClicked: {
+                                loadLibraryContent(model.ratingKey, model.title, model.type)
+                                currentTab = 1 // Switch to library Recommend view
+                            }
                         }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: currentTab = 1
                     }
 
                     Item { Layout.fillHeight: true } // Spacer
@@ -349,6 +471,47 @@ Window {
                 ColumnLayout {
                     width: contentStack.width
                     spacing: 20
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 300
+                        visible: {
+                            var str = appSettings.enabledLibraries;
+                            try {
+                                return Object.keys(JSON.parse(str || "{}")).length === 0;
+                            } catch(e) {
+                                return true;
+                            }
+                        }
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 15
+
+                            Text {
+                                text: "No Plex libraries selected."
+                                color: "white"
+                                font.pixelSize: 24
+                                font.bold: true
+                                horizontalAlignment: Text.AlignHCenter
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Text {
+                                text: "<u>Click here to select libraries to display in Settings</u>"
+                                color: plexOrange
+                                font.pixelSize: 18
+                                horizontalAlignment: Text.AlignHCenter
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: openSettings(1)
+                                }
+                            }
+                        }
+                    }
 
                     Text {
                         text: "Continue Watching"
@@ -435,86 +598,106 @@ Window {
                         }
                     }
 
-                    Text {
-                        text: "Recently Added Movies"
-                        color: "white"
-                        font.pixelSize: 22
-                        font.bold: true
-                        Layout.leftMargin: 20
-                        visible: recentlyAddedList.count > 0
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 330
-                        Layout.leftMargin: 20
-                        visible: recentlyAddedList.count > 0
-
-                        ListView {
-                            id: recentlyAddedList
-                            objectName: "recentlyAddedList"
-                            anchors.fill: parent
-                            orientation: ListView.Horizontal
+                    Repeater {
+                        model: homeLibrariesList
+                        delegate: ColumnLayout {
+                            Layout.fillWidth: true
                             spacing: 20
-                            model: recentlyAddedModel
-                            delegate: movieDelegate
-                            clip: true
-                            interactive: false
                             
-                            Behavior on contentX {
-                                NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+                            PlexModel {
+                                id: delegateRecentModel
+                                Component.onCompleted: {
+                                    if (isTestMode) {
+                                        loadMockData(["/home/geonix/Build/flex_player/tests/dummy1.mkv"], "movie", 0, 0, false)
+                                    } else {
+                                        var endpoint = (modelData.type === "show") ? "/library/sections/" + modelData.id + "/all?type=2&sort=addedAt:desc" : "/library/sections/" + modelData.id + "/recentlyAdded";
+                                        fetchEndpoint(appSettings.serverUrl, appSettings.token, endpoint)
+                                    }
+                                }
                             }
-                        }
-
-                        HoverHandler { id: recentHover }
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 50
-                            color: recentLeftHover.hovered ? "#CC000000" : "#80000000"
-                            visible: recentlyAddedList.contentX > 0
-                            opacity: recentHover.hovered ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 200 } }
 
                             Text {
-                                anchors.centerIn: parent
-                                text: "❮"
-                                color: recentLeftHover.hovered ? plexOrange : "white"
-                                font.pixelSize: 32
+                                text: "Recently Added in " + modelData.title
+                                color: "white"
+                                font.pixelSize: 22
                                 font.bold: true
+                                Layout.leftMargin: 20
+                                visible: delegateRecentList.count > 0
                             }
-                            
-                            HoverHandler { id: recentLeftHover }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: recentlyAddedList.contentX = Math.max(0, recentlyAddedList.contentX - 880)
-                            }
-                        }
 
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 50
-                            color: recentRightHover.hovered ? "#CC000000" : "#80000000"
-                            visible: recentlyAddedList.contentWidth > recentlyAddedList.width && recentlyAddedList.contentX < (recentlyAddedList.contentWidth - recentlyAddedList.width)
-                            opacity: recentHover.hovered ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 200 } }
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 330
+                                Layout.leftMargin: 20
+                                visible: delegateRecentList.count > 0
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "❯"
-                                color: recentRightHover.hovered ? plexOrange : "white"
-                                font.pixelSize: 32
-                                font.bold: true
-                            }
-                            
-                            HoverHandler { id: recentRightHover }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: recentlyAddedList.contentX = Math.min(recentlyAddedList.contentWidth - recentlyAddedList.width, recentlyAddedList.contentX + 880)
+                                ListView {
+                                    id: delegateRecentList
+                                    objectName: "recentlyAddedList"
+                                    anchors.fill: parent
+                                    orientation: ListView.Horizontal
+                                    spacing: 20
+                                    model: delegateRecentModel
+                                    delegate: movieDelegate
+                                    clip: true
+                                    interactive: false
+                                    
+                                    Behavior on contentX {
+                                        NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+                                    }
+                                }
+
+                                HoverHandler { id: delegateRecentHover }
+
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: 50
+                                    color: delegateRecentLeftHover.hovered ? "#CC000000" : "#80000000"
+                                    visible: delegateRecentList.contentX > 0
+                                    opacity: delegateRecentHover.hovered ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "❮"
+                                        color: delegateRecentLeftHover.hovered ? plexOrange : "white"
+                                        font.pixelSize: 32
+                                        font.bold: true
+                                    }
+                                    
+                                    HoverHandler { id: delegateRecentLeftHover }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: delegateRecentList.contentX = Math.max(0, delegateRecentList.contentX - 880)
+                                    }
+                                }
+
+                                Rectangle {
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: 50
+                                    color: delegateRecentRightHover.hovered ? "#CC000000" : "#80000000"
+                                    visible: delegateRecentList.contentWidth > delegateRecentList.width && delegateRecentList.contentX < (delegateRecentList.contentWidth - delegateRecentList.width)
+                                    opacity: delegateRecentHover.hovered ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "❯"
+                                        color: delegateRecentRightHover.hovered ? plexOrange : "white"
+                                        font.pixelSize: 32
+                                        font.bold: true
+                                    }
+                                    
+                                    HoverHandler { id: delegateRecentRightHover }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: delegateRecentList.contentX = Math.min(delegateRecentList.contentWidth - delegateRecentList.width, delegateRecentList.contentX + 880)
+                                    }
+                                }
                             }
                         }
                     }
@@ -523,11 +706,13 @@ Window {
                 }
             }
 
-            // 1: MOVIES VIEW (Collections)
+            // 1: LIBRARY RECOMMEND / COLLECTIONS VIEW
             Item {
-                id: moviesView
-                objectName: "moviesView"
+                id: libraryView
+                objectName: "libraryView"
                 
+                property int libraryTab: 0 // 0: Recommend, 1: Collections
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
@@ -538,20 +723,179 @@ Window {
                         Layout.preferredHeight: 60
                         color: "#1a1a1a"
                         
-                        RowLayout {
-                            anchors.fill: parent
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
                             anchors.leftMargin: 20
+                            spacing: 30
                             
                             Text {
-                                text: "Collections"
+                                id: libraryTitleText
+                                objectName: "libraryTitleText"
+                                text: currentLibraryTitle
                                 color: "white"
-                                font.pixelSize: 20
+                                font.pixelSize: 24
                                 font.bold: true
+                                renderType: Text.NativeRendering
+                                anchors.baseline: collectionsTab.baseline
+                            }
+
+                            Text {
+                                id: recommendedTab
+                                objectName: "recommendedTab"
+                                text: "Recommended"
+                                color: libraryView.libraryTab === 0 ? plexOrange : "gray"
+                                font.pixelSize: 18
+                                font.bold: libraryView.libraryTab === 0
+                                renderType: Text.NativeRendering
+                                anchors.baseline: collectionsTab.baseline
+                                
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: libraryView.libraryTab = 0
+                                    cursorShape: Qt.PointingHandCursor
+                                }
+                            }
+
+                            Text {
+                                id: collectionsTab
+                                objectName: "collectionsTab"
+                                text: "Collections"
+                                color: libraryView.libraryTab === 1 ? plexOrange : "gray"
+                                font.pixelSize: 18
+                                font.bold: libraryView.libraryTab === 1
+                                renderType: Text.NativeRendering
+                                
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: libraryView.libraryTab = 1
+                                    cursorShape: Qt.PointingHandCursor
+                                }
                             }
                         }
                     }
 
-                    GridView {
+                    StackLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        currentIndex: libraryView.libraryTab
+
+                        // 0: Recommended
+                        ScrollView {
+                            clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                            ColumnLayout {
+                                width: contentStack.width
+                                spacing: 20
+
+                                Text {
+                                    text: "Continue Watching"
+                                    color: "white"
+                                    font.pixelSize: 22
+                                    font.bold: true
+                                    Layout.topMargin: 20
+                                    Layout.leftMargin: 20
+                                    visible: continueWatchingListLib.count > 0
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 330
+                                    Layout.leftMargin: 20
+                                    visible: continueWatchingListLib.count > 0
+
+                                    ListView {
+                                        id: continueWatchingListLib
+                                        anchors.fill: parent
+                                        orientation: ListView.Horizontal
+                                        spacing: 20
+                                        model: continueWatchingModel
+                                        delegate: movieDelegate
+                                        clip: true
+                                        interactive: false
+                                        Behavior on contentX { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+                                    }
+                                    
+                                    HoverHandler { id: cwLibHover }
+                                    Rectangle {
+                                        anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 50
+                                        color: cwLibLeftHover.hovered ? "#CC000000" : "#80000000"
+                                        visible: continueWatchingListLib.contentX > 0
+                                        opacity: cwLibHover.hovered ? 1.0 : 0.0
+                                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                                        Text { anchors.centerIn: parent; text: "❮"; color: cwLibLeftHover.hovered ? plexOrange : "white"; font.pixelSize: 32; font.bold: true }
+                                        HoverHandler { id: cwLibLeftHover }
+                                        MouseArea { anchors.fill: parent; onClicked: continueWatchingListLib.contentX = Math.max(0, continueWatchingListLib.contentX - 880) }
+                                    }
+                                    Rectangle {
+                                        anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 50
+                                        color: cwLibRightHover.hovered ? "#CC000000" : "#80000000"
+                                        visible: continueWatchingListLib.contentWidth > continueWatchingListLib.width && continueWatchingListLib.contentX < (continueWatchingListLib.contentWidth - continueWatchingListLib.width)
+                                        opacity: cwLibHover.hovered ? 1.0 : 0.0
+                                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                                        Text { anchors.centerIn: parent; text: "❯"; color: cwLibRightHover.hovered ? plexOrange : "white"; font.pixelSize: 32; font.bold: true }
+                                        HoverHandler { id: cwLibRightHover }
+                                        MouseArea { anchors.fill: parent; onClicked: continueWatchingListLib.contentX = Math.min(continueWatchingListLib.contentWidth - continueWatchingListLib.width, continueWatchingListLib.contentX + 880) }
+                                    }
+                                }
+
+                                Text {
+                                    text: "Recently Added"
+                                    color: "white"
+                                    font.pixelSize: 22
+                                    font.bold: true
+                                    Layout.leftMargin: 20
+                                    visible: recentlyAddedListLib.count > 0
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 330
+                                    Layout.leftMargin: 20
+                                    visible: recentlyAddedListLib.count > 0
+
+                                    ListView {
+                                        id: recentlyAddedListLib
+                                        anchors.fill: parent
+                                        orientation: ListView.Horizontal
+                                        spacing: 20
+                                        model: recentlyAddedModel
+                                        delegate: movieDelegate
+                                        clip: true
+                                        interactive: false
+                                        Behavior on contentX { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+                                    }
+                                    
+                                    HoverHandler { id: raLibHover }
+                                    Rectangle {
+                                        anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 50
+                                        color: raLibLeftHover.hovered ? "#CC000000" : "#80000000"
+                                        visible: recentlyAddedListLib.contentX > 0
+                                        opacity: raLibHover.hovered ? 1.0 : 0.0
+                                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                                        Text { anchors.centerIn: parent; text: "❮"; color: raLibLeftHover.hovered ? plexOrange : "white"; font.pixelSize: 32; font.bold: true }
+                                        HoverHandler { id: raLibLeftHover }
+                                        MouseArea { anchors.fill: parent; onClicked: recentlyAddedListLib.contentX = Math.max(0, recentlyAddedListLib.contentX - 880) }
+                                    }
+                                    Rectangle {
+                                        anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 50
+                                        color: raLibRightHover.hovered ? "#CC000000" : "#80000000"
+                                        visible: recentlyAddedListLib.contentWidth > recentlyAddedListLib.width && recentlyAddedListLib.contentX < (recentlyAddedListLib.contentWidth - recentlyAddedListLib.width)
+                                        opacity: raLibHover.hovered ? 1.0 : 0.0
+                                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                                        Text { anchors.centerIn: parent; text: "❯"; color: raLibRightHover.hovered ? plexOrange : "white"; font.pixelSize: 32; font.bold: true }
+                                        HoverHandler { id: raLibRightHover }
+                                        MouseArea { anchors.fill: parent; onClicked: recentlyAddedListLib.contentX = Math.min(recentlyAddedListLib.contentWidth - recentlyAddedListLib.width, recentlyAddedListLib.contentX + 880) }
+                                    }
+                                }
+                                
+                                Item { Layout.preferredHeight: 20 }
+                            }
+                        }
+
+                        // 1: Collections
+                        GridView {
                         id: collectionsGrid
                         objectName: "collectionsGrid"
                         Layout.fillWidth: true
@@ -578,6 +922,7 @@ Window {
                     }
                 }
             }
+            } // END OF libraryView
             
             // 2: COLLECTION MOVIES VIEW
             Item {
@@ -640,7 +985,6 @@ Window {
                     }
                 }
             }
-        }
         }
     }
 
@@ -741,7 +1085,7 @@ Window {
                 onClicked: {
                     mpvObject.command(["stop"])
                     playerView.visible = false
-                    mainLayout.visible = true
+                    rootLayout.visible = true
                     if (mainWindow.isFullScreenMode) {
                         mainWindow.showNormal()
                     }
@@ -926,6 +1270,7 @@ Window {
                 color: "#151515"
 
                 ColumnLayout {
+                    id: settingsSidebarColumn
                     anchors.fill: parent
                     anchors.margins: 20
                     spacing: 15
@@ -943,7 +1288,7 @@ Window {
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle { color: "transparent" }
-                        onClicked: settingsWindow.visible = false
+                        onClicked: closeSettings()
                     }
 
                     Text {
@@ -955,16 +1300,32 @@ Window {
                         Layout.bottomMargin: 20
                     }
 
+                    property int settingsTab: 0
+
                     Button {
                         text: "Login"
                         Layout.fillWidth: true
                         contentItem: Text {
                             text: parent.text
-                            color: "#E5A00D" // plexOrange
+                            color: parent.parent.settingsTab === 0 ? "#E5A00D" : "white"
                             font.pixelSize: 18
-                            font.bold: true
+                            font.bold: parent.parent.settingsTab === 0
                         }
                         background: Rectangle { color: "transparent" }
+                        onClicked: parent.settingsTab = 0
+                    }
+
+                    Button {
+                        text: "Libraries"
+                        Layout.fillWidth: true
+                        contentItem: Text {
+                            text: parent.text
+                            color: parent.parent.settingsTab === 1 ? "#E5A00D" : "white"
+                            font.pixelSize: 18
+                            font.bold: parent.parent.settingsTab === 1
+                        }
+                        background: Rectangle { color: "transparent" }
+                        onClicked: parent.settingsTab = 1
                     }
 
                     Item { Layout.fillHeight: true }
@@ -977,18 +1338,22 @@ Window {
                 Layout.fillHeight: true
                 color: "transparent"
 
-                ColumnLayout {
+                StackLayout {
                     anchors.fill: parent
                     anchors.margins: 40
-                    spacing: 20
+                    currentIndex: settingsSidebarColumn.settingsTab // Access the sidebar's property
 
-                    Text {
-                        text: "Login Configuration"
-                        color: "white"
-                        font.pixelSize: 28
-                        font.bold: true
-                        Layout.bottomMargin: 20
-                    }
+                    // TAB 0: LOGIN
+                    ColumnLayout {
+                        spacing: 20
+
+                        Text {
+                            text: "Login Configuration"
+                            color: "white"
+                            font.pixelSize: 28
+                            font.bold: true
+                            Layout.bottomMargin: 20
+                        }
 
                     Text {
                         text: "Server URL"
@@ -1054,7 +1419,7 @@ Window {
                                 color: "#444444"
                                 radius: 8 
                             }
-                            onClicked: settingsWindow.visible = false
+                            onClicked: closeSettings()
                         }
                         
                         Button {
@@ -1077,7 +1442,7 @@ Window {
                             onClicked: {
                                 appSettings.serverUrl = serverUrlField.text
                                 appSettings.token = tokenField.text
-                                settingsWindow.visible = false
+                                closeSettings()
                                 
                                 if (!isTestMode) {
                                     recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/recentlyAdded")
@@ -1134,9 +1499,52 @@ Window {
                         Layout.fillWidth: true
                     }
 
-                    Item { Layout.fillHeight: true }
+                        Item { Layout.fillHeight: true }
+                    }
+
+                    // TAB 1: LIBRARIES
+                    ColumnLayout {
+                        spacing: 20
+
+                        Text {
+                            text: "Manage Libraries"
+                            color: "white"
+                            font.pixelSize: 28
+                            font.bold: true
+                            Layout.bottomMargin: 20
+                        }
+
+                        ListView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            model: allLibrariesModel
+                            clip: true
+                            delegate: RowLayout {
+                                width: ListView.view.width
+                                spacing: 15
+                                
+                                CheckBox {
+                                    id: libCheckbox
+                                    checked: {
+                                        var map = JSON.parse(appSettings.enabledLibraries || "{}");
+                                        return map[model.ratingKey] !== undefined && map[model.ratingKey] !== null && map[model.ratingKey] !== false;
+                                    }
+                                    onToggled: {
+                                        mainWindow.setLibraryEnabled(model.ratingKey, checked, model.type, model.title)
+                                    }
+                                }
+                                
+                                Text {
+                                    text: getLibraryIcon(model.type) + " " + model.title + " (" + model.type + ")"
+                                    color: "white"
+                                    font.pixelSize: 18
+                                    Layout.fillWidth: true
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-}
+}}

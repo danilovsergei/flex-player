@@ -16,6 +16,10 @@ struct Movie {
     qint64 viewOffset = 0; // in milliseconds
     qint64 duration = 0;   // in milliseconds
     bool isWatched = false;
+    QString parentTitle;
+    int childCount = 0;
+    int leafCount = 0;
+    int viewedLeafCount = 0;
 };
 
 class PlexModel : public QAbstractListModel {
@@ -29,7 +33,11 @@ public:
         TypeRole,
         ViewOffsetRole,
         DurationRole,
-        IsWatchedRole
+        IsWatchedRole,
+        ParentTitleRole,
+        ChildCountRole,
+        LeafCountRole,
+        ViewedLeafCountRole
     };
 
     explicit PlexModel(QObject *parent = nullptr);
