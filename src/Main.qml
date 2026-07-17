@@ -562,6 +562,19 @@ Window {
                         model: collectionsModel
                         delegate: movieDelegate
                         clip: true
+                        
+                        ScrollBar.vertical: ScrollBar {
+                            active: hovered || collectionsGrid.moving
+                            policy: ScrollBar.AsNeeded
+                            background: Rectangle {
+                                color: "transparent"
+                            }
+                            contentItem: Rectangle {
+                                implicitWidth: 6
+                                radius: 3
+                                color: parent.active ? "#80ffffff" : "#40ffffff"
+                            }
+                        }
                     }
                 }
             }
@@ -611,6 +624,19 @@ Window {
                         model: collectionMoviesModel
                         delegate: movieDelegate
                         clip: true
+                        
+                        ScrollBar.vertical: ScrollBar {
+                            active: hovered || collectionMoviesGrid.moving
+                            policy: ScrollBar.AsNeeded
+                            background: Rectangle {
+                                color: "transparent"
+                            }
+                            contentItem: Rectangle {
+                                implicitWidth: 6
+                                radius: 3
+                                color: parent.active ? "#80ffffff" : "#40ffffff"
+                            }
+                        }
                     }
                 }
             }
