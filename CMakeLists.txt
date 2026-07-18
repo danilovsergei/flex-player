@@ -14,6 +14,8 @@ qt_standard_project_setup()
 
 set(APP_SOURCES
     src/PlexModel.cpp
+    src/PlexAuth.cpp
+    src/PlexAuth.h
     src/PlexModel.h
     src/MpvItem.cpp
     src/MpvItem.h

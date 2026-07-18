@@ -488,4 +488,141 @@ TestCase {
         verify(typeof view.backToCollections !== "undefined", "Should have backToCollections signal");
         if (view) view.destroy();
     }
+
+    function test_26_plex_login_flow() {
+        var settingsWindow = findChild(mainWindow, "settingsWindow")
+        settingsWindow.visible = true
+        wait(500)
+        
+        var loginButton = findChild(settingsWindow, "plexLoginButton")
+        verify(loginButton !== null, "Plex Login button should exist")
+        
+        mouseClick(loginButton)
+        wait(500)
+        
+        var pinOverlay = findChild(settingsWindow, "pinOverlay")
+        verify(pinOverlay !== null, "PIN overlay should exist")
+        verify(pinOverlay.visible, "PIN overlay should be visible after clicking login")
+        
+        // Mock receiving a token
+        var plexAuth = findChild(settingsWindow, "plexAuth")
+        if (plexAuth) {
+            plexAuth.tokenReceived("test-token-123")
+            wait(200)
+            
+            var tokenField = findChild(settingsWindow, "tokenField")
+            verify(tokenField.text === "test-token-123", "Token field should be updated with received token")
+        }
+        
+        settingsWindow.visible = false
+    }
+
+    function test_27_settings_sidebar_items() {
+        var settingsWindow = findChild(mainWindow, "settingsWindow")
+        settingsWindow.visible = true
+        wait(500)
+        
+        var tabLogin = findChild(settingsWindow, "settingsTabLogin")
+        verify(tabLogin !== null, "Login tab should exist in the sidebar")
+        verify(tabLogin.text === "Login Configuration", "Login tab text should be 'Login Configuration'")
+        verify(tabLogin.visible, "Login tab should be visible")
+        
+        var tabLibraries = findChild(settingsWindow, "settingsTabLibraries")
+        verify(tabLibraries !== null, "Libraries tab should exist in the sidebar")
+        verify(tabLibraries.text === "Manage Libraries", "Libraries tab text should be 'Manage Libraries'")
+        verify(tabLibraries.visible, "Libraries tab should be visible")
+        
+        settingsWindow.visible = false
+    }
+
+    function test_28_settings_save_button_validation() {
+        var settingsWindow = findChild(mainWindow, "settingsWindow")
+        settingsWindow.visible = true
+        wait(500)
+        
+        var serverUrlField = findChild(settingsWindow, "serverUrlField")
+        var tokenField = findChild(settingsWindow, "tokenField")
+        var saveButton = findChild(settingsWindow, "saveSettingsButton")
+        var warningText = findChild(settingsWindow, "requiredFieldsWarning")
+        
+        verify(serverUrlField !== null, "Server URL field should exist")
+        verify(tokenField !== null, "Token field should exist")
+        verify(saveButton !== null, "Save button should exist")
+        verify(warningText !== null, "Warning text should exist")
+        
+        // Empty both fields
+        serverUrlField.text = ""
+        tokenField.text = ""
+        wait(100)
+        
+        var checkButton = findChild(settingsWindow, "checkConnectionButton")
+        verify(checkButton !== null, "Check connection button should exist")
+        
+        verify(!saveButton.enabled, "Save button should be disabled when fields are empty")
+        verify(!checkButton.enabled, "Check button should be disabled when fields are empty")
+        verify(warningText.visible, "Warning text should be visible when fields are empty")
+        
+        // Fill one field
+        serverUrlField.text = "http://test"
+        wait(100)
+        
+        verify(!saveButton.enabled, "Save button should be disabled when token is empty")
+        verify(!checkButton.enabled, "Check button should be disabled when token is empty")
+        verify(warningText.visible, "Warning text should be visible when token is empty")
+        
+        // Fill both fields
+        tokenField.text = "token123"
+        wait(100)
+        
+        verify(!saveButton.enabled, "Save button should be disabled when connection is not checked")
+        verify(checkButton.enabled, "Check button should be enabled when both fields are filled")
+        verify(warningText.visible, "Warning text should be visible when connection is not checked")
+        
+        // Mock successful connection check
+        settingsWindow.connectionState = 2
+        wait(100)
+        
+        verify(saveButton.enabled, "Save button should be enabled after successful connection check")
+        verify(!warningText.visible, "Warning text should be hidden after successful connection check")
+        
+        settingsWindow.visible = false
+    }
+
+    function test_29_settings_libraries_save() {
+        var settingsWindow = findChild(mainWindow, "settingsWindow")
+        settingsWindow.visible = true
+        wait(500)
+        
+        var settingsSidebarColumn = findChild(settingsWindow, "settingsSidebarColumn")
+        if (settingsSidebarColumn) settingsSidebarColumn.settingsTab = 1
+        else mainWindow.openSettings(1) // fallback
+        wait(500)
+        
+        var saveLibsButton = findChild(settingsWindow, "saveLibrariesButton")
+        verify(saveLibsButton !== null, "Save button should exist on Libraries tab")
+        verify(saveLibsButton.visible, "Save button on Libraries tab should be visible")
+        
+        settingsWindow.visible = false
+    }
+
+    function test_30_empty_state_visibility() {
+        mainWindow.currentTab = 0
+        wait(500)
+        
+        var homeView = findChild(mainWindow, "homeView")
+        verify(homeView !== null, "HomeView should exist")
+        
+        var emptyState = findChild(homeView, "emptyStateView")
+        verify(emptyState !== null, "Empty state view should exist")
+        
+        // Mock no libraries
+        homeView.enabledLibraries = "{}"
+        wait(100)
+        verify(emptyState.visible, "Empty state should be visible when no libraries are enabled")
+        
+        // Mock libraries
+        homeView.enabledLibraries = '{"1": {"title": "Movies", "type": "movie"}}'
+        wait(100)
+        verify(!emptyState.visible, "Empty state should be hidden when libraries are enabled")
+    }
 }

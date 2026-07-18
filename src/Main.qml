@@ -16,11 +16,25 @@ Window {
     objectName: "mainWindow"
 
     Settings {
-        id: appSettings
+        id: loginSettings
+        category: "Login"
         location: isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property string serverUrl: ""
         property string token: ""
+    }
+
+    Settings {
+        id: librarySettings
+        category: "Libraries"
+        location: isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property string enabledLibraries: "{}"
+    }
+
+    QtObject {
+        id: appSettings
+        property alias serverUrl: loginSettings.serverUrl
+        property alias token: loginSettings.token
+        property alias enabledLibraries: librarySettings.enabledLibraries
     }
 
     property string serverUrl: appSettings.serverUrl
@@ -280,6 +294,7 @@ Window {
                 rootApp: mainWindow
                 continueWatchingModel: continueWatchingModel
                 homeLibrariesList: mainWindow.homeLibrariesList
+                enabledLibraries: appSettings.enabledLibraries
                 movieDelegate: movieDelegate
                 onOpenSettingsRequested: openSettings(1)
             }

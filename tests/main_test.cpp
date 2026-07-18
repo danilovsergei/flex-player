@@ -5,6 +5,7 @@
 #include <QSurfaceFormat>
 #include <clocale>
 #include "../src/PlexModel.h"
+#include "../src/PlexAuth.h"
 #include "../src/MpvItem.h"
 
 int main(int argc, char **argv) {
@@ -18,6 +19,7 @@ int main(int argc, char **argv) {
 
     qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
     qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
+    qmlRegisterType<PlexAuth>("flex.plex", 1, 0, "PlexAuth");
 
     return quick_test_main(argc, argv, "FlexPlayerTest", QUICK_TEST_SOURCE_DIR);
 }

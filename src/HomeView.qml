@@ -12,6 +12,7 @@ ScrollView {
     property var rootApp
     property var continueWatchingModel
     property var homeLibrariesList
+    property string enabledLibraries: "{}"
     property Component movieDelegate
     property color plexOrange: "#E5A00D"
 
@@ -22,13 +23,12 @@ ScrollView {
         spacing: 20
 
         Item {
+            objectName: "emptyStateView"
             Layout.fillWidth: true
             Layout.preferredHeight: 300
             visible: {
-                if (!rootApp || !rootApp.appSettings) return false;
-                var str = rootApp.appSettings.enabledLibraries;
                 try {
-                    return Object.keys(JSON.parse(str || "{}")).length === 0;
+                    return Object.keys(JSON.parse(root.enabledLibraries || "{}")).length === 0;
                 } catch(e) {
                     return true;
                 }

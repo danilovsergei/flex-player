@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QSurfaceFormat>
 #include "PlexModel.h"
+#include "PlexAuth.h"
 #include "MpvItem.h"
 
 int main(int argc, char *argv[])
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
     // Register our custom MPV QML Type
     qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
     qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
+    qmlRegisterType<PlexAuth>("flex.plex", 1, 0, "PlexAuth");
 
     QQmlApplicationEngine engine;
 
