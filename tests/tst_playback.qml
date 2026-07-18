@@ -711,4 +711,525 @@ TestCase {
         playerView.currentRatingKey = "";
         playerView.visible = false;
     }
+
+    function test_33_movie_details() {
+        var rootLayout = findChild(mainWindow, "rootLayout")
+        if (rootLayout) rootLayout.visible = true
+        var playerView = findChild(mainWindow, "playerView")
+        if (playerView) playerView.visible = false
+        
+        mainWindow.currentTab = 0
+        wait(500)
+        
+        var homeView = findChild(mainWindow, "homeView")
+        var continueWatchingListLib = findChild(homeView, "continueWatchingList")
+        verify(continueWatchingListLib !== null, "List should exist")
+        tryCompare(continueWatchingListLib, "count", 1, 5000, "List should have items")
+        
+        var item = continueWatchingListLib.contentItem.children[0]
+        verify(item !== null, "First item should exist")
+        
+        // Find context menu
+        var contextMenu = findChild(item, "contextMenu")
+        verify(contextMenu !== null, "ContextMenu should exist")
+        
+        // Right click to open menu
+        mouseClick(item, Qt.RightButton)
+        wait(200)
+        
+        var detailsMenuItem = findChild(contextMenu, "detailsMenuItem")
+        verify(detailsMenuItem !== null, "detailsMenuItem should exist")
+        
+        // Instead of clicking the native popup menu (which might be hard in headless QtTest), 
+        // we trigger the signal directly
+        detailsMenuItem.triggered()
+        wait(200)
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView")
+        verify(movieDetailsView !== null, "MovieDetailsView should exist")
+        
+        // Mock a details load because the actual network request will fail in test env
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "title": "Mock Detail Title",
+                    "year": 2026,
+                    "duration": 5400000, // 90 mins
+                    "viewOffset": 600000, // 10 mins
+                    "contentRating": "R",
+                    "rating": 8.5,
+                    "ratingImage": "imdb://image.rating",
+                    "audienceRating": 9.0,
+                    "audienceRatingImage": "rottentomatoes://image.rating.upright",
+                    "summary": "This is a mock summary.",
+                    "Genre": [{"tag": "Action"}],
+                    "Role": [{"tag": "Actor A", "role": "Hero", "thumb": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="}],
+                    "Media": [{
+                        "Part": [{
+                            "key": "/mock/part.mkv",
+                            "Stream": [
+                                {"streamType": 1, "codec": "h264", "displayTitle": "1080p (H.264)"},
+                                {"streamType": 1, "codec": "hevc", "displayTitle": "4K (HEVC)"},
+                                {"streamType": 2, "language": "English"},
+                                {"streamType": 3, "language": "Spanish"}
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        // Assign rawJson directly to test parsing
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(500);
+        
+        verify(movieDetailsView.parent.currentIndex === 3, "Details view should be the active tab");
+        
+        var title = findChild(movieDetailsView, "detailsTitle");
+        verify(title !== null, "Title should exist");
+        verify(title.text === "Mock Detail Title", "Title should match mock data");
+        
+        var minsLeft = findChild(movieDetailsView, "detailsMinsLeft");
+        verify(minsLeft.text === "80 mins left", "Mins left should calculate correctly (90-10)");
+        
+        var genres = findChild(movieDetailsView, "detailsGenres");
+        verify(genres.text === "Action", "Genres should parse correctly");
+        
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        verify(playBtn.text === "Resume", "Should say Resume because viewOffset > 0");
+        
+        var videoCombo = findChild(movieDetailsView, "detailsVideoCombo");
+        verify(videoCombo !== null, "Video combobox should exist");
+        verify(videoCombo.count === 2, "Should have 2 video streams");
+        
+        // Open the popup programmatically (headless testing workaround for Popup)
+        videoCombo.popup.open();
+        wait(200);
+        
+        verify(videoCombo.popup.visible, "Video combobox popup should be visible after click");
+        
+        // Find the list view in the popup
+        var popupListView = videoCombo.popup.contentItem;
+        verify(popupListView !== null, "Popup list view should exist");
+        verify(popupListView.count === 2, "Popup list view should have 2 items");
+        
+        // Wait for items to be instantiated
+        wait(500);
+        
+        // Click the second item (index 1) by simulating a mouse click on the delegate
+        // Note: ListView instantiates delegates dynamically, children might include other internal items
+        // we find the second ItemDelegate
+        var delegates = [];
+        for (var i = 0; i < popupListView.contentItem.children.length; i++) {
+            if (popupListView.contentItem.children[i].toString().indexOf("ItemDelegate") !== -1) {
+                delegates.push(popupListView.contentItem.children[i]);
+            }
+        }
+        
+        verify(delegates.length >= 2, "Should find at least 2 delegates instantiated");
+        var secondItem = delegates[1];
+        verify(secondItem !== null, "Second delegate item should exist");
+        mouseClick(secondItem);
+        wait(200);
+        
+        verify(videoCombo.currentText === "4K (HEVC)", "Should select second video stream correctly via click");
+        
+        // Open the popup again to verify the selected item still renders
+        videoCombo.popup.open();
+        wait(200);
+        
+        var delegates2 = [];
+        for (var j = 0; j < popupListView.contentItem.children.length; j++) {
+            if (popupListView.contentItem.children[j].toString().indexOf("ItemDelegate") !== -1) {
+                delegates2.push(popupListView.contentItem.children[j]);
+            }
+        }
+        
+        verify(delegates2.length >= 2, "Should find at least 2 delegates on second open");
+        var selectedItem = delegates2[1];
+        verify(selectedItem.contentItem.text === "4K (HEVC)", "Second delegate text should still be '4K (HEVC)'");
+        verify(selectedItem.contentItem.color.toString() === "#000000" || selectedItem.contentItem.color.toString() === "#ff000000", "Text should be black, got " + selectedItem.contentItem.color);
+        verify(selectedItem.background.color.toString() === "#e5a00d" || selectedItem.background.color.toString() === "#ffe5a00d", "Background should be orange, got " + selectedItem.background.color);
+        
+        // Select first item
+        var firstItem = delegates2[0];
+        mouseClick(firstItem);
+        wait(200);
+        verify(videoCombo.currentText === "1080p (H.264)", "Should select first video stream");
+        
+        // Open popup again
+        videoCombo.popup.open();
+        wait(200);
+        
+        var delegates3 = [];
+        for (var k = 0; k < popupListView.contentItem.children.length; k++) {
+            if (popupListView.contentItem.children[k].toString().indexOf("ItemDelegate") !== -1) {
+                delegates3.push(popupListView.contentItem.children[k]);
+            }
+        }
+        
+        verify(delegates3.length >= 2, "Should find at least 2 delegates on third open");
+        var newFirstItem = delegates3[0];
+        verify(newFirstItem.contentItem.text === "1080p (H.264)", "First delegate text should be correct");
+        
+        // Since we just clicked it, it is the currentIndex. Opening the popup sets highlightedIndex = currentIndex
+        verify(newFirstItem.highlighted === true, "First item should be highlighted because it is the current index");
+        verify(newFirstItem.contentItem.color.toString() === "#000000" || newFirstItem.contentItem.color.toString() === "#ff000000", "Text should be black when highlighted");
+        verify(newFirstItem.background.color.toString() === "#e5a00d" || newFirstItem.background.color.toString() === "#ffe5a00d", "Background should be orange when highlighted");
+        
+        
+        
+        
+        var castList = findChild(movieDetailsView, "detailsCastList");
+        verify(castList !== null, "Cast list should exist");
+        verify(castList.count === 1, "Should have 1 cast member");
+        verify(castList.orientation === ListView.Horizontal, "Cast list should be horizontal");
+        
+        var castDelegateItem = castList.contentItem.children[0];
+        verify(castDelegateItem !== null, "Cast delegate item should exist");
+        
+        // Find the Image inside the cast delegate. It doesn't have an objectName, but it's an Image inside the mask Rect or Item
+        var castImg = null;
+        for (var i = 0; i < castDelegateItem.children[0].children.length; i++) {
+            if (castDelegateItem.children[0].children[i].toString().indexOf("Image") !== -1) {
+                castImg = castDelegateItem.children[0].children[i];
+                break;
+            }
+        }
+        
+        verify(castImg !== null, "Cast Image component should exist");
+        tryCompare(castImg, "status", Image.Ready, 5000, "Cast image should be successfully loaded and ready");
+        
+        var rating0 = findChild(movieDetailsView, "detailsRating0");
+        verify(rating0 !== null, "Rating text 0 should exist");
+        verify(rating0.tooltipText === "IMDb", "Tooltip 0 should parse imdb:// source");
+        
+        var imdbImage = findChild(movieDetailsView, "detailsRatingIconImdb0");
+        verify(imdbImage !== null, "IMDb image should exist");
+        
+        tryCompare(imdbImage, "status", Image.Ready, 5000, "IMDb image should be loaded");
+        
+        var imdbImage = findChild(movieDetailsView, "detailsRatingIconImdb0");
+        verify(imdbImage !== null, "IMDb image should exist");
+        
+        tryCompare(imdbImage, "status", Image.Ready, 5000, "IMDb image should be loaded");
+
+        var rating1 = findChild(movieDetailsView, "detailsRating1");
+        verify(rating1 !== null, "Rating text 1 should exist");
+        verify(rating1.tooltipText === "Rotten Tomatoes Audience", "Tooltip 1 should parse Rotten Tomatoes Audience source");
+        
+        var backBtn = findChild(movieDetailsView, "detailsBackButton");
+        backBtn.clicked();
+        wait(200);
+        verify(mainWindow.currentTab === 0, "Should return to home tab");    }
+
+    function test_34_movie_playback_streams() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "ratingKey": "999",
+                    "title": "Stream Test Movie",
+                    "viewOffset": 15000,
+                    "duration": 50000,
+                    "Media": [{
+                        "Part": [{
+                            "key": "/library/parts/999/1234/file.mkv",
+                            "Stream": [
+                                { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                { "id": 11, "streamType": 2, "language": "English", "index": 1 },
+                                { "id": 12, "streamType": 2, "language": "Russian", "index": 2 },
+                                { "id": 13, "streamType": 3, "language": "English", "index": 3 },
+                                { "id": 14, "streamType": 3, "language": "Russian", "index": 4 }
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(200);
+        
+        var audioCombo = findChild(movieDetailsView, "detailsAudioCombo");
+        verify(audioCombo !== null, "Audio combo should exist");
+        var subCombo = findChild(movieDetailsView, "detailsSubtitleCombo");
+        verify(subCombo !== null, "Subtitle combo should exist");
+        
+        // Select Russian Audio (2nd item in array, index 1)
+        audioCombo.currentIndex = 1;
+        // Select Russian Subtitles (3rd item in array since index 0 is 'None', index 2)
+        subCombo.currentIndex = 2;
+        
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        
+        var playSpy = Qt.createQmlObject('import QtTest; SignalSpy { signalName: "playMediaRequested" }', movieDetailsView, "playSpy34");
+        playSpy.target = movieDetailsView;
+        
+        playBtn.clicked();
+        
+        verify(playSpy.count === 1, "Should emit playMediaRequested once");
+        var args = playSpy.signalArguments[0];
+        verify(args[0] === "Stream Test Movie", "Title should match");
+        verify(args.length === 7, "playMediaRequested should emit 7 arguments");
+        verify(args[5] === "2", "Audio ID should be 2 (Russian)");
+        verify(args[6] === "2", "Subtitle ID should be 2 (Russian)");
+    }
+
+    function test_35_movie_playback_streams_ui() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "ratingKey": "999",
+                    "title": "Stream Test Movie UI",
+                    "viewOffset": 15000,
+                    "duration": 50000,
+                    "Media": [{
+                        "Part": [{
+                            "key": "/library/parts/999/1234/file.mkv",
+                            "Stream": [
+                                { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                { "id": 11, "streamType": 2, "language": "English", "index": 1 },
+                                { "id": 12, "streamType": 2, "language": "Russian", "index": 2 },
+                                { "id": 13, "streamType": 3, "language": "English", "index": 3 },
+                                { "id": 14, "streamType": 3, "language": "Russian", "index": 4 }
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(200);
+        
+        var subCombo = findChild(movieDetailsView, "detailsSubtitleCombo");
+        verify(subCombo !== null, "Subtitle combo should exist");
+        
+        // Reset to 0
+        subCombo.currentIndex = 0;
+        
+        // Open the popup
+        subCombo.popup.open();
+        wait(200);
+        
+        verify(subCombo.popup.visible, "Popup should be open");
+        
+        var popupContent = subCombo.popup.contentItem;
+        verify(popupContent !== null, "Popup content should exist");
+        
+        // Click the 3rd item (index 2)
+        var delegateItem = popupContent.contentItem.children[2];
+        verify(delegateItem !== null, "Delegate item should exist");
+        mouseClick(delegateItem, delegateItem.width / 2, delegateItem.height / 2);
+        wait(200);
+        
+        verify(subCombo.currentIndex === 2, "currentIndex should be updated by clicking");
+        verify(!subCombo.popup.visible, "Popup should be closed after clicking");
+        
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton");
+        var playSpy = Qt.createQmlObject("import QtTest; SignalSpy { signalName: \"playMediaRequested\" }", movieDetailsView, "playSpy35");
+        playSpy.target = movieDetailsView;
+        
+        mouseClick(playBtn, playBtn.width / 2, playBtn.height / 2);
+        
+        verify(playSpy.count === 1, "Should emit playMediaRequested once");
+        var args = playSpy.signalArguments[0];
+        verify(args[6] === "2", "Subtitle ID should be 2 (Russian)");
+    }
+
+    function test_36_forced_subtitles_label() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "ratingKey": "999",
+                    "title": "Stream Test Movie Forced",
+                    "viewOffset": 15000,
+                    "duration": 50000,
+                    "Media": [{
+                        "Part": [{
+                            "key": "/library/parts/999/1234/file.mkv",
+                            "Stream": [
+                                { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                { "id": 11, "streamType": 2, "language": "Russian", "displayTitle": "Русский", "index": 1 },
+                                { "id": 12, "streamType": 3, "language": "Russian", "displayTitle": "Русский", "forced": true, "index": 2 },
+                                { "id": 13, "streamType": 3, "language": "Russian", "displayTitle": "Русский", "forced": false, "index": 3 }
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(200);
+        
+        var subCombo = findChild(movieDetailsView, "detailsSubtitleCombo");
+        verify(subCombo !== null, "Subtitle combo should exist");
+        
+        var model = subCombo.model;
+        verify(model.length >= 3, "Subtitle model should have items");
+        verify(model[1] === "Русский Forced", "Forced subtitle should have Forced appended. Actual: " + model[1]);
+        verify(model[2] === "Русский", "Regular subtitle should not have Forced appended. Actual: " + model[2]);
+    }
+
+    function test_37_audio_track_label() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "ratingKey": "999",
+                    "title": "Stream Test Movie Audio",
+                    "viewOffset": 15000,
+                    "duration": 50000,
+                    "Media": [{
+                        "Part": [{
+                            "key": "/library/parts/999/1234/file.mkv",
+                            "Stream": [
+                                { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                { "id": 11, "streamType": 2, "language": "Русский", "displayTitle": "Русский (EAC3 5.1)", "extendedDisplayTitle": "MovieDalen (Русский EAC3 5.1)", "title": "MovieDalen", "index": 1 }
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(200);
+        
+        var audioCombo = findChild(movieDetailsView, "detailsAudioCombo");
+        verify(audioCombo !== null, "Audio combo should exist");
+        
+        var model = audioCombo.model;
+        verify(model.length >= 1, "Audio model should have items");
+        verify(model[0] === "MovieDalen (Русский EAC3 5.1)", "Audio subtitle should prioritize extendedDisplayTitle. Actual: " + model[0]);
+    }
+
+    function test_38_dropdown_dynamic_width() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "ratingKey": "999",
+                    "title": "Stream Test Movie Width",
+                    "viewOffset": 15000,
+                    "duration": 50000,
+                    "Media": [{
+                        "Part": [{
+                            "key": "/library/parts/999/1234/file.mkv",
+                            "Stream": [
+                                { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                { "id": 11, "streamType": 2, "language": "Русский", "displayTitle": "Русский (EAC3 5.1)", "extendedDisplayTitle": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly (Русский EAC3 5.1)", "title": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly", "index": 1 }
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockJson);
+        wait(200);
+        
+        var audioCombo = findChild(movieDetailsView, "detailsAudioCombo");
+        verify(audioCombo !== null, "Audio combo should exist");
+        
+        verify(audioCombo.width > 300, "Audio combo width should be dynamically expanded beyond defaults. Actual: " + audioCombo.width);
+        
+        // Let us explicitly test that the combo width is >= text width.
+        // We do this by creating a Text element, setting its text to the long string, measuring it, and comparing.
+        var textMetrics = Qt.createQmlObject("import QtQuick; TextMetrics { font.pixelSize: 16 }", movieDetailsView, "testMetrics38");
+        textMetrics.text = "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly (Русский EAC3 5.1)";
+        
+        verify(audioCombo.width >= textMetrics.width + 40, "Audio combo width should fit the text length with padding");
+    }
+
+    function test_39_context_menu_styling() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
+        var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
+        verify(delegate !== null, "Should be able to create MoviePosterDelegate");
+        
+        var contextMenu = findChild(delegate, "contextMenu");
+        verify(contextMenu !== null, "ContextMenu should exist");
+        
+        var detailsMenuItem = findChild(delegate, "detailsMenuItem");
+        verify(detailsMenuItem !== null, "detailsMenuItem should exist");
+        
+        // Check background color of the menu
+        var bg = contextMenu.background;
+        verify(bg !== null, "Menu background should exist");
+        verify(bg.color !== undefined, "Menu background should have a color");
+        var bgColorStr = bg.color.toString();
+        verify(bgColorStr === "#111111" || bgColorStr === "#222222", "Menu background color should be #111111 or #222222, actual: " + bgColorStr);
+        
+        // Check text color of the menu item
+        var itemContent = detailsMenuItem.contentItem;
+        verify(itemContent !== null, "MenuItem contentItem should exist");
+        verify(itemContent.color !== undefined, "MenuItem contentItem should have a color");
+        var textColorStr = itemContent.color.toString();
+        verify(textColorStr === "#e5a00d", "MenuItem text color should be #e5a00d, actual: " + textColorStr);
+        
+        delegate.destroy();
+    }
+
+    function test_40_three_dots_menu_button() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
+        var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
+        verify(delegate !== null, "Should be able to create MoviePosterDelegate");
+        
+        var threeDotsButton = findChild(delegate, "threeDotsButton");
+        verify(threeDotsButton !== null, "threeDotsButton should exist");
+        
+        var contextMenu = findChild(delegate, "contextMenu");
+        verify(contextMenu !== null, "ContextMenu should exist");
+        
+        verify(!contextMenu.opened, "ContextMenu should be closed initially");
+        
+        threeDotsButton.visible = true;
+        wait(50);
+        
+        var ma = findChild(delegate, "threeDotsMouseArea"); mouseClick(ma, ma.width / 2, ma.height / 2);
+        wait(200);
+        
+        verify(contextMenu.opened, "ContextMenu should be open after clicking three dots button");
+        
+        delegate.destroy();
+    }
 }
+

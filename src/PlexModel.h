@@ -50,11 +50,13 @@ public:
     Q_INVOKABLE void checkConnection(const QString &serverUrl, const QString &token, bool isTestMode = false);
     Q_INVOKABLE void loadMockData(const QStringList &mockPaths, const QString &type = "movie", qint64 mockViewOffset = 0, qint64 mockDuration = 0, bool mockIsWatched = false);
     Q_INVOKABLE void playVideo(const QString &mediaUrl);
+    Q_INVOKABLE void fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey);
     Q_INVOKABLE void updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs);
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);
     void connectionChecked(bool success, const QString &errorMessage);
+    void itemDetailsLoaded(const QString &jsonString);
 
 private slots:
     void onReplyFinished(QNetworkReply *reply);

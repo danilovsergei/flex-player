@@ -196,6 +196,10 @@ Window {
                 playerView.visible = true
                 playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration)
             }
+            onOpenDetails: function(ratingKey) {
+                console.log("Opening details for: " + ratingKey);
+                continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+            }
         }
     }
 
@@ -282,6 +286,14 @@ Window {
             }
 
         // MAIN CONTENT
+        Connections {
+            target: continueWatchingModel
+            function onItemDetailsLoaded(jsonString) {
+                movieDetailsView.rawJson = jsonString;
+                mainWindow.currentTab = 3;
+            }
+        }
+
         StackLayout {
             id: contentStack
             Layout.fillWidth: true
@@ -315,6 +327,18 @@ Window {
                 collectionMoviesModel: collectionMoviesModel
                 movieDelegate: movieDelegate
                 onBackToCollections: currentTab = 1
+            }
+
+            // 3: MOVIE DETAILS VIEW
+            MovieDetailsView {
+                id: movieDetailsView
+                rootApp: mainWindow
+                onBackRequested: currentTab = 0
+                onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId) {
+                    rootLayout.visible = false
+                    playerView.visible = true
+                    playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId)
+                }
             }
         }
     }

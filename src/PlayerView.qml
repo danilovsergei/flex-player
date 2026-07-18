@@ -20,9 +20,12 @@ Item {
         signal playbackStopped()
         signal timelineUpdateRequested(string state, int timeMs)
 
-        function playMedia(url, offset, ratingKey, duration) {
+        function playMedia(url, offset, ratingKey, duration, audioId, subId) {
             currentRatingKey = ratingKey !== undefined ? ratingKey : ""
             currentDuration = duration !== undefined ? duration : 0
+
+            mpvObject.setProperty("aid", audioId !== undefined ? audioId : "auto")
+            mpvObject.setProperty("sid", subId !== undefined ? subId : "no")
 
             if (offset > 0) {
                 mpvObject.setProperty("start", (offset / 1000).toString())

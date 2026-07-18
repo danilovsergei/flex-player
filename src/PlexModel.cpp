@@ -10,7 +10,6 @@
 
 PlexModel::PlexModel(QObject *parent)
     : QAbstractListModel(parent), m_networkManager(new QNetworkAccessManager(this)) {
-    connect(m_networkManager, &QNetworkAccessManager::finished, this, &PlexModel::onReplyFinished);
 }
 
 int PlexModel::rowCount(const QModelIndex &parent) const {
@@ -77,7 +76,10 @@ void PlexModel::fetchEndpoint(const QString &serverUrl, const QString &token, co
     request.setRawHeader("X-Plex-Token", m_token.toUtf8());
     request.setRawHeader("Accept", "application/json");
 
-    m_networkManager->get(request);
+    QNetworkReply *reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        onReplyFinished(reply);
+    });
 }
 
 void PlexModel::playVideo(const QString &mediaUrl) {
@@ -286,4 +288,29 @@ void PlexModel::updateTimeline(const QString &serverUrl, const QString &token, c
 
     QNetworkReply *reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
+}
+
+void PlexModel::fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey) {
+    qDebug() << "fetchItemDetails called with ratingKey:" << ratingKey << "serverUrl:" << serverUrl;
+    if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) {
+        qWarning() << "fetchItemDetails missing arguments!";
+        return;
+    }
+    
+    QUrl url(serverUrl + "/library/metadata/" + ratingKey);
+    QNetworkRequest request(url);
+    request.setRawHeader("Accept", "application/json");
+    request.setRawHeader("X-Plex-Token", token.toUtf8());
+
+    QNetworkReply *reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() == QNetworkReply::NoError) {
+            QString json = QString::fromUtf8(reply->readAll());
+            emit itemDetailsLoaded(json);
+        } else {
+            qWarning() << "Failed to fetch details:" << reply->errorString();
+            emit itemDetailsLoaded("{}");
+        }
+    });
 }

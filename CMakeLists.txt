@@ -30,7 +30,9 @@ qt_add_executable(flex_player_app src/main.cpp ${APP_SOURCES})
 qt_add_qml_module(flex_player_app
     URI flex_player
     VERSION 1.0
-    QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
+    src/MovieDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    RESOURCES assets/imdb_logo.svg
 )
 
 target_include_directories(flex_player_app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${MPV_INCLUDE_DIRS} /usr/include/qt6/QtGui/6.11.1)
@@ -43,7 +45,9 @@ qt_add_executable(flex_player_test tests/main_test.cpp ${APP_SOURCES})
 qt_add_qml_module(flex_player_test
     URI flex_player_test_module
     VERSION 1.0
-    QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
+    src/MovieDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    RESOURCES assets/imdb_logo.svg
 )
 
 target_include_directories(flex_player_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${MPV_INCLUDE_DIRS} /usr/include/qt6/QtGui/6.11.1)

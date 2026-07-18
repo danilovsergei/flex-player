@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 
 Item {
     id: root
@@ -12,6 +13,7 @@ Item {
     signal openCollection(string ratingKey)
     signal openShow(string ratingKey)
     signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
+    signal openDetails(string ratingKey)
 
     Rectangle {
         anchors.fill: parent
@@ -122,30 +124,123 @@ Item {
                 font.bold: true
             }
         }
+
+
     }
     
+    Menu {
+        id: contextMenu
+        objectName: "contextMenu"
+        background: Rectangle {
+            color: "#222222"
+            radius: 4
+            border.color: "#444444"
+        }
+        MenuItem {
+            id: detailsMenuItem
+            text: "Details"
+            objectName: "detailsMenuItem"
+            contentItem: Text {
+                text: detailsMenuItem.text
+                color: "#E5A00D"
+                font.pixelSize: 16
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: detailsMenuItem.highlighted ? "#444444" : "transparent"
+                radius: 4
+            }
+            onTriggered: {
+                var mRatingKey = typeof model !== 'undefined' && typeof model.ratingKey !== 'undefined' ? model.ratingKey : ratingKey
+                root.openDetails(mRatingKey)
+            }
+        }
+    }
+
     MouseArea {
+        id: posterMouseArea
+        objectName: "posterMouseArea"
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: parent.scale = 1.05
         onExited: parent.scale = 1.0
-        onClicked: {
+        onClicked: function(mouse) {
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.popup()
+                return
+            }
             root.posterClicked()
             
-            var mType = typeof model.type !== 'undefined' ? model.type : type
-            var mRatingKey = typeof model.ratingKey !== 'undefined' ? model.ratingKey : ratingKey
-            var mTitle = typeof model.title !== 'undefined' ? model.title : title
-            var mMediaUrl = typeof model.mediaUrl !== 'undefined' ? model.mediaUrl : mediaUrl
-            var mViewOffset = typeof model.viewOffset !== 'undefined' ? model.viewOffset : viewOffset
-            
-            if (mType === "collection") {
-                root.openCollection(mRatingKey)
-            } else if (mType === "show" || mType === "season") {
-                root.openShow(mRatingKey)
-            } else {
-                var urlToPlay = mMediaUrl ? mMediaUrl : ""
-                var mDuration = typeof model.duration !== 'undefined' ? model.duration : duration
-                root.playMedia(mTitle, urlToPlay, mViewOffset, mRatingKey, mDuration)
+            try {
+                var mType = ""
+                if (typeof model !== "undefined" && model.type !== undefined) mType = model.type
+                else if (typeof type !== "undefined") mType = type
+                
+                var mRatingKey = ""
+                if (typeof model !== "undefined" && model.ratingKey !== undefined) mRatingKey = model.ratingKey
+                else if (typeof ratingKey !== "undefined") mRatingKey = ratingKey
+                
+                var mTitle = ""
+                if (typeof model !== "undefined" && model.title !== undefined) mTitle = model.title
+                else if (typeof title !== "undefined") mTitle = title
+                
+                var mMediaUrl = ""
+                if (typeof model !== "undefined" && model.mediaUrl !== undefined) mMediaUrl = model.mediaUrl
+                else if (typeof mediaUrl !== "undefined") mMediaUrl = mediaUrl
+                
+                var mViewOffset = 0
+                if (typeof model !== "undefined" && model.viewOffset !== undefined) mViewOffset = model.viewOffset
+                else if (typeof viewOffset !== "undefined") mViewOffset = viewOffset
+                
+                if (mType === "collection") {
+                    root.openCollection(mRatingKey)
+                } else if (mType === "show" || mType === "season") {
+                    root.openShow(mRatingKey)
+                } else {
+                    var urlToPlay = mMediaUrl ? mMediaUrl : ""
+                    var mDuration = 0
+                    if (typeof model !== "undefined" && model.duration !== undefined) mDuration = model.duration
+                    else if (typeof duration !== "undefined") mDuration = duration
+                    root.playMedia(mTitle, urlToPlay, mViewOffset, mRatingKey, mDuration)
+                }
+            } catch(e) {
+                console.log("Error in poster click:", e)
+            }
+        }
+    }
+
+    Rectangle {
+        id: threeDotsButton
+        objectName: "threeDotsButton"
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.margins: 10
+        width: 32
+        height: 32
+        radius: 16
+        color: "#88000000"
+        border.color: "transparent"
+        visible: posterMouseArea.containsMouse || contextMenu.opened || threeDotsMouseArea.containsMouse
+        
+        Text {
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: -3
+            text: "⋮"
+            color: "white"
+            font.pixelSize: 20
+            font.bold: true
+        }
+
+        MouseArea {
+            id: threeDotsMouseArea
+            objectName: "threeDotsMouseArea"
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: parent.color = "#E5A00D"
+            onExited: parent.color = "#88000000"
+            onClicked: function(mouse) {
+                contextMenu.popup(threeDotsButton, 0, threeDotsButton.height)
             }
         }
     }
