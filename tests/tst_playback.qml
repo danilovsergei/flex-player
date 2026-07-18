@@ -374,4 +374,118 @@ TestCase {
         wait(500);
         verify(playerView.visible, "Player view should be visible");
     }
+
+    function test_19_home_recently_added_rails() {
+        mainWindow.currentTab = 0;
+        wait(500);
+        
+        var continueWatching = findChild(mainWindow, "continueWatchingList");
+        verify(continueWatching !== null, "Continue Watching list should exist on Home Page");
+        verify(continueWatching.count > 0, "Continue Watching list should have items");
+        verify(continueWatching.parent.visible, "Continue Watching section should be visible");
+        
+        var libraryRepeater = findChild(mainWindow, "libraryRepeater");
+        verify(libraryRepeater !== null, "libraryRepeater should exist");
+        verify(libraryRepeater.count === 2, "Repeater should have instantiated 2 LibraryRails");
+        
+        var firstRail = libraryRepeater.itemAt(0);
+        verify(firstRail !== null, "First rail should exist");
+        
+        var recentlyAdded = findChild(firstRail, "recentlyAddedList");
+        
+        // If QML findChild still fails on dynamic children, we check if firstRail has children
+        var hasList = false;
+        for (var i = 0; i < firstRail.children.length; i++) {
+            var child = firstRail.children[i];
+            for (var j = 0; j < child.children.length; j++) {
+                if (child.children[j].objectName === "recentlyAddedList") {
+                    hasList = true;
+                }
+            }
+        }
+        verify(recentlyAdded !== null || hasList, "Recently Added rail should exist on Home Page");
+        
+        console.log("Verified Home Page has both Continue Watching and Recently Added sections");
+    }
+
+    function test_20_movie_poster_delegate_extraction() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
+        var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
+        verify(delegate !== null, "Should be able to create MoviePosterDelegate");
+        verify(typeof delegate.posterClicked !== "undefined", "Should have posterClicked signal");
+        if (delegate) delegate.destroy();
+    }
+
+    function test_21_home_view_extraction() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/HomeView.qml");
+        verify(component.status === Component.Ready, "HomeView.qml should exist and be valid");
+        var view = component.createObject(mainWindow);
+        verify(view !== null, "Should be able to create HomeView");
+        verify(typeof view.openSettingsRequested !== "undefined", "Should have openSettingsRequested signal");
+        if (view) view.destroy();
+    }
+
+    function test_22_library_recommend_view_extraction() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/LibraryRecommendView.qml");
+        verify(component.status === Component.Ready, "LibraryRecommendView.qml should exist and be valid");
+        var view = component.createObject(mainWindow);
+        verify(view !== null, "Should be able to create LibraryRecommendView");
+        if (view) view.destroy();
+    }
+
+    function test_23_library_recommend_view_content() {
+        mainWindow.currentTab = 1;
+        wait(500);
+        
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "LibraryView should be active");
+        
+        var continueWatching = findChild(libraryView, "continueWatchingListLib");
+        verify(continueWatching !== null, "Continue Watching list should exist in Library View");
+        verify(continueWatching.count > 0, "Continue Watching list should have items in Library View");
+        verify(continueWatching.parent.visible, "Continue Watching section should be visible in Library View");
+        
+        var recentlyAdded = findChild(libraryView, "recentlyAddedListLib");
+        verify(recentlyAdded !== null, "Recently Added list should exist in Library View");
+        verify(recentlyAdded.count > 0, "Recently Added list should have items in Library View");
+        verify(recentlyAdded.parent.visible, "Recently Added section should be visible in Library View");
+    }
+
+    function test_24_collections_view_content() {
+        mainWindow.currentTab = 1;
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "LibraryView should exist");
+        
+        // Switch to collections tab
+        libraryView.libraryTab = 1;
+        wait(500);
+        
+        var collectionsGrid = findChild(libraryView, "collectionsGrid");
+        verify(collectionsGrid !== null, "Collections grid should exist");
+        verify(collectionsGrid.count > 0, "Collections grid should have items");
+        verify(collectionsGrid.parent.visible, "Collections grid should be visible");
+        
+        // Simulate click on a collection (we can just manually trigger the logic for now, or just test tab 2)
+        // Since testCollectionsModel has data, and testCollectionMoviesModel has data, let's just go to tab 2
+        mainWindow.currentTab = 2;
+        wait(500);
+        
+        var collectionMoviesView = findChild(mainWindow, "collectionMoviesView");
+        verify(collectionMoviesView !== null, "CollectionMoviesView should exist");
+        
+        var collectionMoviesGrid = findChild(collectionMoviesView, "collectionMoviesGrid");
+        verify(collectionMoviesGrid !== null, "collectionMoviesGrid should exist");
+        verify(collectionMoviesGrid.count > 0, "collectionMoviesGrid should have items");
+        verify(collectionMoviesGrid.parent.visible, "collectionMoviesGrid should be visible");
+    }
+
+    function test_25_collection_movies_view_extraction() {
+        var component = Qt.createComponent("qrc:/flex_player_test_module/src/CollectionMoviesView.qml");
+        verify(component.status === Component.Ready, "CollectionMoviesView.qml should exist and be valid");
+        var view = component.createObject(mainWindow);
+        verify(view !== null, "Should be able to create CollectionMoviesView");
+        verify(typeof view.backToCollections !== "undefined", "Should have backToCollections signal");
+        if (view) view.destroy();
+    }
 }
