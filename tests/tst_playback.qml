@@ -625,4 +625,54 @@ TestCase {
         wait(100)
         verify(!emptyState.visible, "Empty state should be hidden when libraries are enabled")
     }
+
+    function test_31_screensaver_inhibitor() {
+        mainWindow.currentTab = 0
+        wait(500)
+        
+        var homeView = findChild(mainWindow, "homeView")
+        verify(homeView !== null, "HomeView should exist")
+        
+        var continueWatchingListLib = findChild(homeView, "continueWatchingList")
+        verify(continueWatchingListLib !== null, "List should exist")
+        
+        // Wait for it to have items
+        tryCompare(continueWatchingListLib, "count", 1, 5000, "List should have items")
+        
+        var item = continueWatchingListLib.contentItem.children[0]
+        verify(item !== null, "First item should exist")
+        
+        var playerView = findChild(mainWindow, "playerView")
+        var mpvObject = findChild(playerView, "mpvObject")
+        var inhibitor = findChild(playerView, "screensaverInhibitor")
+        
+        verify(inhibitor !== null, "ScreenSaverInhibitor should exist")
+        
+        // Initial state
+        verify(inhibitor.active === false, "Inhibitor should be inactive initially")
+        
+        // Click to play
+        mouseClick(item)
+        wait(1000)
+        
+        verify(playerView.visible, "Player should be visible")
+        verify(!mpvObject.paused, "Player should be playing")
+        verify(inhibitor.active === true, "Inhibitor should be active when playing")
+        
+        // Pause
+        mpvObject.paused = true
+        wait(200)
+        verify(inhibitor.active === false, "Inhibitor should be inactive when paused")
+        
+        // Play again
+        mpvObject.paused = false
+        wait(200)
+        verify(inhibitor.active === true, "Inhibitor should be active when playing again")
+        
+        // Stop
+        mpvObject.command(["stop"])
+        playerView.visible = false
+        wait(200)
+        verify(inhibitor.active === false, "Inhibitor should be inactive when hidden")
+    }
 }

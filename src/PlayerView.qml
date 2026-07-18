@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import flex.mpv 1.0
+import flex.plex 1.0
 
 Item {
         id: playerView
@@ -39,7 +40,25 @@ Item {
             id: playerHover
         }
 
+        ScreenSaverInhibitor {
+
+
+            id: screensaverInhibitor
+
+
+            objectName: "screensaverInhibitor"
+
+
+            active: playerView.visible && !mpvObject.paused
+
+
+        }
+
+
+
         MpvObject {
+
+
             id: mpvObject
             objectName: "mpvObject"
             anchors.fill: parent
