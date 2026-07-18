@@ -36,6 +36,10 @@ Flex Player uses the Plex server API directly to fetch and display your library.
   - Watched status checkmarks
 - **Playback:** Fully featured embedded playback with auto-hiding controls.
 
+### Player
+- Report already played time to the plex server during video playback
+- Inhibit screensaver while playing video
+
 ### Settings and Customization
 - Configurable Plex libraries to display in UI (Movies and Series are supported now)
 - Plex SSO support to generate API token

@@ -1,4 +1,5 @@
 #include "PlexModel.h"
+#include <QUrlQuery>
 #include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -263,4 +264,26 @@ void PlexModel::checkConnection(const QString &serverUrl, const QString &token, 
             }
         });
     });
+}
+
+void PlexModel::updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs) {
+    if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) return;
+    
+    QString clientId = "flex-player-desktop";
+    QUrl url(serverUrl + "/:/timeline");
+    QUrlQuery query;
+    query.addQueryItem("ratingKey", ratingKey);
+    query.addQueryItem("key", "/library/metadata/" + ratingKey);
+    query.addQueryItem("state", state);
+    query.addQueryItem("time", QString::number(timeMs));
+    query.addQueryItem("duration", QString::number(durationMs));
+    query.addQueryItem("X-Plex-Client-Identifier", clientId);
+    url.setQuery(query);
+
+    QNetworkRequest request(url);
+    request.setRawHeader("Accept", "application/json");
+    request.setRawHeader("X-Plex-Token", token.toUtf8());
+
+    QNetworkReply *reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
 }

@@ -190,11 +190,11 @@ Window {
                 collectionMoviesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/metadata/" + ratingKey + "/allLeaves")
                 currentTab = 2 // Switch to Collection Movies view
             }
-            onPlayMedia: function(title, mediaUrl, viewOffset) {
+            onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
                 rootLayout.visible = false
                 playerView.visible = true
-                playerView.playMedia(mediaUrl, viewOffset)
+                playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration)
             }
         }
     }
@@ -324,7 +324,18 @@ Window {
     PlayerView {
         id: playerView
         isFullScreenMode: mainWindow.isFullScreenMode
-        onPlaybackStopped: rootLayout.visible = true
+        onTimelineUpdateRequested: function(state, timeMs) {
+            if (playerView.currentRatingKey !== "") {
+                continueWatchingModel.updateTimeline(appSettings.serverUrl, appSettings.token, playerView.currentRatingKey, state, timeMs, playerView.currentDuration)
+            }
+        }
+        onPlaybackStopped: {
+            if (playerView.currentRatingKey !== "") {
+                continueWatchingModel.updateTimeline(appSettings.serverUrl, appSettings.token, playerView.currentRatingKey, "stopped", 0, playerView.currentDuration);
+                playerView.currentRatingKey = "";
+            }
+            rootLayout.visible = true
+        }
     }
 
     SettingsWindow {

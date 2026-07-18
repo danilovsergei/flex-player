@@ -11,7 +11,7 @@ Item {
     signal posterClicked()
     signal openCollection(string ratingKey)
     signal openShow(string ratingKey)
-    signal playMedia(string title, string mediaUrl, int viewOffset)
+    signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
 
     Rectangle {
         anchors.fill: parent
@@ -144,7 +144,8 @@ Item {
                 root.openShow(mRatingKey)
             } else {
                 var urlToPlay = mMediaUrl ? mMediaUrl : ""
-                root.playMedia(mTitle, urlToPlay, mViewOffset)
+                var mDuration = typeof model.duration !== 'undefined' ? model.duration : duration
+                root.playMedia(mTitle, urlToPlay, mViewOffset, mRatingKey, mDuration)
             }
         }
     }

@@ -14,9 +14,16 @@ Item {
         property bool fullScreenControlsVisible: true
         property bool isFullScreenMode: false
         
-        signal playbackStopped()
+        property string currentRatingKey: ""
+        property int currentDuration: 0
 
-        function playMedia(url, offset) {
+        signal playbackStopped()
+        signal timelineUpdateRequested(string state, int timeMs)
+
+        function playMedia(url, offset, ratingKey, duration) {
+            currentRatingKey = ratingKey !== undefined ? ratingKey : ""
+            currentDuration = duration !== undefined ? duration : 0
+
             if (offset > 0) {
                 mpvObject.setProperty("start", (offset / 1000).toString())
                 mpvObject.command(["loadfile", url])
@@ -26,6 +33,18 @@ Item {
             mpvObject.paused = false
         }
 
+
+        Timer {
+            id: timelineTimer
+            objectName: "timelineTimer"
+            interval: 10000
+            running: playerView.visible && playerView.currentRatingKey !== "" && !mpvObject.paused
+            repeat: true
+            onTriggered: {
+                var timeMs = Math.floor(mpvObject.position * 1000);
+                playerView.timelineUpdateRequested("playing", timeMs);
+            }
+        }
 
         Timer {
             id: hideControlsTimer
@@ -41,27 +60,24 @@ Item {
         }
 
         ScreenSaverInhibitor {
-
-
-            id: screensaverInhibitor
-
-
-            objectName: "screensaverInhibitor"
-
-
-            active: playerView.visible && !mpvObject.paused
-
-
-        }
+        id: screensaverInhibitor
+        objectName: "screensaverInhibitor"
+        active: playerView.visible && !mpvObject.paused
+    }
 
 
 
         MpvObject {
-
-
             id: mpvObject
             objectName: "mpvObject"
             anchors.fill: parent
+            onPausedChanged: {
+                if (playerView.currentRatingKey !== "" && playerView.visible) {
+                    var state = paused ? "paused" : "playing";
+                    var timeMs = Math.floor(mpvObject.position * 1000);
+                    playerView.timelineUpdateRequested(state, timeMs);
+                }
+            }
         }
 
         MouseArea {

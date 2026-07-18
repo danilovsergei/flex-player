@@ -675,4 +675,40 @@ TestCase {
         wait(200)
         verify(inhibitor.active === false, "Inhibitor should be inactive when hidden")
     }
+
+    function test_32_timeline_reporting() {
+        var playerView = findChild(mainWindow, "playerView")
+        verify(playerView !== null, "PlayerView should exist")
+        
+        var timelineTimer = findChild(playerView, "timelineTimer")
+        verify(timelineTimer !== null, "Timeline timer should exist")
+        
+        var spy = Qt.createQmlObject('import QtTest; SignalSpy {}', mainWindow);
+        spy.target = playerView;
+        spy.signalName = "timelineUpdateRequested";
+        
+        // Simulate playing a video
+        playerView.currentRatingKey = "12345";
+        playerView.visible = true;
+        
+        var mpvObject = findChild(playerView, "mpvObject");
+        verify(mpvObject !== null, "mpvObject should exist");
+        
+        mpvObject.paused = false;
+        wait(200);
+        spy.clear(); // Clear any existing signals
+        
+        // Trigger a pause
+        mpvObject.paused = true;
+        spy.wait(500); // Wait for signal
+        
+        verify(spy.count === 1, "timelineUpdateRequested should be emitted exactly once on pause");
+        
+        var args = spy.signalArguments[0];
+        verify(args[0] === "paused", "Reported state should be 'paused'");
+        
+        spy.destroy();
+        playerView.currentRatingKey = "";
+        playerView.visible = false;
+    }
 }
