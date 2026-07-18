@@ -135,13 +135,14 @@ Item {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.margins: 20
-                text: "Back"
-                font.bold: true
-                font.pixelSize: 16
+                text: "⬅"
+                font.pixelSize: 24
                 contentItem: Text {
                     text: backButton.text
                     font: backButton.font
                     color: backButton.down ? mainWindow.plexOrange : "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     color: "transparent"
