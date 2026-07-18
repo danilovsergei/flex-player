@@ -37,7 +37,8 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 - **Playback:** Fully featured embedded playback with auto-hiding controls.
 
 ### Settings and Customization
-- Configurable Plex libraries to display in UI (Movies and Series are supported now)  
+- Configurable Plex libraries to display in UI (Movies and Series are supported now)
+- Plex SSO support to generate API token
 
 Application settings can be configured either through the in-app settings page or directly by editing `~/.config/flex-player/config.ini`.
 
