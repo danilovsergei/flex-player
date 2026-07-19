@@ -222,6 +222,12 @@ Item {
             color: "#B3000000" // 70% opacity black
             visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
 
+            MouseArea {
+                objectName: "topControlShield"
+                anchors.fill: parent
+                hoverEnabled: true
+            }
+
             Button {
                 id: backButton
                 objectName: "backButton"
@@ -259,6 +265,12 @@ Item {
             height: 80
             color: "#B3000000" // 70% opacity black
             visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
+
+            MouseArea {
+                objectName: "bottomControlShield"
+                anchors.fill: parent
+                hoverEnabled: true
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -512,6 +524,70 @@ Item {
                     font.pixelSize: 14
                     font.bold: true
                     Layout.alignment: Qt.AlignVCenter
+                }
+
+                // Volume Slider Wrapper
+                Item {
+                    Layout.preferredWidth: 100
+                    Layout.preferredHeight: 40
+                    Layout.alignment: Qt.AlignVCenter
+                    
+                    Slider {
+                        id: volumeSlider
+                        objectName: "volumeSlider"
+                        anchors.fill: parent
+                        from: 0
+                        to: 100
+                        value: mpvObject.volume
+                        onValueChanged: {
+                            if (mpvObject.volume !== value) {
+                                mpvObject.volume = value
+                            }
+                        }
+                        
+                        ToolTip.visible: hovered || pressed
+                        ToolTip.text: "Volume: " + Math.round(value) + "%"
+
+                        background: Rectangle {
+                            x: volumeSlider.leftPadding
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                            width: volumeSlider.availableWidth
+                            height: 4
+                            radius: 2
+                            color: "#444444"
+                            Rectangle {
+                                width: volumeSlider.visualPosition * parent.width
+                                height: parent.height
+                                color: mainWindow.plexOrange
+                                radius: 2
+                            }
+                        }
+                        handle: Rectangle {
+                            x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                            width: 12
+                            height: 12
+                            radius: 6
+                            color: volumeSlider.pressed ? "#FFA000" : "white"
+                        }
+                    }
+
+                    MouseArea {
+                        objectName: "volumeMouseArea"
+                        anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton
+                        onPressed: function(mouse) {
+                            var pad = volumeSlider.leftPadding || 0;
+                            var aw = volumeSlider.availableWidth || volumeSlider.width;
+                            var pos = (mouse.x - pad) / aw;
+                            pos = Math.max(0, Math.min(1, pos));
+                            var newVal = volumeSlider.from + pos * (volumeSlider.to - volumeSlider.from);
+                            console.log("VOLUME MOUSEAREA PRESSED! pos=" + pos + " newVal=" + newVal);
+                            mpvObject.volume = newVal;
+                            volumeSlider.value = newVal; // Update slider visually too!
+                            mouse.accepted = false; // Pass through
+                        }
+                    }
                 }
 
                 // Full Screen Button

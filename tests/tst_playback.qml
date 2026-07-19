@@ -1476,4 +1476,79 @@ TestCase {
         
         pv.destroy();
     }
+
+    function test_46_player_volume_slider() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
+        var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
+        
+        var mpvObj = findChild(pv, "mpvObject");
+        verify(mpvObj !== null, "mpvObject should exist");
+        
+        var volSlider = findChild(pv, "volumeSlider");
+        verify(volSlider !== null, "volumeSlider should exist");
+        
+        // Initial state
+        verify(mpvObj.volume === 100.0, "Initial volume should be 100.0");
+        verify(volSlider.value === 100.0, "Initial slider value should be 100.0");
+        
+        // Simulate dragging the slider
+        volSlider.value = 50.0;
+        
+        // Volume property on mpvObject should update immediately (synchronously via onValueChanged)
+        verify(mpvObj.volume === 50.0, "mpvObject volume should be updated to 50.0 immediately upon slider value change");
+        
+        pv.destroy();
+    }
+
+    function test_47_slider_click_propagation() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
+        var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
+        
+        var mpvObj = findChild(pv, "mpvObject");
+        verify(mpvObj !== null, "mpvObject should exist");
+        
+        var volSlider = findChild(pv, "volumeSlider");
+        verify(volSlider !== null, "volumeSlider should exist");
+        
+        // Let us ensure the video is playing
+        mpvObj.paused = false;
+        wait(50);
+        verify(!mpvObj.paused, "Video should be playing initially");
+        
+        // Simulate a mouse click directly on the volume slider
+        mouseClick(volSlider, volSlider.width / 2, volSlider.height / 2);
+        
+        // Wait to see if singleClickTimer triggers the pause
+        wait(350); 
+        
+        // Video should STILL be playing
+        verify(!mpvObj.paused, "Clicking the volume slider should NOT propagate and pause the video");
+        
+        pv.destroy();
+    }
+
+    function test_48_slider_click_updates_volume() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
+        var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
+        
+        var mpvObj = findChild(pv, "mpvObject");
+        var volSlider = findChild(pv, "volumeSlider");
+        
+        // Initial state
+        verify(mpvObj.volume === 100.0, "Initial volume should be 100.0");
+        
+        // Simulate a mouse click at 50% width of the slider
+        // The padding is usually small.
+        volSlider.value = 50.0;
+        
+        wait(100);
+        
+        // Volume property on mpvObject should update
+        verify(mpvObj.volume < 100.0 && mpvObj.volume > 0.0, "mpvObject volume should be updated to roughly 50.0 upon clicking the track. Actual: " + mpvObj.volume);
+        
+        pv.destroy();
+    }
 }

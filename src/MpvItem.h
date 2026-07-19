@@ -17,6 +17,7 @@ class MpvObject : public MpvAbstractItem
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
     Q_PROPERTY(QString aid READ aid WRITE setAid NOTIFY aidChanged)
     Q_PROPERTY(QString sid READ sid WRITE setSid NOTIFY sidChanged)
+    Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY volumeChanged)
 
 public:
     explicit MpvObject(QQuickItem *parent = nullptr) : MpvAbstractItem(parent)
@@ -53,6 +54,7 @@ public:
         observeProperty("pause", MPV_FORMAT_FLAG);
         observeProperty("aid", MPV_FORMAT_STRING);
         observeProperty("sid", MPV_FORMAT_STRING);
+        observeProperty("volume", MPV_FORMAT_DOUBLE);
         
         connect(mpvController(), &MpvController::propertyChanged, this, [this](const QString &prop, const QVariant &val) {
             if (prop == "duration") {
@@ -70,6 +72,9 @@ public:
             } else if (prop == "sid") {
                 m_sid = val.toString();
                 emit sidChanged();
+            } else if (prop == "volume") {
+                m_volume = val.toDouble();
+                emit volumeChanged();
             }
         });
     }
@@ -88,6 +93,9 @@ public:
 
     QString sid() const { return m_sid; }
     void setSid(const QString& value) { setProperty("sid", value); }
+
+    double volume() const { return m_volume; }
+    void setVolume(double value) { if(m_volume == value) return; m_volume = value; emit volumeChanged(); setProperty("volume", value); }
 
     Q_INVOKABLE void command(const QVariantList &params)
     {
@@ -109,6 +117,7 @@ signals:
     void pausedChanged();
     void aidChanged();
     void sidChanged();
+    void volumeChanged();
 
 private:
     double m_duration = 0.0;
@@ -116,6 +125,7 @@ private:
     bool m_paused = false;
     QString m_aid = "auto";
     QString m_sid = "no";
+    double m_volume = 100.0;
 };
 
 #endif
