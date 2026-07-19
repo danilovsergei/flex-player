@@ -1551,4 +1551,315 @@ TestCase {
         
         pv.destroy();
     }
+
+    function test_49_series_details_view() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var seriesDetailsView = findChild(mainWindow, "seriesDetailsView");
+        verify(seriesDetailsView !== null, "seriesDetailsView should exist");
+        
+        var mockSeriesJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "show",
+                    "ratingKey": "1000",
+                    "title": "Test Series",
+                    "thumb": "/library/metadata/1000/thumb",
+                    "year": 2026,
+                    "childCount": 3,
+                    "Role": [
+                        { "tag": "Actor 1", "role": "Character 1" }
+                    ]
+                }]
+            }
+        };
+        
+        // Mock server response for seasons
+        // The QML code does an XMLHttpRequest. Since we are in QML test, XHR will try to hit the actual URL.
+        // If we set rootApp.serverUrl to a non-existent host, XHR will fail silently, but we can verify the UI structure first.
+        // Wait, for seasons, we can just inject seasonsData directly into seriesDetailsView for the sake of the UI test!
+        
+        mainWindow.currentTab = 4;
+        seriesDetailsView.rawJson = JSON.stringify(mockSeriesJson);
+        
+        var mockSeasons = [
+            { "ratingKey": "1001", "title": "Season 1", "thumb": "/library/metadata/1001/thumb", "leafCount": 10, "viewedLeafCount": 5 },
+            { "ratingKey": "1002", "title": "Season 2", "thumb": "/library/metadata/1002/thumb", "leafCount": 10, "viewedLeafCount": 10 }
+        ];
+        seriesDetailsView.seasonsData = mockSeasons;
+        
+        var mockEpToPlay = { "parentIndex": 3, "index": 16, "title": "The Big Showdown", "viewOffset": 1500 };
+        seriesDetailsView.epToPlay = mockEpToPlay;
+        
+        wait(200);
+        
+        // Check Poster and On Deck
+        var poster = findChild(seriesDetailsView, "seriesDetailsPoster");
+        verify(poster !== null, "Poster should exist");
+        
+        var onDeckLabel = findChild(seriesDetailsView, "seriesOnDeckLabel");
+        verify(onDeckLabel !== null, "On Deck label should exist");
+        verify(onDeckLabel.visible === true, "On Deck label should be visible");
+        verify(onDeckLabel.text === "On Deck - S3 E16", "On Deck label text should match expected");
+        
+        // Check Details
+        var title = findChild(seriesDetailsView, "seriesDetailsTitle");
+        verify(title.text === "Test Series", "Title should match");
+        
+        // Check Seasons List
+        var seasonsList = findChild(seriesDetailsView, "seriesSeasonsList");
+        verify(seasonsList !== null, "Seasons list should exist");
+        verify(seasonsList.count === 2, "Seasons list should have 2 items");
+        
+        // Verify season 1 has watched count
+        var season1Item = seasonsList.contentItem.children[0];
+        verify(season1Item !== null, "Season 1 item should exist");
+        
+        var season2Item = seasonsList.contentItem.children[1];
+        verify(season2Item !== null, "Season 2 item should exist");
+        
+        // Wait for UI to render delegates
+        wait(200);
+        
+        // Check season 2 (fully watched)
+        var s2CountRect = findChild(season2Item, "seasonCountRect");
+        verify(s2CountRect !== null, "seasonCountRect should exist on season 2");
+        verify(s2CountRect.visible === true, "seasonCountRect should remain visible even when fully watched");
+        
+        var s2Checkmark = findChild(season2Item, "seasonWatchedCheckmark");
+        verify(s2Checkmark !== null, "seasonWatchedCheckmark should exist on season 2");
+        verify(s2Checkmark.visible === true, "seasonWatchedCheckmark should be visible when fully watched");
+        
+        // QML test runner cannot easily dig deep into delegates without objectNames, but we know the structure.
+        // Let"s ensure it renders without error.
+        
+        // Check Cast List (DetailsCastList)
+        var castList = findChild(seriesDetailsView, "detailsCastList");
+        verify(castList !== null, "Cast list should exist");
+        verify(castList.count === 1, "Cast list should have 1 item");
+        
+        var playBtn = findChild(seriesDetailsView, "seriesDetailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        verify(playBtn.text === "Resume", "Play button should say Resume because viewOffset > 0. Actual: " + playBtn.text);
+    }
+
+    function test_50_season_details_view() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var seasonDetailsView = findChild(mainWindow, "seasonDetailsView");
+        verify(seasonDetailsView !== null, "seasonDetailsView should exist");
+        
+        var mockSeasonJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "season",
+                    "ratingKey": "1001",
+                    "parentTitle": "Test Series",
+                    "title": "Season 1",
+                    "thumb": "/library/metadata/1001/thumb",
+                    "year": 2026,
+                    "leafCount": 10,
+                    "viewedLeafCount": 5,
+                    "Role": [
+                        { "tag": "Actor 1", "role": "Character 1" }
+                    ]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 5;
+        seasonDetailsView.rawJson = JSON.stringify(mockSeasonJson);
+        
+        var mockEpisodes = [
+            { "ratingKey": "2001", "index": 1, "title": "Episode 1", "thumb": "/library/metadata/2001/thumb", "viewCount": 1, "viewOffset": 0, "duration": 3000 },
+            { "ratingKey": "2002", "index": 2, "title": "Episode 2", "thumb": "/library/metadata/2002/thumb", "viewCount": 0, "viewOffset": 1500, "duration": 3000 }
+        ];
+        seasonDetailsView.episodesData = mockEpisodes;
+        
+        // Mock the calculated epToPlay (simulating what fetchEpisodes does)
+        seasonDetailsView.epToPlay = mockEpisodes[1];
+        
+        wait(200);
+        
+        // Check Poster and On Deck
+        var poster = findChild(seasonDetailsView, "seasonDetailsPoster");
+        verify(poster !== null, "Poster should exist");
+        
+        var onDeckLabel = findChild(seasonDetailsView, "seasonOnDeckLabel");
+        verify(onDeckLabel !== null, "On Deck label should exist");
+        verify(onDeckLabel.visible === true, "On Deck label should be visible");
+        verify(onDeckLabel.text === "On Deck - E2", "On Deck label text should match expected");
+        
+        // Check Details
+        var title = findChild(seasonDetailsView, "seasonDetailsTitle");
+        verify(title.text === "Test Series - Season 1", "Title should match");
+        
+        var playBtn = findChild(seasonDetailsView, "seasonDetailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        verify(playBtn.text === "Resume", "Play button should be Resume since epToPlay is in progress. Actual: " + playBtn.text);
+        
+        // Check Episodes List
+        var episodesGrid = findChild(seasonDetailsView, "seasonEpisodesGrid");
+        verify(episodesGrid !== null, "Episodes grid should exist");
+        verify(episodesGrid.count === 2, "Episodes grid should have 2 items");
+        
+        // Check Cast List (DetailsCastList)
+        var castList = findChild(seasonDetailsView, "detailsCastList");
+        verify(castList !== null, "Cast list should exist");
+        verify(castList.count === 1, "Cast list should have 1 item");
+    }
+
+    function test_51_cast_list_rendering() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/DetailsCastList.qml");
+        verify(pvComponent.status === Component.Ready, "DetailsCastList should exist");
+        var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 300, "visible": true});
+        
+        pv.detailsData = {
+            "Role": [
+                { "tag": "Actor 1", "role": "Character 1", "thumb": "/library/metadata/1000/thumb" },
+                { "tag": "Actor 2", "role": "Character 2", "thumb": "/library/metadata/1001/thumb" }
+            ]
+        };
+        
+        wait(200);
+        var lv = findChild(pv, "detailsCastList");
+        verify(lv !== null, "detailsCastList should exist");
+        verify(lv.count === 2, "Should have 2 items");
+        
+        // Wait for rendering
+        wait(200);
+        
+        // Let"s check the height of the first delegate item
+        var item1 = lv.contentItem.children[0];
+        console.log("Item 1 height: " + item1.height + ", width: " + item1.width);
+        
+        pv.destroy();
+    }
+
+    function test_52_cast_list_visibility() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "movieDetailsView should exist");
+        
+        var mockMovieJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "movie",
+                    "ratingKey": "1000",
+                    "title": "Test Movie",
+                    "Role": [
+                        { "tag": "Actor 1", "role": "Character 1" }
+                    ]
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 3;
+        movieDetailsView.rawJson = JSON.stringify(mockMovieJson);
+        
+        wait(200);
+        
+        // Find the cast list component (the root Item of DetailsCastList)
+        // It has no objectName currently. Let"s find detailsCastList (the ListView) and check its parent.
+        var castListView = findChild(movieDetailsView, "detailsCastList");
+        verify(castListView !== null, "detailsCastList should exist");
+        verify(castListView.count === 1, "Cast list should have 1 item");
+        
+        var castRoot = castListView.parent.parent.parent; // ListView -> Item -> ColumnLayout -> Item(rootItem)
+        console.log("castRoot visible: " + castRoot.visible);
+        verify(castRoot.visible === true, "Cast list root should be visible when Role is present");
+    }
+
+    function test_53_cast_list_actual_visibility() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/MovieDetailsView.qml");
+        verify(pvComponent.status === Component.Ready, "MovieDetailsView should exist");
+        var pv = pvComponent.createObject(mainWindow, {"width": 1200, "height": 800, "visible": true});
+        
+        var mockMovieJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "movie",
+                    "ratingKey": "1000",
+                    "title": "Test Movie",
+                    "Role": [
+                        { "tag": "Actor 1", "role": "Character 1", "thumb": "/library/metadata/1000/thumb" },
+                        { "tag": "Actor 2", "role": "Character 2", "thumb": "/library/metadata/1001/thumb" }
+                    ]
+                }]
+            }
+        };
+        
+        pv.rawJson = JSON.stringify(mockMovieJson);
+        wait(300);
+        
+        var castListView = findChild(pv, "detailsCastList");
+        verify(castListView !== null, "detailsCastList should exist");
+        
+        // Find the root of the cast component
+        var castRoot = castListView.parent.parent.parent;
+        console.log("CastRoot width: " + castRoot.width + ", height: " + castRoot.height + ", visible: " + castRoot.visible);
+        
+        verify(castRoot.visible === true, "castRoot should be visible");
+        verify(castRoot.height > 100 && castRoot.height < 400, "castRoot must have tight actual height. Current height: " + castRoot.height);
+        verify(castListView.height > 100, "castListView must have actual height. Current height: " + castListView.height);
+        
+        pv.destroy();
+    }
+
+    function test_54_season_details_cast_inheritance() {
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var seasonDetailsView = findChild(mainWindow, "seasonDetailsView");
+        verify(seasonDetailsView !== null, "seasonDetailsView should exist");
+        
+        // Mock the Series Data (which HAS the Cast & Crew)
+        var mockSeriesData = {
+            "type": "show",
+            "ratingKey": "1000",
+            "title": "Test Series",
+            "Role": [
+                { "tag": "Inherited Actor 1", "role": "Char 1", "thumb": "/thumb1" },
+                { "tag": "Inherited Actor 2", "role": "Char 2", "thumb": "/thumb2" }
+            ]
+        };
+        
+        // Mock the Season Data (which lacks Cast & Crew, as Plex typically does)
+        var mockSeasonJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "season",
+                    "ratingKey": "1001",
+                    "parentTitle": "Test Series",
+                    "title": "Season 1",
+                    "thumb": "/library/metadata/1001/thumb",
+                    "year": 2026,
+                    "leafCount": 10,
+                    "viewedLeafCount": 5
+                    // Note: No "Role" array here!
+                }]
+            }
+        };
+        
+        mainWindow.currentTab = 5;
+        // Inject the series data first, just like Main.qml does
+        seasonDetailsView.seriesData = mockSeriesData;
+        seasonDetailsView.rawJson = JSON.stringify(mockSeasonJson);
+        
+        wait(300);
+        
+        // Find the Cast List component
+        var castListView = findChild(seasonDetailsView, "detailsCastList");
+        verify(castListView !== null, "detailsCastList should exist in season view");
+        
+        // Verify it inherited the 2 actors from the Series Data!
+        verify(castListView.count === 2, "Cast list should have inherited 2 items from the Series. Actual: " + castListView.count);
+        
+        var castRoot = castListView.parent.parent.parent;
+        verify(castRoot.visible === true, "Cast list root should be visible due to inherited data");
+    }
 }

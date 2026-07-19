@@ -187,8 +187,7 @@ Window {
             }
             onOpenShow: function(ratingKey) {
                 console.log("Opening show/season: " + ratingKey)
-                collectionMoviesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/metadata/" + ratingKey + "/allLeaves")
-                currentTab = 2 // Switch to Collection Movies view
+                continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
             }
             onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
@@ -289,8 +288,23 @@ Window {
         Connections {
             target: continueWatchingModel
             function onItemDetailsLoaded(jsonString) {
-                movieDetailsView.rawJson = jsonString;
-                mainWindow.currentTab = 3;
+                try {
+                    var parsed = JSON.parse(jsonString);
+                    var type = parsed.MediaContainer.Metadata[0].type;
+                    if (type === "show") {
+                        seriesDetailsView.rawJson = jsonString;
+                        mainWindow.currentTab = 4;
+                    } else if (type === "season") {
+                        seasonDetailsView.rawJson = jsonString;
+                        mainWindow.currentTab = 5;
+                    } else {
+                        movieDetailsView.rawJson = jsonString;
+                        mainWindow.currentTab = 3;
+                    }
+                } catch(e) {
+                    movieDetailsView.rawJson = jsonString;
+                    mainWindow.currentTab = 3;
+                }
             }
         }
 
@@ -334,6 +348,35 @@ Window {
                 id: movieDetailsView
                 rootApp: mainWindow
                 onBackRequested: currentTab = 0
+                onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
+                    rootLayout.visible = false
+                    playerView.visible = true
+                    playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams)
+                }
+            }
+            
+            // 4: SERIES DETAILS VIEW
+            SeriesDetailsView {
+                id: seriesDetailsView
+                rootApp: mainWindow
+                onBackRequested: currentTab = 0
+                onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
+                    rootLayout.visible = false
+                    playerView.visible = true
+                    playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams)
+                }
+                onOpenSeasonRequested: function(ratingKey) {
+                    console.log("Opening season from series: " + ratingKey);
+                    seasonDetailsView.seriesData = seriesDetailsView.detailsData;
+                    continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                }
+            }
+            
+            // 5: SEASON DETAILS VIEW
+            SeasonDetailsView {
+                id: seasonDetailsView
+                rootApp: mainWindow
+                onBackRequested: currentTab = 4
                 onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
                     rootLayout.visible = false
                     playerView.visible = true

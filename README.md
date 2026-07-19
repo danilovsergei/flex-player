@@ -37,7 +37,15 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 - **Moview Details:**
   - Movie year , rating , description
   - Select video , audio streams and subtitles
-  - Cast crew list  
+  - Cast crew list
+- **Series Details:**
+  - Series year , rating , description
+  - Seasons list
+  - Cast crew list
+- **Series Season Details:**
+  - Series year , rating , description
+  - Episodes list
+  - Cast crew list 
 - **Playback:** Fully featured embedded playback with auto-hiding controls.
 
 ### Player

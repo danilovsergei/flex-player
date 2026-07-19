@@ -31,7 +31,7 @@ qt_add_qml_module(flex_player_app
     URI flex_player
     VERSION 1.0
     QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
-    src/MovieDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    src/MovieDetailsView.qml src/DetailsCastList.qml src/SeriesDetailsView.qml src/SeasonDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
     RESOURCES assets/imdb_logo.svg
 )
 
@@ -46,7 +46,7 @@ qt_add_qml_module(flex_player_test
     URI flex_player_test_module
     VERSION 1.0
     QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
-    src/MovieDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
+    src/MovieDetailsView.qml src/DetailsCastList.qml src/SeriesDetailsView.qml src/SeasonDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
     RESOURCES assets/imdb_logo.svg
 )
 
