@@ -334,10 +334,10 @@ Window {
                 id: movieDetailsView
                 rootApp: mainWindow
                 onBackRequested: currentTab = 0
-                onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId) {
+                onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
                     rootLayout.visible = false
                     playerView.visible = true
-                    playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId)
+                    playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams)
                 }
             }
         }
@@ -347,6 +347,7 @@ Window {
     // EMBEDDED PLAYER VIEW
     PlayerView {
         id: playerView
+        rootApp: mainWindow
         isFullScreenMode: mainWindow.isFullScreenMode
         onTimelineUpdateRequested: function(state, timeMs) {
             if (playerView.currentRatingKey !== "") {

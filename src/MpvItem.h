@@ -15,6 +15,8 @@ class MpvObject : public MpvAbstractItem
     Q_PROPERTY(double duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(double position READ position WRITE setPosition NOTIFY positionChanged)
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
+    Q_PROPERTY(QString aid READ aid WRITE setAid NOTIFY aidChanged)
+    Q_PROPERTY(QString sid READ sid WRITE setSid NOTIFY sidChanged)
 
 public:
     explicit MpvObject(QQuickItem *parent = nullptr) : MpvAbstractItem(parent)
@@ -49,6 +51,8 @@ public:
         observeProperty("duration", MPV_FORMAT_DOUBLE);
         observeProperty("time-pos", MPV_FORMAT_DOUBLE);
         observeProperty("pause", MPV_FORMAT_FLAG);
+        observeProperty("aid", MPV_FORMAT_STRING);
+        observeProperty("sid", MPV_FORMAT_STRING);
         
         connect(mpvController(), &MpvController::propertyChanged, this, [this](const QString &prop, const QVariant &val) {
             if (prop == "duration") {
@@ -60,6 +64,12 @@ public:
             } else if (prop == "pause") {
                 m_paused = val.toBool();
                 emit pausedChanged();
+            } else if (prop == "aid") {
+                m_aid = val.toString();
+                emit aidChanged();
+            } else if (prop == "sid") {
+                m_sid = val.toString();
+                emit sidChanged();
             }
         });
     }
@@ -72,6 +82,12 @@ public:
 
     bool paused() const { return m_paused; }
     void setPaused(bool value) { setProperty("pause", value); }
+
+    QString aid() const { return m_aid; }
+    void setAid(const QString& value) { setProperty("aid", value); }
+
+    QString sid() const { return m_sid; }
+    void setSid(const QString& value) { setProperty("sid", value); }
 
     Q_INVOKABLE void command(const QVariantList &params)
     {
@@ -91,11 +107,15 @@ signals:
     void durationChanged();
     void positionChanged();
     void pausedChanged();
+    void aidChanged();
+    void sidChanged();
 
 private:
     double m_duration = 0.0;
     double m_position = 0.0;
     bool m_paused = false;
+    QString m_aid = "auto";
+    QString m_sid = "no";
 };
 
 #endif

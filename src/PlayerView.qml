@@ -16,16 +16,96 @@ Item {
         
         property string currentRatingKey: ""
         property int currentDuration: 0
+        
+        property var rootApp: null
+        property var mediaStreams: []
+        property string currentAudioId: "auto"
+        property string currentSubId: "no"
+
 
         signal playbackStopped()
         signal timelineUpdateRequested(string state, int timeMs)
 
-        function playMedia(url, offset, ratingKey, duration, audioId, subId) {
+        function getCurrentAudioName() {
+            if (!playerView.mediaStreams) return "Unknown";
+            var aid = parseInt(playerView.currentAudioId);
+            if (isNaN(aid)) return "Unknown";
+            var aIndex = 1;
+            for (var i=0; i<playerView.mediaStreams.length; i++) {
+                if (playerView.mediaStreams[i].streamType === 2) {
+                    if (aIndex === aid) {
+                        var s = playerView.mediaStreams[i];
+                        return s.extendedDisplayTitle || s.displayTitle || s.title || s.language || "Unknown";
+                    }
+                    aIndex++;
+                }
+            }
+            return "Unknown";
+        }
+
+        function getCurrentSubName() {
+            if (playerView.currentSubId === "no") return "None";
+            if (!playerView.mediaStreams) return "Unknown";
+            var sid = parseInt(playerView.currentSubId);
+            if (isNaN(sid)) return "Unknown";
+            var sIndex = 1;
+            for (var i=0; i<playerView.mediaStreams.length; i++) {
+                if (playerView.mediaStreams[i].streamType === 3) {
+                    if (sIndex === sid) {
+                        var s = playerView.mediaStreams[i];
+                        var t = s.extendedDisplayTitle || s.displayTitle || s.title || s.language || "Unknown";
+                        if (s.forced && t.indexOf("Forced") === -1 && t.indexOf("forced") === -1) {
+                            t += " Forced";
+                        }
+                        return t;
+                    }
+                    sIndex++;
+                }
+            }
+            return "Unknown";
+        }
+
+
+        function playMedia(url, offset, ratingKey, duration, audioId, subId, streams) {
             currentRatingKey = ratingKey !== undefined ? ratingKey : ""
             currentDuration = duration !== undefined ? duration : 0
+            playerView.mediaStreams = streams || []
+            currentAudioId = audioId !== undefined ? audioId : "auto"
+            currentSubId = subId !== undefined ? subId : "no"
 
-            mpvObject.setProperty("aid", audioId !== undefined ? audioId : "auto")
-            mpvObject.setProperty("sid", subId !== undefined ? subId : "no")
+            console.log("PlayerView playMedia called with " + (playerView.mediaStreams ? playerView.mediaStreams.length : 0) + " streams");
+
+            if (playerView.mediaStreams.length === 0 && currentRatingKey !== "") {
+                var req = new XMLHttpRequest();
+                var sUrl = playerView.rootApp ? playerView.rootApp.serverUrl : "";
+                var tok = playerView.rootApp ? playerView.rootApp.token : "";
+                var metadataUrl = sUrl + "/library/metadata/" + currentRatingKey + "?X-Plex-Token=" + tok;
+                console.log("PlayerView fetching dynamic streams from: " + metadataUrl);
+                req.open("GET", metadataUrl, true);
+                req.setRequestHeader("Accept", "application/json");
+                req.onreadystatechange = function() {
+                    if (req.readyState === XMLHttpRequest.DONE) {
+                        if (req.status === 200) {
+                            try {
+                                var data = JSON.parse(req.responseText);
+                                if (data && data.MediaContainer && data.MediaContainer.Metadata && data.MediaContainer.Metadata.length > 0) {
+                                    var meta = data.MediaContainer.Metadata[0];
+                                    if (meta.Media && meta.Media.length > 0 && meta.Media[0].Part && meta.Media[0].Part.length > 0) {
+                                        playerView.mediaStreams = meta.Media[0].Part[0].Stream || [];
+                                        console.log("PlayerView fetched " + playerView.mediaStreams.length + " streams dynamically");
+                                    }
+                                }
+                            } catch (e) {
+                                console.log("Failed to parse metadata for streams:", e);
+                            }
+                        }
+                    }
+                }
+                req.send();
+            }
+
+            mpvObject.setProperty("aid", currentAudioId)
+            mpvObject.setProperty("sid", currentSubId)
 
             if (offset > 0) {
                 mpvObject.setProperty("start", (offset / 1000).toString())
@@ -74,6 +154,16 @@ Item {
             id: mpvObject
             objectName: "mpvObject"
             anchors.fill: parent
+            onAidChanged: {
+                if (mpvObject.aid !== "") {
+                    playerView.currentAudioId = mpvObject.aid;
+                }
+            }
+            onSidChanged: {
+                if (mpvObject.sid !== "") {
+                    playerView.currentSubId = mpvObject.sid;
+                }
+            }
             onPausedChanged: {
                 if (playerView.currentRatingKey !== "" && playerView.visible) {
                     var state = paused ? "paused" : "playing";
@@ -201,6 +291,165 @@ Item {
                     }
                     onClicked: {
                         mpvObject.paused = !mpvObject.paused
+                    }
+                }
+
+                // Audio Selection Button
+                Button {
+                    id: playerAudioButton
+                    objectName: "playerAudioButton"
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    Layout.alignment: Qt.AlignVCenter
+                    padding: 0
+                    text: "🔊\uFE0E"
+                    font.pixelSize: 24
+                    
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Audio Track: " + playerView.getCurrentAudioName()
+                    
+                    contentItem: Text {
+                        text: playerAudioButton.text
+                        font: playerAudioButton.font
+                        color: playerAudioButton.hovered || playerAudioMenu.opened ? mainWindow.plexOrange : "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        opacity: 1.0
+                    }
+                    background: Rectangle {
+                        color: "transparent"
+                    }
+                    onClicked: {
+                        playerAudioMenu.popup(0, -playerAudioMenu.height)
+                    }
+
+                    Menu {
+                        id: playerAudioMenu
+                        objectName: "playerAudioMenu"
+                        background: Rectangle { color: "#222222"; radius: 4; border.color: "#444444" }
+                        
+                        Repeater {
+                            model: {
+                                if (!playerView.mediaStreams) return [];
+                                var a = [];
+                                for (var i=0; i<playerView.mediaStreams.length; i++) {
+                                    if (playerView.mediaStreams[i].streamType === 2) a.push(playerView.mediaStreams[i]);
+                                }
+                                return a;
+                            }
+                            MenuItem {
+                                text: (playerView.currentAudioId === (index + 1).toString() ? "✓ " : "") + (modelData.extendedDisplayTitle || modelData.displayTitle || modelData.title || modelData.language)
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: (playerView.currentAudioId === (index + 1).toString()) ? "#4CAF50" : "white"
+                                    font.pixelSize: 16
+                                    font.bold: playerView.currentAudioId === (index + 1).toString()
+                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                }
+                                background: Rectangle {
+                                    color: parent.highlighted ? "#444444" : "transparent"
+                                    radius: 4
+                                }
+                                onClicked: {
+                                    playerView.currentAudioId = (index + 1).toString()
+                                    mpvObject.setProperty("aid", playerView.currentAudioId)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Subtitle Selection Button
+                Button {
+                    id: playerSubtitleButton
+                    objectName: "playerSubtitleButton"
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    Layout.alignment: Qt.AlignVCenter
+                    padding: 0
+                    text: "💬"
+                    font.pixelSize: 24
+                    
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Subtitles: " + playerView.getCurrentSubName()
+                    
+                    contentItem: Text {
+                        text: playerSubtitleButton.text
+                        font: playerSubtitleButton.font
+                        color: playerSubtitleButton.hovered || playerSubtitleMenu.opened ? mainWindow.plexOrange : "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        opacity: 1.0
+                    }
+                    background: Rectangle {
+                        color: "transparent"
+                    }
+                    onClicked: {
+                        playerSubtitleMenu.popup(0, -playerSubtitleMenu.height)
+                    }
+
+                    Menu {
+                        id: playerSubtitleMenu
+                        objectName: "playerSubtitleMenu"
+                        background: Rectangle { color: "#222222"; radius: 4; border.color: "#444444" }
+                        
+                        MenuItem {
+                            text: (playerView.currentSubId === "no" ? "✓ " : "") + "None"
+                            contentItem: Text {
+                                text: parent.text
+                                color: (playerView.currentSubId === "no") ? "#4CAF50" : "white"
+                                font.pixelSize: 16
+                                font.bold: playerView.currentSubId === "no"
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? "#444444" : "transparent"
+                                radius: 4
+                            }
+                            onClicked: {
+                                playerView.currentSubId = "no"
+                                mpvObject.setProperty("sid", "no")
+                            }
+                        }
+
+                        Repeater {
+                            model: {
+                                if (!playerView.mediaStreams) return [];
+                                var s = [];
+                                for (var i=0; i<playerView.mediaStreams.length; i++) {
+                                    if (playerView.mediaStreams[i].streamType === 3) s.push(playerView.mediaStreams[i]);
+                                }
+                                return s;
+                            }
+                            MenuItem {
+                                text: {
+                                    var t = modelData.extendedDisplayTitle || modelData.displayTitle || modelData.title || modelData.language;
+                                    if (modelData.forced && t.indexOf("Forced") === -1 && t.indexOf("forced") === -1) {
+                                        t += " Forced";
+                                    }
+                                    return (playerView.currentSubId === (index + 1).toString() ? "✓ " : "") + t;
+                                }
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: (playerView.currentSubId === (index + 1).toString()) ? "#4CAF50" : "white"
+                                    font.pixelSize: 16
+                                    font.bold: playerView.currentSubId === (index + 1).toString()
+                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                }
+                                background: Rectangle {
+                                    color: parent.highlighted ? "#444444" : "transparent"
+                                    radius: 4
+                                }
+                                onClicked: {
+                                    playerView.currentSubId = (index + 1).toString()
+                                    mpvObject.setProperty("sid", playerView.currentSubId)
+                                }
+                            }
+                        }
                     }
                 }
 

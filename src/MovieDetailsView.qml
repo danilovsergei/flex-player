@@ -42,7 +42,7 @@ Item {
     }
 
     signal backRequested()
-    signal playMediaRequested(string title, string mediaUrl, int viewOffset, string ratingKey, int duration, string audioId, string subId)
+    signal playMediaRequested(string title, string mediaUrl, int viewOffset, string ratingKey, int duration, string audioId, string subId, var streams)
 
     onRawJsonChanged: {
         console.log("rawJson string length:", rawJson ? rawJson.length : 0)
@@ -514,22 +514,24 @@ Item {
                         contentItem: Text { text: playBtn.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                         background: Rectangle { implicitWidth: 120; implicitHeight: 40; color: "#E5A00D"; radius: 8 }
                         onClicked: {
-                            if (detailsData && detailsData.Media && detailsData.Media.length > 0) {
-                                var part = detailsData.Media[0].Part[0];
-                                var url = rootApp ? rootApp.serverUrl + part.key + "?X-Plex-Token=" + rootApp.token : "";
-                                
-                                var audioId = "auto";
-                                if (audioComboControl.currentIndex >= 0) {
-                                    audioId = (audioComboControl.currentIndex + 1).toString();
+                            try {
+                                if (detailsData && detailsData.Media && detailsData.Media.length > 0) {
+                                    var part = detailsData.Media[0].Part[0];
+                                    var url = rootApp ? rootApp.serverUrl + part.key + "?X-Plex-Token=" + rootApp.token : "";
+                                    
+                                    var audioId = "auto";
+                                    if (audioComboControl.currentIndex >= 0) {
+                                        audioId = (audioComboControl.currentIndex + 1).toString();
+                                    }
+                                    
+                                    var subId = "no";
+                                    if (subtitleComboControl.currentIndex > 0) {
+                                        subId = subtitleComboControl.currentIndex.toString();
+                                    }
+                                    
+                                    root.playMediaRequested(detailsData.title, url, detailsData.viewOffset || 0, detailsData.ratingKey, detailsData.duration || 0, audioId, subId, detailsData.Media[0].Part[0].Stream || []);
                                 }
-                                
-                                var subId = "no";
-                                if (subtitleComboControl.currentIndex > 0) {
-                                    subId = subtitleComboControl.currentIndex.toString();
-                                }
-                                
-                                root.playMediaRequested(detailsData.title, url, detailsData.viewOffset || 0, detailsData.ratingKey, detailsData.duration || 0, audioId, subId);
-                            }
+                            } catch(e) { console.log("ERROR IN PLAYBTN:", e); }
                         }
                     }
 
