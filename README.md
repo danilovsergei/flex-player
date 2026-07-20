@@ -6,6 +6,10 @@
 
 Flex Player is a custom Qt6/QML client for the Plex media server. It uses `libmpv` as its playback engine, natively supporting all the advanced features `mpv` has to offer.
 
+## Demo
+
+https://github.com/user-attachments/assets/44b2f970-d76e-418d-af6c-999912f4ebb6
+
 ## Screenshots
 
 <p align="center">
