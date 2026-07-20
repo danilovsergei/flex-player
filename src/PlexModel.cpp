@@ -21,6 +21,10 @@ bool PlexModel::isFlatpak() const {
     return qEnvironmentVariableIsSet("FLATPAK_ID");
 }
 
+void PlexModel::checkPermissions() {
+    emit permissionStatusChanged();
+}
+
 bool PlexModel::hasFlatpakSpawnPermission() const {
     if (!isFlatpak()) return true;
     QDBusInterface iface("org.freedesktop.Flatpak", "/org/freedesktop/Flatpak", "org.freedesktop.Flatpak", QDBusConnection::sessionBus());
@@ -383,17 +387,19 @@ void PlexModel::deployHdrScript(bool enable, const QString &enableCmd, const QSt
         dir.mkpath(".");
     }
     
-    QString scriptPath = configDir + "/kde-hdr-toggle.lua";
+    QString scriptPath = configDir + "/flex_hdr.lua";
     
-    if (!enable) {
-        if (QFile::exists(scriptPath)) {
-            QFile::remove(scriptPath);
-            qDebug() << "[DeployHdrScript] Removed script:" << scriptPath;
-        } else {
-            qDebug() << "[DeployHdrScript] Script not found for removal.";
+    // Hard cleanup of ALL possible script names (legacy and current)
+    QStringList legacyFiles;
+    legacyFiles << "flex_hdr.lua" << "flex_hdr.lua" << "hdr-toggle.lua" << "kde_hdr_toggle.lua";
+    for (const QString &f : legacyFiles) {
+        if (QFile::exists(configDir + "/" + f)) {
+            QFile::remove(configDir + "/" + f);
+            qDebug() << "[DeployHdrScript] Removed legacy/conflicting script:" << f;
         }
-        return;
     }
+
+    if (!enable) return;
     
     QString luaContent = R"(
 -- Auto-generated HDR toggle script
@@ -446,6 +452,7 @@ local function check_hdr(name, value)
         gamma = v_params["gamma"] or ""
     end
 
+    local is_stopped = false
     local is_hdr = false
     if primaries == "bt.2020" or gamma == "pq" or gamma == "hlg" then
         is_hdr = true
@@ -462,6 +469,17 @@ local function check_hdr(name, value)
         current_file_is_hdr = false
     end
 end
+
+
+mp.register_script_message("stop-hdr-check", function()
+    print("[HDR-TOGGLE] >>> STOP REQUEST RECEIVED. DISABLING AND CLEANING UP. <<<")
+    is_stopped = true
+    mp.unobserve_property(check_hdr)
+    if hdr_was_enabled then
+        execute_command("%2")
+        hdr_was_enabled = false
+    end
+end)
 
 mp.observe_property("video-params", "native", check_hdr)
 mp.observe_property("video-out-params", "native", check_hdr)

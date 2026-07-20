@@ -2,10 +2,12 @@
 #define MPVITEM_H_
 
 #include <MpvAbstractItem>
+#include <MpvController>
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickFramebufferObject>
 #include <QDir>
 #include <QStandardPaths>
+#include <QDebug>
 
 class MpvObject : public MpvAbstractItem
 {
@@ -22,36 +24,19 @@ class MpvObject : public MpvAbstractItem
 public:
     explicit MpvObject(QQuickItem *parent = nullptr) : MpvAbstractItem(parent)
     {
-        // Internal configuration
         setProperty("terminal", "yes");
         setProperty("msg-level", "all=v");
         setProperty("vo", "libmpv");
-        
-        // Wayland HDR metadata
         setProperty("target-colorspace-hint", "yes");
-        
-        // Hardware decoding
         setProperty("hwdec", "auto-safe");
 
-        QString configDir;
-        if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
-            configDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.var/app/" + qEnvironmentVariable("FLATPAK_ID") + "/config/flex-player/mpv";
-        } else {
-            configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv";
-        }
+        QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv";
         QDir().mkpath(configDir);
         setProperty("config", "yes");
         setProperty("config-dir", configDir);
 
-        connect(this, &MpvAbstractItem::ready, this, [this, configDir]() {
-            QDir scriptsDir(configDir + "/scripts");
-            if (scriptsDir.exists()) {
-                QStringList scripts = scriptsDir.entryList(QStringList() << "*.lua" << "*.js", QDir::Files);
-                for (const QString &script : scripts) {
-                    QString scriptPath = scriptsDir.absoluteFilePath(script);
-                    MpvAbstractItem::commandBlocking(QStringList() << "load-script" << scriptPath);
-                }
-            }
+        connect(this, &MpvAbstractItem::ready, this, [this]() {
+            loadScripts();
         });
 
         observeProperty("duration", MPV_FORMAT_DOUBLE);
@@ -99,6 +84,27 @@ public:
     QString sid() const { return m_sid; }
     void setSid(const QString& value) { setProperty("sid", value); }
 
+    Q_INVOKABLE void loadScripts() {
+        QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv";
+        
+        // Use message to neutralize old scripts (they are already named 'flex_hdr' in Lua now)
+        command(QVariantList() << "script-message" << "stop-hdr-check");
+        
+        QDir scriptsDir(configDir + "/scripts");
+        if (scriptsDir.exists()) {
+            QStringList scripts = scriptsDir.entryList(QStringList() << "*.lua" << "*.js", QDir::Files);
+            for (const QString &script : scripts) {
+                QString scriptPath = scriptsDir.absoluteFilePath(script);
+                // Standard mpv way to load a script
+                command(QVariantList() << "load-script" << scriptPath);
+            }
+        }
+    }
+
+    Q_INVOKABLE void stopHdr() {
+        command(QVariantList() << "script-message" << "stop-hdr-check");
+    }
+
     double volume() const { return m_volume; }
     void setVolume(double value) { if(m_volume == value) return; m_volume = value; emit volumeChanged(); setProperty("volume", value); }
 
@@ -108,7 +114,7 @@ public:
         for (const auto &p : params) {
             strParams << p.toString();
         }
-        MpvAbstractItem::commandBlocking(strParams);
+        mpvController()->command(strParams);
     }
 
     Q_INVOKABLE void setProperty(const QString& name, const QVariant& value)
@@ -134,3 +140,4 @@ private:
 };
 
 #endif
+

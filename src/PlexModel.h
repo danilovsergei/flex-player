@@ -28,7 +28,7 @@ struct Movie {
 class PlexModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(bool isFlatpak READ isFlatpak CONSTANT)
-    Q_PROPERTY(bool hasFlatpakSpawnPermission READ hasFlatpakSpawnPermission CONSTANT)
+    Q_PROPERTY(bool hasFlatpakSpawnPermission READ hasFlatpakSpawnPermission NOTIFY permissionStatusChanged)
 public:
     enum MovieRoles {
         TitleRole = Qt::UserRole + 1,
@@ -64,12 +64,14 @@ public:
     Q_INVOKABLE void fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey);
     Q_INVOKABLE void updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs);
     Q_INVOKABLE void executeSystemCommand(const QString &command);
+    Q_INVOKABLE void checkPermissions();
     Q_INVOKABLE void deployHdrScript(bool enable, const QString &enableCmd, const QString &disableCmd);
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);
     void connectionChecked(bool success, const QString &errorMessage);
     void itemDetailsLoaded(const QString &jsonString);
+    void permissionStatusChanged();
 
 private slots:
     void onReplyFinished(QNetworkReply *reply);

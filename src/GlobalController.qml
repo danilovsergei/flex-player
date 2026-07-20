@@ -115,8 +115,26 @@ Item {
     }
 
     function deployHdrScript() {
+        console.log("GlobalController: deployHdrScript called. autoToggleHdr=" + appSettings.autoToggleHdr)
+        
+        if (playerView && playerView.mpvObject && !appSettings.autoToggleHdr) {
+            console.log("GlobalController: Disabling HDR feature live...")
+            playerView.mpvObject.stopHdr();
+        }
+        
         if (m_continueWatchingModel) {
-            m_continueWatchingModel.deployHdrScript(appSettings.autoToggleHdr, appSettings.hdrEnableCommand, appSettings.hdrDisableCommand);
+            if (playerView && playerView.mpvObject && !appSettings.autoToggleHdr) {
+            playerView.mpvObject.stopHdr();
+        }
+        m_continueWatchingModel.deployHdrScript(appSettings.autoToggleHdr, appSettings.hdrEnableCommand, appSettings.hdrDisableCommand);
+        if (playerView && playerView.mpvObject) {
+            playerView.mpvObject.loadScripts();
+        }
+            // Signal MPV to reload scripts folder so it picks up the change (load or remove) immediately
+            if (playerView && playerView.mpvObject) {
+                console.log("GlobalController: Signalling mpvObject to load scripts...")
+                playerView.mpvObject.loadScripts();
+            }
         }
     }
     
@@ -156,7 +174,7 @@ Item {
                 })
             }
             homeLibrariesList = libArray
-            console.log("GlobalController: homeLibrariesList updated, count: " + libArray.length); for(var i=0; i<libArray.length; i++) console.log("  Lib " + i + ": " + libArray[i].title + " (id=" + libArray[i].id + ", type=" + libArray[i].type + ")");
+            console.log("GlobalController: homeLibrariesList updated, count: " + libArray.length);
                 
             if (!mainWindow.isTestMode) {
                 m_allLibrariesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections")
@@ -182,3 +200,4 @@ Item {
         return mStr + ":" + sStr;
     }
 }
+

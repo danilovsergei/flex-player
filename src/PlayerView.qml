@@ -248,6 +248,7 @@ Item {
                     color: "transparent"
                 }
                 onClicked: {
+                    mpvObject.stopHdr()
                     mpvObject.command(["stop"])
                     playerView.visible = false
                     playbackStopped()

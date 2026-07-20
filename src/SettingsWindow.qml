@@ -158,7 +158,7 @@ Rectangle {
                         spacing: 10
                         
                         Image {
-                            source: "qrc:/flex_player/assets/flex_icon.svg"
+                            source: "../assets/flex_icon.svg"
                             sourceSize.width: 64
                             sourceSize.height: 64
                             fillMode: Image.PreserveAspectFit
@@ -702,13 +702,14 @@ Rectangle {
                                 objectName: "hdrEnableCheckbox"
                                 text: "Automatically Toggle system HDR on HDR movie playback"
                                 checked: appSettings.autoToggleHdr || false
+                                enabled: !collectionsModel.isFlatpak || collectionsModel.hasFlatpakSpawnPermission
                                 onCheckedChanged: {
                                     appSettings.autoToggleHdr = checked
                                     mainWindow.deployHdrScript()
                                 }
                                 contentItem: Text {
                                     text: parent.text
-                                    color: "white"
+                                    color: hdrEnableCheckbox.enabled ? "white" : "gray"
                                     font.pixelSize: 16
                                     verticalAlignment: Text.AlignVCenter
                                     leftPadding: parent.indicator.width + parent.spacing
@@ -716,6 +717,38 @@ Rectangle {
                             }
                         }
 
+                        ColumnLayout {
+                            visible: collectionsModel.isFlatpak && !collectionsModel.hasFlatpakSpawnPermission
+                            spacing: 5
+                            Layout.fillWidth: true
+                            
+                            Text {
+                                text: "Flatpak permission required to enable automatic HDR. Run this command and **restart the application**:"
+                                color: "#FF5252"
+                                font.pixelSize: 13
+                                font.bold: true
+                            }
+                            
+                            TextField {
+                                text: "flatpak override --user --talk-name=org.freedesktop.Flatpak org.flexplayer.FlexPlayer"
+                                readOnly: true
+                                selectByMouse: true
+                                Layout.fillWidth: true
+                                font.family: "Monospace"
+                                font.pixelSize: 12
+                                background: Rectangle {
+                                    color: "#000000"
+                                    radius: 4
+                                    border.color: "#FF5252"
+                                    border.width: 1
+                                }
+                                color: "#00FF00"
+                                topPadding: 8
+                                bottomPadding: 8
+                                leftPadding: 10
+                            }
+
+                            }
                         Text {
                             text: "HDR Enable Command"
                             color: "gray"
