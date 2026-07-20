@@ -68,6 +68,7 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 - Report already played time to the plex server during video playback
 - Inhibit screensaver while playing video
 - Select subtitles and sound track
+- Smooth and fast mpv like scrolling
 
 ### Settings and Customization
 - Configurable Plex libraries to display in UI (Movies and Series are supported now)

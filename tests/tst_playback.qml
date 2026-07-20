@@ -2189,4 +2189,35 @@ TestCase {
         
         poster.destroy();
     }
+
+    function test_64_seek_hotkeys() {
+        var playerView = findChild(mainWindow, "playerView");
+        var mpvObject = findChild(mainWindow, "mpvObject");
+        var rootLayout = findChild(mainWindow, "rootLayout");
+        
+        if (rootLayout) rootLayout.visible = false;
+        playerView.visible = true;
+        mpvObject.command(["loadfile", "/home/geonix/Build/flex_player/tests/dummy1.mkv"]);
+        wait(500); // wait for load
+        
+        mpvObject.paused = true;
+        mpvObject.position = 10;
+        wait(200);
+        compare(Math.round(mpvObject.position), 10, "Should be at 10s");
+        
+        // Seek forward (Right arrow)
+        keyClick(Qt.Key_Right);
+        wait(200);
+        // mpv keyframe seek is faster but less precise
+        verify(mpvObject.position >= 12 && mpvObject.position <= 18, "Should seek forward by ~5s. Actual: " + mpvObject.position);
+        
+        // Seek backward (Left arrow)
+        keyClick(Qt.Key_Left);
+        wait(200);
+        // Keyframe seeks are imprecise
+        verify(mpvObject.position >= 5 && mpvObject.position <= 15, "Should seek backward by ~5s. Actual: " + mpvObject.position);
+        
+        playerView.visible = false;
+        if (rootLayout) rootLayout.visible = true;
+    }
 }

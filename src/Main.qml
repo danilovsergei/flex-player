@@ -38,6 +38,8 @@ Window {
         property string playPauseHotkey: "Space"
         property string volumeUpHotkey: "Up"
         property string volumeDownHotkey: "Down"
+        property string seekForwardHotkey: "Right"
+        property string seekBackwardHotkey: "Left"
     }
 
     Settings {
@@ -58,6 +60,8 @@ Window {
         property alias playPauseHotkey: hotkeySettings.playPauseHotkey
         property alias volumeUpHotkey: hotkeySettings.volumeUpHotkey
         property alias volumeDownHotkey: hotkeySettings.volumeDownHotkey
+        property alias seekForwardHotkey: hotkeySettings.seekForwardHotkey
+        property alias seekBackwardHotkey: hotkeySettings.seekBackwardHotkey
         property alias autoToggleHdr: playbackSettings.autoToggleHdr
         property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
         property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
@@ -74,6 +78,52 @@ Window {
     property bool isFullScreenMode: mainWindow.visibility === Window.FullScreen
 
     readonly property color plexOrange: "#E5A00D"
+
+    property bool isScrubbing: false
+    property bool wasPausedBeforeScrub: false
+    property real lastSeekTime: 0
+    property int consecutiveSeekCount: 0
+
+    function throttleSeek(direction) {
+        var now = Date.now()
+        // High frequency (20Hz) to match mpv snappiness
+        if (now - lastSeekTime < 50) return 
+        
+        lastSeekTime = now
+        consecutiveSeekCount++
+        scrubEndTimer.restart()
+        
+        // Smart Scrubbing: Only force-pause if we detect consecutive repeats (hold)
+        if (!isScrubbing && consecutiveSeekCount > 1) {
+            isScrubbing = true
+            wasPausedBeforeScrub = playerView.mpvObject.paused
+            playerView.mpvObject.paused = true
+        }
+        
+        // Multi-stage acceleration: 5s -> 10s -> 30s
+        var seekAmount = 5
+        if (consecutiveSeekCount > 30) seekAmount = 30
+        else if (consecutiveSeekCount > 5) seekAmount = 10
+        
+        playerView.mpvObject.command(["seek", direction * seekAmount, "relative", "keyframes"])
+    }
+
+    Timer {
+        id: scrubEndTimer
+        interval: 300
+        onTriggered: {
+            if (isScrubbing) {
+                isScrubbing = false
+                if (playerView.visible) {
+                    // Final precise seek to snap to exact frame on release
+                    playerView.mpvObject.command(["seek", "0", "relative", "exact"])
+                    // Restore original playback state
+                    playerView.mpvObject.paused = wasPausedBeforeScrub
+                }
+            }
+            consecutiveSeekCount = 0
+        }
+    }
 
     PlexModel { id: recentlyAddedModel }
     PlexModel { id: continueWatchingModel }
@@ -227,6 +277,25 @@ Window {
         onActivated: {
             if (playerView.visible) {
                 playerView.mpvObject.volume = Math.max(0, playerView.mpvObject.volume - 5);
+            }
+        }
+    }
+
+    
+    Shortcut {
+        sequence: appSettings.seekForwardHotkey
+        onActivated: {
+            if (playerView.visible) {
+                throttleSeek(1)
+            }
+        }
+    }
+    
+    Shortcut {
+        sequence: appSettings.seekBackwardHotkey
+        onActivated: {
+            if (playerView.visible) {
+                throttleSeek(-1)
             }
         }
     }

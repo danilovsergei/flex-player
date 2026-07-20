@@ -686,6 +686,68 @@ Rectangle {
                             }
                         }
                         
+                                                // Row 5: Seek Forward
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Seek Forward"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Skip forward 5 seconds"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: seekFwdHotkeyText
+                                objectName: "seekFwdHotkeyText"
+                                text: appSettings.seekForwardHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setSeekFwdHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "seekforward"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+                        
+                        // Row 6: Seek Backward
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Seek Backward"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Rewind 5 seconds"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: seekBackHotkeyText
+                                objectName: "seekBackHotkeyText"
+                                text: appSettings.seekBackwardHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setSeekBackHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "seekbackward"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+
                         Item { Layout.fillHeight: true }
                     } // END TAB 2: HOTKEYS
                     // TAB 3: PLAYBACK
