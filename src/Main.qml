@@ -131,6 +131,14 @@ Window {
     PlexModel { id: collectionMoviesModel }
     PlexModel { id: allLibrariesModel }
     
+    // Dedicated model for fetching item metadata (details, seasons, episodes)
+    PlexModel { id: detailsModel }
+    
+    // Library-specific models for the Recommend/Collections view
+    PlexModel { id: libraryRecentlyAddedModel }
+    PlexModel { id: libraryContinueWatchingModel }
+    PlexModel { id: libraryCollectionsModel }
+    
     property var homeLibrariesList: []
     property string currentLibraryId: "1"
     property string currentLibraryTitle: "Movies"
@@ -182,12 +190,12 @@ Window {
         currentLibraryTitle = title
         if (!isTestMode) {
             if (type === "show") {
-                recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/all?type=2&sort=addedAt:desc")
+                libraryRecentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/all?type=2&sort=addedAt:desc")
             } else {
-                recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/recentlyAdded")
+                libraryRecentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/recentlyAdded")
             }
-            continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/onDeck")
-            collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/collections")
+            libraryContinueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/onDeck")
+            libraryCollectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/" + id + "/collections")
         }
     }
 
@@ -302,6 +310,7 @@ Window {
 
     // Expose models for testing
     property var testRecentlyAddedModel: recentlyAddedModel
+    property var testLibraryContinueWatchingModel: libraryContinueWatchingModel
     property var testContinueWatchingModel: continueWatchingModel
     property var testCollectionsModel: collectionsModel
     property var testCollectionMoviesModel: collectionMoviesModel
@@ -321,7 +330,7 @@ Window {
             }
             onOpenShow: function(ratingKey) {
                 console.log("Opening show/season: " + ratingKey)
-                continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                detailsModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
             }
             onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
@@ -331,7 +340,7 @@ Window {
             }
             onOpenDetails: function(ratingKey) {
                 console.log("Opening details for: " + ratingKey);
-                continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                detailsModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
             }
         }
     }
@@ -420,7 +429,7 @@ Window {
 
         // MAIN CONTENT
         Connections {
-            target: continueWatchingModel
+            target: detailsModel
             function onItemDetailsLoaded(jsonString) {
                 try {
                     var parsed = JSON.parse(jsonString);
@@ -463,9 +472,9 @@ Window {
             LibraryRecommendView {
                 id: libraryView
                 currentLibraryTitle: currentLibraryTitle
-                continueWatchingModel: continueWatchingModel
-                recentlyAddedModel: recentlyAddedModel
-                collectionsModel: collectionsModel
+                continueWatchingModel: libraryContinueWatchingModel
+                recentlyAddedModel: libraryRecentlyAddedModel
+                collectionsModel: libraryCollectionsModel
                 movieDelegate: movieDelegate
             }
             
@@ -502,7 +511,7 @@ Window {
                 onOpenSeasonRequested: function(ratingKey) {
                     console.log("Opening season from series: " + ratingKey);
                     seasonDetailsView.seriesData = seriesDetailsView.detailsData;
-                    continueWatchingModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                    detailsModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
                 }
             }
             

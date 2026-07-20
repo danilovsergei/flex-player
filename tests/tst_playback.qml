@@ -2220,4 +2220,40 @@ TestCase {
         playerView.visible = false;
         if (rootLayout) rootLayout.visible = true;
     }
+
+    function test_65_continue_watching_navigation_isolation() {
+        // 1. Setup mock data
+        var globalDeck = ["/home/geonix/Build/flex_player/tests/dummy1.mkv", "/home/geonix/Build/flex_player/tests/dummy2.mkv"];
+        var seriesDeck = ["/home/geonix/Build/flex_player/tests/dummy2.mkv"];
+        
+        // Ensure isolated models exist
+        verify(mainWindow.testLibraryContinueWatchingModel !== undefined, "Isolated library model should exist");
+
+        // Load Global deck (Home view)
+        mainWindow.testContinueWatchingModel.loadMockData(globalDeck, "movie", 0, 0, false);
+        wait(50);
+        
+        var homeCWList = findChild(mainWindow, "continueWatchingList");
+        verify(homeCWList.count === 2, "Home CW should show 2 items initially");
+        
+        // 2. Navigate to Series library
+        mainWindow.loadLibraryContent("2", "Series", "show");
+        mainWindow.currentTab = 1;
+        
+        // Load Library-specific deck
+        mainWindow.testLibraryContinueWatchingModel.loadMockData(seriesDeck, "episode", 0, 0, false);
+        wait(50);
+        
+        // Verify Library view count
+        // Note: LibraryRecommendView has a property continueWatchingModel which is now libraryContinueWatchingModel
+        var libRecommendView = findChild(mainWindow, "libraryView");
+        verify(libRecommendView.continueWatchingModel.rowCount() === 1, "Library CW should show 1 item");
+        
+        // 3. Navigate back to Home
+        mainWindow.currentTab = 0;
+        wait(50);
+        
+        // Now it should pass because global model was not touched
+        verify(homeCWList.count === 2, "Home CW should STILL show 2 items after returning from series page");
+    }
 }
