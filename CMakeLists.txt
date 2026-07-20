@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Quick Network OpenGL Test QuickTest Gui DBus)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED mpv)
-find_package(MpvQt REQUIRED)
+add_subdirectory(3rdparty/mpvqt)
 
 qt_standard_project_setup()
 

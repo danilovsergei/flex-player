@@ -14,9 +14,10 @@ To compile Flex Player from source, ensure your system meets the following prere
 
 Flex Player uses CMake as its build system. Follow these steps to build the application and the test suite:
 
-1. **Navigate to the project root:**
+1. **Clone the repository with submodules:**
    ```bash
-   cd /path/to/flex_player
+   git clone --recurse-submodules https://github.com/danilovsergei/flex-player.git
+   cd flex-player
    ```
 
 2. **Create a build directory:**

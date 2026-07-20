@@ -1,0 +1,3 @@
+[submodule "3rdparty/mpvqt"]
+	path = 3rdparty/mpvqt
+	url = https://invent.kde.org/libraries/mpvqt.git
