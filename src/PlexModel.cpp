@@ -81,6 +81,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
 }
 
 void PlexModel::fetchEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint) {
+    qDebug() << "[PlexModel] Fetching:" << endpoint;
     m_serverUrl = serverUrl;
     m_token = token;
     

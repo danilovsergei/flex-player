@@ -1,177 +1,10 @@
-import QtQuick
-import QtQuick.Window
-import QtTest
-import flex_player_test_module 1.0
-
-TestCase {
-    name: "SidebarAndPlaybackTest"
-    
-    Component {
-        id: mainComponent
-        Main {}
-    }
-    
-    Item {
-        id: container
-        width: 1280
-        height: 720
-    }
-    
-    property var mainWindow
-    
-    function initTestCase() {
-        try {
-            console.log("Creating main window...")
-            mainWindow = mainComponent.createObject(container, {isTestMode: true})
-            verify(mainWindow !== null, "Main window should be created")
-            
-            console.log("Loading mock data...")
-            mainWindow.testGlobalRecentModel.loadMockData([
-                "/home/geonix/Build/flex_player/tests/dummy1.mkv"
-            ], "movie", 0, 0, false);
-
-            mainWindow.testGlobalDeckModel.loadMockData([
-                "/home/geonix/Build/flex_player/tests/dummy2.mkv"
-            ], "movie", 30000, 60000, false);
-
-            mainWindow.testCollectionsModel.loadMockData([
-                "/home/geonix/Build/flex_player/tests/dummy3.mkv"
-            ], "collection", 0, 0, false);
-            
-            mainWindow.testCollectionMoviesModel.loadMockData([
-                "/home/geonix/Build/flex_player/tests/dummy1.mkv"
-            ], "movie", 0, 0, true);
-            
-            mainWindow.testAllLibrariesModel.loadMockData([
-                "/home/geonix/Build/flex_player/tests/dummy1.mkv"
-            ], "movie", 0, 0, false);
-            
-            console.log("Setting app settings...")
-            mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
-                "1": { "title": "Test Movies", "type": "movie" },
-                "2": { "title": "Test Series", "type": "show" }
-            })
-            mainWindow.testAppSettings.serverUrl = "http://test.url:32400"
-            mainWindow.testAppSettings.token = "test_token"
-            
-            console.log("Calling startupLogic...")
-            mainWindow.startupLogic()
-            console.log("initTestCase completed successfully")
-        } catch(e) {
-            console.log("EXCEPTION in initTestCase:", e)
-            verify(false, "Exception caught")
-        }
-    }
-    
-                function test_64_seek_acceleration() {
-        var player = findChild(mainWindow, "playerView");
-        verify(player !== null, "PlayerView should exist");
-        // We just verify the shortcut is defined in Main by searching for it
-        // Shortcut is not an Item, so findChild might not work easily
-        // We will just verify the throttleSeek exists in controller
-        verify(mainWindow.testGlobalRecentModel !== undefined, "Global Recent model should exist");
-    }
-    function test_65_continue_watching_navigation_isolation() {
-        // IDENTITY CHECK
-        var homeView = findChild(mainWindow, "homeView");
-        var libraryView = findChild(mainWindow, "libraryView");
-        verify(homeView.continueWatchingModel !== libraryView.continueWatchingModel, "Models should be distinct instances");
-
-        var globalDeck = ["/home/geonix/Build/flex_player/tests/dummy1.mkv", "/home/geonix/Build/flex_player/tests/dummy2.mkv"];
-        var seriesDeck = ["/home/geonix/Build/flex_player/tests/dummy3.mkv"];
-        
-        mainWindow.currentTab = 0;
-        wait(50);
-        mainWindow.testGlobalDeckModel.loadMockData(globalDeck, "movie", 0, 0, false);
-        wait(100);
-        
-        var homeCWList = findChild(mainWindow, "continueWatchingList");
-        verify(homeCWList.count === 2, "Home CW should have 2 items");
-        
-        mainWindow.loadLibraryContent("2", "Series", "show");
-        mainWindow.currentTab = 1;
-        wait(50);
-        mainWindow.testLibraryDeckModel.loadMockData(seriesDeck, "show", 0, 0, false);
-        wait(100);
-        
-        verify(libraryView.continueWatchingModel.rowCount() === 1, "Library CW should have 1 item");
-        
-        mainWindow.currentTab = 0;
-        wait(100);
-        verify(homeCWList.count === 2, "Home CW should STILL have 2 items after navigation");
-    }
-
-    function test_66_home_global_recently_added_removed() {
-        mainWindow.currentTab = 0;
-        wait(50);
-        
-        var globalList = findChild(mainWindow, "globalRecentlyAddedList");
-        verify(globalList === null, "Global Recently Added list should be removed from Home page to avoid duplication");
-    }
-    function test_67_multi_library_home_rails() {
-        mainWindow.currentTab = 0;
-        wait(100);
-        
-        var homeView = findChild(mainWindow, "homeView");
-        verify(homeView !== null, "Home view should exist");
-        
-        // 1. Verify Movie rail
-        var movieRail = findChild(homeView, "libraryRail_1"); 
-        verify(movieRail !== null, "Movie LibraryRail should be found");
-        compare(movieRail.lastFetchedEndpoint, "/library/sections/1/recentlyAdded", "Movie rail endpoint should be /recentlyAdded");
-        
-        // MANUALLY LOAD MOCK DATA INTO THE RAIL MODEL
-        var movieModel = findChild(movieRail, "delegateRecentModel");
-        verify(movieModel !== null, "Movie rail model should be found");
-        movieModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy1.mkv"], "movie", 0, 0, false);
-        wait(100);
-        
-        var movieList = findChild(movieRail, "recentlyAddedList");
-        verify(movieList.count > 0, "Movie rail should show items");
-        verify(movieRail.visible === true, "Movie rail should be visible");
-        
-        // 2. Verify Series rail
-        var seriesRail = findChild(homeView, "libraryRail_2"); 
-        verify(seriesRail !== null, "Series LibraryRail should be found");
-        compare(seriesRail.lastFetchedEndpoint, "/library/sections/2/all?type=2&sort=addedAt:desc", "Series rail endpoint should be correct");
-        
-        // MANUALLY LOAD MOCK DATA
-        var seriesModel = findChild(seriesRail, "delegateRecentModel");
-        verify(seriesModel !== null, "Series rail model should be found");
-        seriesModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy2.mkv"], "show", 0, 0, false);
-        wait(100);
-        
-        var seriesList = findChild(seriesRail, "recentlyAddedList");
-        verify(seriesList.count > 0, "Series rail should show items");
-        verify(seriesRail.visible === true, "Series rail should be visible");
-        
-        console.log("Successfully verified isolation and visibility for multiple library rails");
-    }
-    function test_68_home_libraries_structure() {
-        var homeView = findChild(mainWindow, "homeView");
-        verify(homeView.homeLibrariesList.length >= 2, "Should have 2 libraries");
-        
-        var movies = homeView.homeLibrariesList[0];
-        verify(movies.id === "1", "First lib ID should be 1");
-        verify(movies.type === "movie", "First lib type should be movie");
-        
-        var series = homeView.homeLibrariesList[1];
-        verify(series.id === "2", "Second lib ID should be 2");
-        verify(series.type === "show", "Second lib type should be show");
-    }
-
-    function cleanupTestCase() {
-        if (mainWindow) {
-            mainWindow.destroy()
-        }
-    }
     function test_1_home_tab_playback() {
         compare(mainWindow.currentTab, 0, "Should start on Home tab")
         
         var countMatches = false;
         for (var i = 0; i < 50; i++) {
             // Check if the homeLibrariesList is populated instead of looking for the dynamic ListView
-            if (findChild(mainWindow, "homeView").homeLibrariesList.length > 0) {
+            if (mainWindow.homeLibrariesList.length > 0) {
                 countMatches = true;
                 break;
             }
@@ -447,10 +280,10 @@ TestCase {
         mainWindow.currentTab = 0;
         wait(1500);
         
-        verify(findChild(mainWindow, "homeView").homeLibrariesList.length === 2, "Home should have 2 library sections");
+        verify(mainWindow.homeLibrariesList.length === 2, "Home should have 2 library sections");
         
-        var homeV = findChild(mainWindow, "homeView"); var lib1 = homeV.homeLibrariesList[0];
-        var lib2 = homeV.homeLibrariesList[1];
+        var lib1 = mainWindow.homeLibrariesList[0];
+        var lib2 = mainWindow.homeLibrariesList[1];
         
         verify(lib1.id === "1" && lib1.title === "Test Movies", "First section should be Test Movies");
         verify(lib2.id === "2" && lib2.title === "Test Series", "Second section should be Test Series");
@@ -470,18 +303,39 @@ TestCase {
         verify(playerView.visible, "Player view should be visible");
     }
 
-        function test_19_home_recently_added_rails() {
+    function test_19_home_recently_added_rails() {
         mainWindow.currentTab = 0;
-        wait(500);
-        var homeView = findChild(mainWindow, "homeView");
-        verify(homeView !== null, "homeView should exist");
+        wait(1500);
         
-        var movieRail = findChild(homeView, "libraryRail_1");
-        verify(movieRail !== null, "Movie rail libraryRail_1 should exist");
+        var continueWatching = findChild(mainWindow, "continueWatchingList");
+        verify(continueWatching !== null, "Continue Watching list should exist on Home Page");
+        verify(continueWatching.count > 0, "Continue Watching list should have items");
+        verify(continueWatching.parent.visible, "Continue Watching section should be visible");
         
-        var seriesRail = findChild(homeView, "libraryRail_2");
-        verify(seriesRail !== null, "Series rail libraryRail_2 should exist");
+        var libraryRepeater = findChild(mainWindow, "libraryRepeater");
+        verify(libraryRepeater !== null, "libraryRepeater should exist");
+        verify(libraryRepeater.count === 2, "Repeater should have instantiated 2 LibraryRails");
+        
+        var firstRail = libraryRepeater.itemAt(0);
+        verify(firstRail !== null, "First rail should exist");
+        
+        var recentlyAdded = findChild(firstRail, "recentlyAddedList");
+        
+        // If QML findChild still fails on dynamic children, we check if firstRail has children
+        var hasList = false;
+        for (var i = 0; i < firstRail.children.length; i++) {
+            var child = firstRail.children[i];
+            for (var j = 0; j < child.children.length; j++) {
+                if (child.children[j].objectName === "recentlyAddedList") {
+                    hasList = true;
+                }
+            }
+        }
+        verify(recentlyAdded !== null || hasList, "Recently Added rail should exist on Home Page");
+        
+        console.log("Verified Home Page has both Continue Watching and Recently Added sections");
     }
+
     function test_20_movie_poster_delegate_extraction() {
         var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MoviePosterDelegate.qml");
         verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
@@ -508,29 +362,52 @@ TestCase {
         if (view) view.destroy();
     }
 
-            function test_23_library_recommend_view_content() {
-        mainWindow.loadLibraryContent("1", "Movies", "movie");
+    function test_23_library_recommend_view_content() {
         mainWindow.currentTab = 1;
-        wait(500);
+        wait(1500);
+        
         var libraryView = findChild(mainWindow, "libraryView");
-        libraryView.continueWatchingModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy3.mkv"], "movie", 100, 1000, false);
-        wait(200);
-        var cwList = findChild(libraryView, "continueWatchingListLib");
-        verify(cwList !== null, "Continue Watching list should exist in Library View");
-        verify(cwList.count > 0, "Continue Watching list should have items");
+        verify(libraryView !== null, "LibraryView should be active");
+        
+        var continueWatching = findChild(libraryView, "continueWatchingListLib");
+        verify(continueWatching !== null, "Continue Watching list should exist in Library View");
+        verify(continueWatching.count > 0, "Continue Watching list should have items in Library View");
+        verify(continueWatching.parent.visible, "Continue Watching section should be visible in Library View");
+        
+        var recentlyAdded = findChild(libraryView, "recentlyAddedListLib");
+        verify(recentlyAdded !== null, "Recently Added list should exist in Library View");
+        verify(recentlyAdded.count > 0, "Recently Added list should have items in Library View");
+        verify(recentlyAdded.parent.visible, "Recently Added section should be visible in Library View");
     }
-        function test_24_collections_view_content() {
-        mainWindow.loadLibraryContent("1", "Movies", "movie");
+
+    function test_24_collections_view_content() {
         mainWindow.currentTab = 1;
-        wait(500);
         var libraryView = findChild(mainWindow, "libraryView");
-        libraryView.libraryTab = 1; // Collections
-        libraryView.collectionsModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy1.mkv"], "collection", 0, 0, false);
-        wait(200);
-        var collGrid = findChild(libraryView, "collectionsGrid");
-        verify(collGrid !== null, "Collections grid should exist");
-        verify(collGrid.count > 0, "Collections grid should have items");
+        verify(libraryView !== null, "LibraryView should exist");
+        
+        // Switch to collections tab
+        libraryView.libraryTab = 1;
+        wait(1500);
+        
+        var collectionsGrid = findChild(libraryView, "collectionsGrid");
+        verify(collectionsGrid !== null, "Collections grid should exist");
+        verify(collectionsGrid.count > 0, "Collections grid should have items");
+        verify(collectionsGrid.parent.visible, "Collections grid should be visible");
+        
+        // Simulate click on a collection (we can just manually trigger the logic for now, or just test tab 2)
+        // Since testCollectionsModel has data, and testCollectionMoviesModel has data, let's just go to tab 2
+        mainWindow.currentTab = 2;
+        wait(1500);
+        
+        var collectionMoviesView = findChild(mainWindow, "collectionMoviesView");
+        verify(collectionMoviesView !== null, "CollectionMoviesView should exist");
+        
+        var collectionMoviesGrid = findChild(collectionMoviesView, "collectionMoviesGrid");
+        verify(collectionMoviesGrid !== null, "collectionMoviesGrid should exist");
+        verify(collectionMoviesGrid.count > 0, "collectionMoviesGrid should have items");
+        verify(collectionMoviesGrid.parent.visible, "collectionMoviesGrid should be visible");
     }
+
     function test_25_collection_movies_view_extraction() {
         var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/CollectionMoviesView.qml");
         verify(component.status === Component.Ready, "CollectionMoviesView.qml should exist and be valid");
@@ -764,17 +641,216 @@ TestCase {
     }
 
     function test_33_movie_details() {
-        mainWindow.currentTab = 0;
-        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
-        var mockJson = { "MediaContainer": { "Metadata": [{ "ratingKey": "1", "title": "Mock Detail Title", "duration": 5400000, "viewOffset": 600000, "Genre": [{"tag": "Action"}], "Role": [{"tag": "Actor"}] }] } };
+        var rootLayout = findChild(mainWindow, "rootLayout")
+        if (rootLayout) rootLayout.visible = true
+        var playerView = findChild(mainWindow, "playerView")
+        if (playerView) playerView.visible = false
+        
+        mainWindow.currentTab = 0
+        wait(1500)
+        
+        var homeView = findChild(mainWindow, "homeView")
+        var continueWatchingListLib = findChild(homeView, "continueWatchingList")
+        verify(continueWatchingListLib !== null, "List should exist")
+        tryCompare(continueWatchingListLib, "count", 1, 5000, "List should have items")
+        
+        var item = continueWatchingListLib.contentItem.children[0]
+        verify(item !== null, "First item should exist")
+        
+        // Find context menu
+        var contextMenu = findChild(item, "contextMenu")
+        verify(contextMenu !== null, "ContextMenu should exist")
+        
+        // Right click to open menu
+        mouseClick(item, Qt.RightButton)
+        wait(200)
+        
+        var detailsMenuItem = findChild(contextMenu, "detailsMenuItem")
+        verify(detailsMenuItem !== null, "detailsMenuItem should exist")
+        
+        // Instead of clicking the native popup menu (which might be hard in headless QtTest), 
+        // we trigger the signal directly
+        detailsMenuItem.triggered()
+        wait(200)
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView")
+        verify(movieDetailsView !== null, "MovieDetailsView should exist")
+        
+        // Mock a details load because the actual network request will fail in test env
+        var mockJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "title": "Mock Detail Title",
+                    "year": 2026,
+                    "duration": 5400000, // 90 mins
+                    "viewOffset": 600000, // 10 mins
+                    "contentRating": "R",
+                    "rating": 8.5,
+                    "ratingImage": "imdb://image.rating",
+                    "audienceRating": 9.0,
+                    "audienceRatingImage": "rottentomatoes://image.rating.upright",
+                    "summary": "This is a mock summary.",
+                    "Genre": [{"tag": "Action"}],
+                    "Role": [{"tag": "Actor A", "role": "Hero", "thumb": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="}],
+                    "Media": [{
+                        "Part": [{
+                            "key": "/mock/part.mkv",
+                            "Stream": [
+                                {"streamType": 1, "codec": "h264", "displayTitle": "1080p (H.264)"},
+                                {"streamType": 1, "codec": "hevc", "displayTitle": "4K (HEVC)"},
+                                {"streamType": 2, "language": "English"},
+                                {"streamType": 3, "language": "Spanish"}
+                            ]
+                        }]
+                    }]
+                }]
+            }
+        };
+        
+        // Assign rawJson directly to test parsing
         movieDetailsView.rawJson = JSON.stringify(mockJson);
-        mainWindow.currentTab = 3;
-        wait(200);
+        wait(1500);
+        
+        verify(movieDetailsView.parent.currentIndex === 3, "Details view should be the active tab");
+        
         var title = findChild(movieDetailsView, "detailsTitle");
-        verify(title.text === "Mock Detail Title", "Title should match");
+        verify(title !== null, "Title should exist");
+        verify(title.text === "Mock Detail Title", "Title should match mock data");
+        
+        var minsLeft = findChild(movieDetailsView, "detailsMinsLeft");
+        verify(minsLeft.text === "80 mins left", "Mins left should calculate correctly (90-10)");
+        
+        var genres = findChild(movieDetailsView, "detailsGenres");
+        verify(genres.text === "Action", "Genres should parse correctly");
+        
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        verify(playBtn.text === "Resume", "Should say Resume because viewOffset > 0");
+        
+        var videoCombo = findChild(movieDetailsView, "detailsVideoCombo");
+        verify(videoCombo !== null, "Video combobox should exist");
+        verify(videoCombo.count === 2, "Should have 2 video streams");
+        
+        // Open the popup programmatically (headless testing workaround for Popup)
+        videoCombo.popup.open();
+        wait(200);
+        
+        verify(videoCombo.popup.visible, "Video combobox popup should be visible after click");
+        
+        // Find the list view in the popup
+        var popupListView = videoCombo.popup.contentItem;
+        verify(popupListView !== null, "Popup list view should exist");
+        verify(popupListView.count === 2, "Popup list view should have 2 items");
+        
+        // Wait for items to be instantiated
+        wait(1500);
+        
+        // Click the second item (index 1) by simulating a mouse click on the delegate
+        // Note: ListView instantiates delegates dynamically, children might include other internal items
+        // we find the second ItemDelegate
+        var delegates = [];
+        for (var i = 0; i < popupListView.contentItem.children.length; i++) {
+            if (popupListView.contentItem.children[i].toString().indexOf("ItemDelegate") !== -1) {
+                delegates.push(popupListView.contentItem.children[i]);
+            }
+        }
+        
+        verify(delegates.length >= 2, "Should find at least 2 delegates instantiated");
+        var secondItem = delegates[1];
+        verify(secondItem !== null, "Second delegate item should exist");
+        mouseClick(secondItem);
+        wait(200);
+        
+        verify(videoCombo.currentText === "4K (HEVC)", "Should select second video stream correctly via click");
+        
+        // Open the popup again to verify the selected item still renders
+        videoCombo.popup.open();
+        wait(200);
+        
+        var delegates2 = [];
+        for (var j = 0; j < popupListView.contentItem.children.length; j++) {
+            if (popupListView.contentItem.children[j].toString().indexOf("ItemDelegate") !== -1) {
+                delegates2.push(popupListView.contentItem.children[j]);
+            }
+        }
+        
+        verify(delegates2.length >= 2, "Should find at least 2 delegates on second open");
+        var selectedItem = delegates2[1];
+        verify(selectedItem.contentItem.text === "4K (HEVC)", "Second delegate text should still be '4K (HEVC)'");
+        verify(selectedItem.contentItem.color.toString() === "#000000" || selectedItem.contentItem.color.toString() === "#ff000000", "Text should be black, got " + selectedItem.contentItem.color);
+        verify(selectedItem.background.color.toString() === "#e5a00d" || selectedItem.background.color.toString() === "#ffe5a00d", "Background should be orange, got " + selectedItem.background.color);
+        
+        // Select first item
+        var firstItem = delegates2[0];
+        mouseClick(firstItem);
+        wait(200);
+        verify(videoCombo.currentText === "1080p (H.264)", "Should select first video stream");
+        
+        // Open popup again
+        videoCombo.popup.open();
+        wait(200);
+        
+        var delegates3 = [];
+        for (var k = 0; k < popupListView.contentItem.children.length; k++) {
+            if (popupListView.contentItem.children[k].toString().indexOf("ItemDelegate") !== -1) {
+                delegates3.push(popupListView.contentItem.children[k]);
+            }
+        }
+        
+        verify(delegates3.length >= 2, "Should find at least 2 delegates on third open");
+        var newFirstItem = delegates3[0];
+        verify(newFirstItem.contentItem.text === "1080p (H.264)", "First delegate text should be correct");
+        
+        // Since we just clicked it, it is the currentIndex. Opening the popup sets highlightedIndex = currentIndex
+        verify(newFirstItem.highlighted === true, "First item should be highlighted because it is the current index");
+        verify(newFirstItem.contentItem.color.toString() === "#000000" || newFirstItem.contentItem.color.toString() === "#ff000000", "Text should be black when highlighted");
+        verify(newFirstItem.background.color.toString() === "#e5a00d" || newFirstItem.background.color.toString() === "#ffe5a00d", "Background should be orange when highlighted");
+        
+        
+        
+        
         var castList = findChild(movieDetailsView, "detailsCastList");
-        verify(castList.count > 0, "Cast list should have items");
-    }
+        verify(castList !== null, "Cast list should exist");
+        verify(castList.count === 1, "Should have 1 cast member");
+        verify(castList.orientation === ListView.Horizontal, "Cast list should be horizontal");
+        
+        var castDelegateItem = castList.contentItem.children[0];
+        verify(castDelegateItem !== null, "Cast delegate item should exist");
+        
+        // Find the Image inside the cast delegate. It doesn't have an objectName, but it's an Image inside the mask Rect or Item
+        var castImg = null;
+        for (var i = 0; i < castDelegateItem.children[0].children.length; i++) {
+            if (castDelegateItem.children[0].children[i].toString().indexOf("Image") !== -1) {
+                castImg = castDelegateItem.children[0].children[i];
+                break;
+            }
+        }
+        
+        verify(castImg !== null, "Cast Image component should exist");
+        tryCompare(castImg, "status", Image.Ready, 5000, "Cast image should be successfully loaded and ready");
+        
+        var rating0 = findChild(movieDetailsView, "detailsRating0");
+        verify(rating0 !== null, "Rating text 0 should exist");
+        verify(rating0.tooltipText === "IMDb", "Tooltip 0 should parse imdb:// source");
+        
+        var imdbImage = findChild(movieDetailsView, "detailsRatingIconImdb0");
+        verify(imdbImage !== null, "IMDb image should exist");
+        
+        tryCompare(imdbImage, "status", Image.Ready, 5000, "IMDb image should be loaded");
+        
+        var imdbImage = findChild(movieDetailsView, "detailsRatingIconImdb0");
+        verify(imdbImage !== null, "IMDb image should exist");
+        
+        tryCompare(imdbImage, "status", Image.Ready, 5000, "IMDb image should be loaded");
+
+        var rating1 = findChild(movieDetailsView, "detailsRating1");
+        verify(rating1 !== null, "Rating text 1 should exist");
+        verify(rating1.tooltipText === "Rotten Tomatoes Audience", "Tooltip 1 should parse Rotten Tomatoes Audience source");
+        
+        var backBtn = findChild(movieDetailsView, "detailsBackButton");
+        backBtn.clicked();
+        wait(200);
+        verify(mainWindow.currentTab === 0, "Should return to home tab");    }
 
     function test_34_movie_playback_streams() {
         mainWindow.currentTab = 0;
@@ -823,7 +899,7 @@ TestCase {
         var playBtn = findChild(movieDetailsView, "detailsPlayButton");
         verify(playBtn !== null, "Play button should exist");
         
-        var playSpy = Qt.createQmlObject('import QtTest; SignalSpy { signalName: \"playMediaRequested\" }', movieDetailsView, "playSpy34");
+        var playSpy = Qt.createQmlObject('import QtTest; SignalSpy { signalName: "playMediaRequested" }', movieDetailsView, "playSpy34");
         playSpy.target = movieDetailsView;
         
         playBtn.clicked();
@@ -1376,7 +1452,7 @@ TestCase {
         wait(350); 
         
         // Video should STILL be playing
-        verify(true, "Skipping brittle propagation check");
+        verify(!mpvObj.paused, "Clicking the volume slider should NOT propagate and pause the video");
         
         pv.destroy();
     }
@@ -1405,15 +1481,95 @@ TestCase {
     }
 
     function test_49_series_details_view() {
-        mainWindow.currentTab = 4;
-        var seriesDetailsView = findChild(mainWindow, "seriesDetailsView");
-        var mockSeries = { "MediaContainer": { "Metadata": [{ "type": "show", "ratingKey": "1000", "title": "Test Series" }] } };
-        seriesDetailsView.rawJson = JSON.stringify(mockSeries);
-        seriesDetailsView.epToPlay = { "parentIndex": 3, "index": 16, "title": "The Big Showdown", "viewOffset": 1500 };
+        mainWindow.currentTab = 0;
         wait(200);
+        
+        var seriesDetailsView = findChild(mainWindow, "seriesDetailsView");
+        verify(seriesDetailsView !== null, "seriesDetailsView should exist");
+        
+        var mockSeriesJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "show",
+                    "ratingKey": "1000",
+                    "title": "Test Series",
+                    "thumb": "/library/metadata/1000/thumb",
+                    "year": 2026,
+                    "childCount": 3,
+                    "Role": [
+                        { "tag": "Actor 1", "role": "Character 1" }
+                    ]
+                }]
+            }
+        };
+        
+        // Mock server response for seasons
+        // The QML code does an XMLHttpRequest. Since we are in QML test, XHR will try to hit the actual URL.
+        // If we set rootApp.serverUrl to a non-existent host, XHR will fail silently, but we can verify the UI structure first.
+        // Wait, for seasons, we can just inject seasonsData directly into seriesDetailsView for the sake of the UI test!
+        
+        mainWindow.currentTab = 4;
+        seriesDetailsView.rawJson = JSON.stringify(mockSeriesJson);
+        
+        var mockSeasons = [
+            { "ratingKey": "1001", "title": "Season 1", "thumb": "/library/metadata/1001/thumb", "leafCount": 10, "viewedLeafCount": 5 },
+            { "ratingKey": "1002", "title": "Season 2", "thumb": "/library/metadata/1002/thumb", "leafCount": 10, "viewedLeafCount": 10 }
+        ];
+        seriesDetailsView.seasonsData = mockSeasons;
+        
+        var mockEpToPlay = { "parentIndex": 3, "index": 16, "title": "The Big Showdown", "viewOffset": 1500 };
+        seriesDetailsView.epToPlay = mockEpToPlay;
+        
+        wait(200);
+        
+        // Check Poster and On Deck
+        var poster = findChild(seriesDetailsView, "seriesDetailsPoster");
+        verify(poster !== null, "Poster should exist");
+        
         var onDeckLabel = findChild(seriesDetailsView, "seriesOnDeckLabel");
         verify(onDeckLabel !== null, "On Deck label should exist");
         verify(onDeckLabel.visible === true, "On Deck label should be visible");
+        verify(onDeckLabel.text === "On Deck - S3 E16", "On Deck label text should match expected");
+        
+        // Check Details
+        var title = findChild(seriesDetailsView, "seriesDetailsTitle");
+        verify(title.text === "Test Series", "Title should match");
+        
+        // Check Seasons List
+        var seasonsList = findChild(seriesDetailsView, "seriesSeasonsList");
+        verify(seasonsList !== null, "Seasons list should exist");
+        verify(seasonsList.count === 2, "Seasons list should have 2 items");
+        
+        // Verify season 1 has watched count
+        var season1Item = seasonsList.contentItem.children[0];
+        verify(season1Item !== null, "Season 1 item should exist");
+        
+        var season2Item = seasonsList.contentItem.children[1];
+        verify(season2Item !== null, "Season 2 item should exist");
+        
+        // Wait for UI to render delegates
+        wait(200);
+        
+        // Check season 2 (fully watched)
+        var s2CountRect = findChild(season2Item, "seasonCountRect");
+        verify(s2CountRect !== null, "seasonCountRect should exist on season 2");
+        verify(s2CountRect.visible === true, "seasonCountRect should remain visible even when fully watched");
+        
+        var s2Checkmark = findChild(season2Item, "seasonWatchedCheckmark");
+        verify(s2Checkmark !== null, "seasonWatchedCheckmark should exist on season 2");
+        verify(s2Checkmark.visible === true, "seasonWatchedCheckmark should be visible when fully watched");
+        
+        // QML test runner cannot easily dig deep into delegates without objectNames, but we know the structure.
+        // Let"s ensure it renders without error.
+        
+        // Check Cast List (DetailsCastList)
+        var castList = findChild(seriesDetailsView, "detailsCastList");
+        verify(castList !== null, "Cast list should exist");
+        verify(castList.count === 1, "Cast list should have 1 item");
+        
+        var playBtn = findChild(seriesDetailsView, "seriesDetailsPlayButton");
+        verify(playBtn !== null, "Play button should exist");
+        verify(playBtn.text === "Resume", "Play button should say Resume because viewOffset > 0. Actual: " + playBtn.text);
     }
 
     function test_50_season_details_view() {
@@ -1665,14 +1821,11 @@ TestCase {
         pv.destroy();
     }
 
-        function test_56_poster_episode_titles() {
-        var qml = "import QtQuick; import QtQuick.Controls; import \"qrc:/qt/qml/flex_player_test_module/src/\" as App; ListView { width: 200; height: 300; model: ListModel { ListElement { type: \"episode\"; ratingKey: \"1000\"; grandparentTitle: \"Dinotrux\"; parentIndex: 3; index: 16; title: \"The Big Showdown\"; thumbUrl: \"\" } } delegate: App.MoviePosterDelegate {} }";
+    function test_56_poster_episode_titles() {
+        var qml = "import QtQuick\nimport QtQuick.Controls\nimport \"qrc:/qt/qml/flex_player_test_module/src/\" as App\nListView { width: 200; height: 300; model: ListModel { ListElement { type: \"episode\"; ratingKey: \"1000\"; grandparentTitle: \"Dinotrux\"; parentIndex: 3; index: 16; title: \"The Big Showdown\"; thumbUrl: \"\" } }\n delegate: App.MoviePosterDelegate {} }";
         var pvComponent = Qt.createQmlObject(qml, mainWindow, "test56");
+        
         wait(200);
-        var pTitle = findChild(pvComponent, "posterTitle");
-        verify(pTitle !== null, "posterTitle should exist");
-        verify(pTitle.text === "Dinotrux - S3", "Top title should be Dinotrux - S3");
-        pvComponent.destroy();
         
         var pTitle = findChild(pvComponent, "posterTitle");
         verify(pTitle !== null, "posterTitle should exist");

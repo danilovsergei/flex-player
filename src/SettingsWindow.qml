@@ -4,49 +4,49 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Rectangle {
-        id: settingsWindow
-        objectName: "settingsWindow"
-        anchors.fill: parent
-        color: "#1e1e1e" // Full screen background
-        visible: false
-        z: 999 // Ensure it's on top of everything
+    id: settingsWindow
+    objectName: "settingsWindow"
+    anchors.fill: parent
+    color: "#1e1e1e"
+    visible: false
+    z: 999
 
-        property int connectionState: 0 // 0: Idle, 1: Checking, 2: Success, 3: Failed
-        property string connectionError: ""
+    property int connectionState: 0
+    property string connectionError: ""
+    property var allLibrariesModel: null
+    property var collectionsModel: null
 
-        function openTab(tabIndex, serverUrl, token) {
-            if (tabIndex !== undefined) {
-                settingsSidebarColumn.settingsTab = tabIndex
+    function openTab(tabIndex, serverUrl, token) {
+        if (tabIndex !== undefined) {
+            settingsSidebarColumn.settingsTab = tabIndex
+        } else {
+            settingsSidebarColumn.settingsTab = 0
+        }
+        serverUrlField.text = serverUrl
+        tokenField.text = token
+        connectionState = 0
+        connectionError = ""
+        visible = true
+    }
+
+    Connections {
+        target: collectionsModel
+        function onConnectionChecked(success, errorMessage) {
+            if (success) {
+                settingsWindow.connectionState = 2
+                settingsWindow.connectionError = ""
             } else {
-                settingsSidebarColumn.settingsTab = 0
-            }
-            serverUrlField.text = serverUrl
-            tokenField.text = token
-            connectionState = 0
-            connectionError = ""
-            visible = true
-        }
-
-        Connections {
-            target: collectionsModel
-            function onConnectionChecked(success, errorMessage) {
-                if (success) {
-                    settingsWindow.connectionState = 2
-                    settingsWindow.connectionError = ""
-                } else {
-                    settingsWindow.connectionState = 3
-                    settingsWindow.connectionError = errorMessage
-                }
+                settingsWindow.connectionState = 3
+                settingsWindow.connectionError = errorMessage
             }
         }
+    }
 
-        // Absorb clicks
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onWheel: {}
-        }
-
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onWheel: {}
+    }
         PlexAuth {
             id: plexAuth
             onTokenReceived: function(token) {
@@ -158,7 +158,7 @@ Rectangle {
                         spacing: 10
                         
                         Image {
-                            source: "../assets/flex_icon.svg"
+                            source: "qrc:/flex_player/assets/flex_icon.svg"
                             sourceSize.width: 64
                             sourceSize.height: 64
                             fillMode: Image.PreserveAspectFit
@@ -376,6 +376,12 @@ Rectangle {
                                 appSettings.serverUrl = serverUrlField.text
                                 appSettings.token = tokenField.text
                                 closeSettings()
+                                
+                                if (!isTestMode) {
+                                    recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/recentlyAdded")
+                                    continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/onDeck")
+                                    collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/collections")
+                                }
                             }
                         }
 
@@ -473,8 +479,6 @@ Rectangle {
                                 
                                 CheckBox {
                                     id: libCheckbox
-                                    objectName: "libraryCheckbox"
-                                    enabled: model.type === "movie" || model.type === "show"
                                     checked: librariesTabCol.localLibrariesMap[model.ratingKey] !== undefined && librariesTabCol.localLibrariesMap[model.ratingKey] !== null && librariesTabCol.localLibrariesMap[model.ratingKey] !== false
                                     onClicked: {
                                         var map = librariesTabCol.localLibrariesMap;
@@ -489,18 +493,8 @@ Rectangle {
                                 
                                 Text {
                                     text: getLibraryIcon(model.type) + " " + model.title + " (" + model.type + ")"
-                                    color: (model.type === "movie" || model.type === "show") ? "white" : "gray"
+                                    color: "white"
                                     font.pixelSize: 18
-                                    Layout.fillWidth: (model.type === "movie" || model.type === "show")
-                                }
-                                
-                                Text {
-                                    objectName: "unsupportedWarning"
-                                    text: model.type + " not supported yet."
-                                    color: "#FF5252"
-                                    font.pixelSize: 14
-                                    font.italic: true
-                                    visible: model.type !== "movie" && model.type !== "show"
                                     Layout.fillWidth: true
                                 }
                             }
@@ -526,6 +520,7 @@ Rectangle {
                                 onClicked: {
                                     appSettings.enabledLibraries = JSON.stringify(librariesTabCol.localLibrariesMap);
                                     closeSettings();
+                                    if (!isTestMode) mainWindow.startupLogic();
                                 }
                             }
                         }
@@ -686,68 +681,6 @@ Rectangle {
                             }
                         }
                         
-                                                // Row 5: Seek Forward
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Seek Forward"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Skip forward 5 seconds"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: seekFwdHotkeyText
-                                objectName: "seekFwdHotkeyText"
-                                text: appSettings.seekForwardHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setSeekFwdHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "seekforward"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-                        
-                        // Row 6: Seek Backward
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Seek Backward"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Rewind 5 seconds"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: seekBackHotkeyText
-                                objectName: "seekBackHotkeyText"
-                                text: appSettings.seekBackwardHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setSeekBackHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "seekbackward"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-
                         Item { Layout.fillHeight: true }
                     } // END TAB 2: HOTKEYS
                     // TAB 3: PLAYBACK

@@ -11,6 +11,7 @@ ScrollView {
 
     property var rootApp
     property var continueWatchingModel
+    property var recentlyAddedModel
     property var homeLibrariesList
     property string enabledLibraries: "{}"
     property Component movieDelegate
@@ -19,6 +20,7 @@ ScrollView {
     signal openSettingsRequested()
 
     ColumnLayout {
+        objectName: "homeContentColumn"
         width: root.width
         spacing: 20
 
@@ -28,47 +30,42 @@ ScrollView {
             Layout.fillWidth: true
             Layout.preferredHeight: 300
             visible: {
+                var libs = [];
                 try {
-                    return Object.keys(JSON.parse(root.enabledLibraries || "{}")).length === 0;
-                } catch(e) {
-                    return true;
-                }
+                    libs = JSON.parse(root.enabledLibraries);
+                } catch(e) {}
+                return Object.keys(libs).length === 0;
             }
 
             Column {
                 anchors.centerIn: parent
-                spacing: 15
-
+                spacing: 20
                 Text {
-                    text: "No Plex libraries selected."
+                    text: "Welcome to Flex Player"
                     color: "white"
-                    font.pixelSize: 24
+                    font.pixelSize: 32
                     font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
-
                 Text {
-                    text: "<u>Click here to select libraries to display in Settings</u>"
-                    color: plexOrange
+                    text: "Please enable some libraries in settings to get started."
+                    color: "gray"
                     font.pixelSize: 18
-                    horizontalAlignment: Text.AlignHCenter
                     anchors.horizontalCenter: parent.horizontalCenter
-                    
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.openSettingsRequested()
-                    }
+                }
+                Button {
+                    text: "Open Settings"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    onClicked: root.openSettingsRequested()
                 }
             }
         }
 
+        // Continue Watching Section
         Text {
-            objectName: "continueWatchingHeader"
             text: "Continue Watching"
             color: "white"
-            font.pixelSize: 22
+            font.pixelSize: 24
             font.bold: true
             Layout.topMargin: 20
             Layout.leftMargin: 20
@@ -76,7 +73,6 @@ ScrollView {
         }
 
         Item {
-            objectName: "continueWatchingContainer"
             Layout.fillWidth: true
             Layout.preferredHeight: 330
             Layout.leftMargin: 20
@@ -109,20 +105,9 @@ ScrollView {
                 visible: continueWatchingList.contentX > 0
                 opacity: continueHover.hovered ? 1.0 : 0.0
                 Behavior on opacity { NumberAnimation { duration: 200 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "❮"
-                    color: continueLeftHover.hovered ? plexOrange : "white"
-                    font.pixelSize: 32
-                    font.bold: true
-                }
-                
+                Text { anchors.centerIn: parent; text: "❮"; color: continueLeftHover.hovered ? root.plexOrange : "white"; font.pixelSize: 32; font.bold: true }
                 HoverHandler { id: continueLeftHover }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: continueWatchingList.contentX = Math.max(0, continueWatchingList.contentX - 880)
-                }
+                MouseArea { anchors.fill: parent; onClicked: continueWatchingList.contentX = Math.max(0, continueWatchingList.contentX - 880) }
             }
 
             Rectangle {
@@ -134,34 +119,30 @@ ScrollView {
                 visible: continueWatchingList.contentWidth > continueWatchingList.width && continueWatchingList.contentX < (continueWatchingList.contentWidth - continueWatchingList.width)
                 opacity: continueHover.hovered ? 1.0 : 0.0
                 Behavior on opacity { NumberAnimation { duration: 200 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "❯"
-                    color: continueRightHover.hovered ? plexOrange : "white"
-                    font.pixelSize: 32
-                    font.bold: true
-                }
-                
+                Text { anchors.centerIn: parent; text: "❯"; color: continueRightHover.hovered ? root.plexOrange : "white"; font.pixelSize: 32; font.bold: true }
                 HoverHandler { id: continueRightHover }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: continueWatchingList.contentX = Math.min(continueWatchingList.contentWidth - continueWatchingList.width, continueWatchingList.contentX + 880)
-                }
+                MouseArea { anchors.fill: parent; onClicked: continueWatchingList.contentX = Math.min(continueWatchingList.contentWidth - continueWatchingList.width, continueWatchingList.contentX + 880) }
             }
         }
 
+        
+
+        // Individual Library Rails
         Repeater {
             id: libraryRepeater
             objectName: "libraryRepeater"
             model: root.homeLibrariesList
             delegate: LibraryRail {
-                rootApp: root.rootApp
                 libraryTitle: modelData.title
                 libraryId: modelData.id
                 libraryType: modelData.type
+                rootApp: root.rootApp
+                Layout.fillWidth: true
+                Layout.preferredHeight: 400
+                visible: !emptyStateView.visible
             }
         }
-        Item { Layout.preferredHeight: 20 } // Bottom spacer
+        
+        Item { Layout.fillHeight: true }
     }
 }
