@@ -6,6 +6,18 @@
 
 Flex Player is a custom Qt6/QML client for the Plex media server. It uses `libmpv` as its playback engine, natively supporting all the advanced features `mpv` has to offer.
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/home_screen.png" width="800" alt="Home Screen">
+</p>
+<p align="center">
+  <img src="assets/series_page.png" width="800" alt="Series Page">
+</p>
+<p align="center">
+  <img src="assets/series_details.png" width="800" alt="Series Details">
+</p>
+
 ## Why Flex Player?
 The main motivation for creating Flex Player was to replace the official Flatpak and Snap Plex clients on Linux to address their architectural limitations. Specifically:
 * Flex Player natively supports Wayland.

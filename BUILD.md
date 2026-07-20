@@ -70,31 +70,45 @@ The application configures `mpv` to use `hwdec=auto-safe` and native Wayland HDR
 
 Flex Player provides an official Flatpak manifest (`org.flexplayer.FlexPlayer.json`) to securely containerize the application, compile its dependencies (including `libmpv`, `ffmpeg`, `libplacebo`, and `libass`), and natively bind to Wayland and host GPUs.
 
-To compile and install the Flatpak directly to your local user directory, follow these steps:
+To guarantee a perfectly reproducible build environment that matches the GitHub Actions CI pipeline, we strongly recommend building the Flatpak locally using Docker:
 
-1. **Install Flatpak Builder:**
-   Ensure `flatpak-builder` is installed on your system.
-   - Ubuntu/Debian: `sudo apt install flatpak-builder`
-   - Arch Linux: `sudo pacman -S flatpak-builder`
-   - Gentoo: `sudo emerge -av dev-util/flatpak-builder`
-
-2. **Add Flathub repository (if not already present):**
+1. **Launch the Flathub CI Container:**
+   From the root of the `flex_player` repository, start the official KDE 6.8 build container:
    ```bash
-   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+   docker run --rm -it \
+     --privileged \
+     -v $(pwd):/workspace \
+     -w /workspace \
+     ghcr.io/flathub-infra/flatpak-github-actions:kde-6.8 \
+     bash
+   ```
+   *(Note: `--privileged` is strictly required for `flatpak-builder` to create secure Bubblewrap namespaces during compilation.)*
+
+2. **Fix Container DBus (Inside Docker):**
+   Docker containers lack a machine-id by default, which Flatpak requires. Generate one:
+   ```bash
+   dbus-uuidgen > /etc/machine-id
    ```
 
-3. **Install the KDE SDK and Platform:**
+3. **Run the Build:**
+   Compile the Flatpak while bypassing the FUSE filesystem wrapper (which requires X11/Wayland context):
    ```bash
-   flatpak install --user -y flathub org.kde.Platform//6.8 org.kde.Sdk//6.8
+   flatpak-builder build-dir org.flexplayer.FlexPlayer.json --force-clean --disable-rofiles-fuse
    ```
 
-4. **Build and Install:**
-   From the root of the `flex_player` repository, run:
+4. **Export the Bundle (Inside Docker):**
+   Once the build completes, export the application into a standalone `.flatpak` installer:
    ```bash
-   flatpak-builder build-dir org.flexplayer.FlexPlayer.json --force-clean --user --install
+   flatpak build-export repo build-dir
+   flatpak build-bundle repo flex-player.flatpak org.flexplayer.FlexPlayer
+   ```
+   You can now type `exit` to leave the Docker container.
+
+5. **Install and Run (On Host):**
+   Install the newly generated Flatpak bundle directly to your local user environment:
+   ```bash
+   flatpak install --user -y flex-player.flatpak
+   flatpak run org.flexplayer.FlexPlayer
    ```
 
-Once installed, you can launch the application from your desktop application menu or via the command line:
-```bash
-flatpak run org.flexplayer.FlexPlayer
-```
+*(Note: If you prefer not to use Docker, you can install `flatpak-builder` on your host system and install the `org.kde.Platform//6.8` and `org.kde.Sdk//6.8` runtimes via Flathub.)*

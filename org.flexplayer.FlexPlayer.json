@@ -104,6 +104,10 @@
                 {
                     "type": "dir",
                     "path": "."
+                },
+                {
+                    "type": "patch",
+                    "path": "flatpak/patches/mpvqt-flatpak-fixes.patch"
                 }
             ]
         }

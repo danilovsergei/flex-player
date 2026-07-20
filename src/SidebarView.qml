@@ -25,7 +25,7 @@ Rectangle {
                         spacing: 10
                         
                         Image {
-                            source: "qrc:/flex_player/assets/flex_icon.svg"
+                            source: "../assets/flex_icon.svg"
                             sourceSize.width: mainWindow.sidebarCollapsed ? 48 : 64
                             sourceSize.height: mainWindow.sidebarCollapsed ? 48 : 64
                             fillMode: Image.PreserveAspectFit
