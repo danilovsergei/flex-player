@@ -11,6 +11,10 @@ pkg_check_modules(MPV REQUIRED mpv)
 add_subdirectory(3rdparty/mpvqt)
 
 qt_standard_project_setup()
+if(COMMAND qt_policy)
+    qt_policy(SET QTP0001 NEW)
+    qt_policy(SET QTP0004 NEW)
+endif()
 
 set(APP_SOURCES
     src/PlexModel.cpp
@@ -54,3 +58,25 @@ target_include_directories(flex_player_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(flex_player_test PRIVATE Qt6::Quick Qt6::Network Qt6::OpenGL Qt6::DBus Qt6::Test Qt6::QuickTest MpvQt::MpvQt ${MPV_LIBRARIES})
 target_compile_definitions(flex_player_test PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests")
 add_test(NAME flex_player_test COMMAND flex_player_test)
+
+
+# Install App
+install(TARGETS flex_player_app
+    RUNTIME DESTINATION bin
+)
+
+# Install Desktop file
+install(FILES org.flexplayer.FlexPlayer.desktop
+    DESTINATION share/applications
+)
+
+# Install Icon
+install(FILES assets/flex_icon.svg
+    DESTINATION share/icons/hicolor/scalable/apps
+    RENAME org.flexplayer.FlexPlayer.svg
+)
+
+# Install Metainfo
+install(FILES org.flexplayer.FlexPlayer.metainfo.xml
+    DESTINATION share/metainfo
+)

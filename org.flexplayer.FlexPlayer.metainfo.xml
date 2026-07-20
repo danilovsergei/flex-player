@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>org.flexplayer.FlexPlayer</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Flex Player</name>
+  <summary>A modern, native media player for Plex</summary>
+  <description>
+    <p>Flex Player is a custom Qt6/QML client for the Plex media server. It uses libmpv as its playback engine, natively supporting all the advanced features mpv has to offer.</p>
+  </description>
+  <launchable type="desktop-id">org.flexplayer.FlexPlayer.desktop</launchable>
+  <developer id="org.flexplayer">
+    <name>Flex Player Developers</name>
+  </developer>
+</component>

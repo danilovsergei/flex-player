@@ -65,3 +65,36 @@ To run the application natively on a Wayland display, use the following command:
 **Zero-Copy Hardware Decoding Note:** 
 The application configures `mpv` to use `hwdec=auto-safe` and native Wayland HDR output. Ensure your system has the appropriate graphics drivers (e.g., VAAPI) installed and configured for optimal zero-copy playback performance.
 
+
+## Building the Flatpak
+
+Flex Player provides an official Flatpak manifest (`org.flexplayer.FlexPlayer.json`) to securely containerize the application, compile its dependencies (including `libmpv`, `ffmpeg`, `libplacebo`, and `libass`), and natively bind to Wayland and host GPUs.
+
+To compile and install the Flatpak directly to your local user directory, follow these steps:
+
+1. **Install Flatpak Builder:**
+   Ensure `flatpak-builder` is installed on your system.
+   - Ubuntu/Debian: `sudo apt install flatpak-builder`
+   - Arch Linux: `sudo pacman -S flatpak-builder`
+   - Gentoo: `sudo emerge -av dev-util/flatpak-builder`
+
+2. **Add Flathub repository (if not already present):**
+   ```bash
+   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+   ```
+
+3. **Install the KDE SDK and Platform:**
+   ```bash
+   flatpak install --user -y flathub org.kde.Platform//6.8 org.kde.Sdk//6.8
+   ```
+
+4. **Build and Install:**
+   From the root of the `flex_player` repository, run:
+   ```bash
+   flatpak-builder build-dir org.flexplayer.FlexPlayer.json --force-clean --user --install
+   ```
+
+Once installed, you can launch the application from your desktop application menu or via the command line:
+```bash
+flatpak run org.flexplayer.FlexPlayer
+```

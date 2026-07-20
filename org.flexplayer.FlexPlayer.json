@@ -1,0 +1,110 @@
+{
+    "app-id": "org.flexplayer.FlexPlayer",
+    "runtime": "org.kde.Platform",
+    "runtime-version": "6.8",
+    "sdk": "org.kde.Sdk",
+    "command": "flex_player_app",
+    "finish-args": [
+        "--share=network",
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=pulseaudio",
+        "--device=dri"
+    ],
+    "modules": [
+        {
+            "name": "luajit",
+            "buildsystem": "simple",
+            "build-commands": [
+                "make PREFIX=/app",
+                "make install PREFIX=/app"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/LuaJIT/LuaJIT/archive/refs/tags/v2.1.0-beta3.tar.gz",
+                    "sha256": "409f7fe570d3c16558e594421c47bdd130238323c9d6fd6c83dedd2aaeb082a8"
+                }
+            ]
+        },
+        {
+            "name": "ffmpeg",
+            "buildsystem": "autotools",
+            "config-opts": [
+                "--enable-shared",
+                "--disable-static",
+                "--disable-programs",
+                "--disable-doc",
+                "--disable-debug",
+                "--enable-gpl",
+                "--enable-version3"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://ffmpeg.org/releases/ffmpeg-7.0.2.tar.xz",
+                    "sha256": "8646515b638a3ad303e23af6a3587734447cb8fc0a0c064ecdb8e95c4fd8b389"
+                }
+            ]
+        },
+        {
+            "name": "libass",
+            "buildsystem": "autotools",
+            "config-opts": [
+                "--disable-static"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/libass/libass/releases/download/0.17.5/libass-0.17.5.tar.gz",
+                    "sha256": "caab4b993dd7be6187c55623b789ed75dddefea6e65938af134637c732fe094a"
+                }
+            ]
+        },
+        {
+            "name": "libplacebo",
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Ddemos=false"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/haasn/libplacebo.git",
+                    "tag": "v7.349.0",
+                    "commit": "1fd3c7bde7b943fe8985c893310b5269a09b46c5"
+                }
+            ]
+        },
+        {
+            "name": "libmpv",
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Dlibmpv=true",
+                "-Dcplayer=false",
+                "-Dalsa=disabled",
+                "-Dhtml-build=disabled",
+                "-Djavascript=disabled",
+                "-Duchardet=disabled",
+                "-Dlibarchive=disabled"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/mpv-player/mpv/archive/refs/tags/v0.38.0.tar.gz",
+                    "sha256": "86d9ef40b6058732f67b46d0bbda24a074fae860b3eaae05bab3145041303066"
+                }
+            ]
+        },
+        {
+            "name": "flex-player",
+            "buildsystem": "cmake-ninja",
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "."
+                }
+            ]
+        }
+    ]
+}

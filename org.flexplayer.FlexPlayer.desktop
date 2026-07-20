@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Flex Player
+Comment=A modern, native media player for Plex
+Exec=flex_player_app
+Icon=org.flexplayer.FlexPlayer
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Player;
+StartupWMClass=org.flexplayer.FlexPlayer
