@@ -23,7 +23,7 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: flex-player.flatpak
-          manifest-path: org.flexplayer.FlexPlayer.json
+          manifest-path: io.github.danilovsergei.flex-player.json
           cache-key: flatpak-builder-${{ github.sha }}
 
       - name: Upload Artifact

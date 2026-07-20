@@ -1,5 +1,5 @@
 {
-    "app-id": "org.flexplayer.FlexPlayer",
+    "app-id": "io.github.danilovsergei.flex-player",
     "runtime": "org.kde.Platform",
     "runtime-version": "6.11",
     "sdk": "org.kde.Sdk",

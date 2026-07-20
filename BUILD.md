@@ -68,7 +68,7 @@ The application configures `mpv` to use `hwdec=auto-safe` and native Wayland HDR
 
 ## Building the Flatpak
 
-Flex Player provides an official Flatpak manifest (`org.flexplayer.FlexPlayer.json`) to securely containerize the application, compile its dependencies (including `libmpv`, `ffmpeg`, `libplacebo`, and `libass`), and natively bind to Wayland and host GPUs.
+Flex Player provides an official Flatpak manifest (`io.github.danilovsergei.flex-player.json`) to securely containerize the application, compile its dependencies (including `libmpv`, `ffmpeg`, `libplacebo`, and `libass`), and natively bind to Wayland and host GPUs.
 
 To guarantee a perfectly reproducible build environment that matches the GitHub Actions CI pipeline, we strongly recommend building the Flatpak locally using Docker:
 
@@ -93,14 +93,14 @@ To guarantee a perfectly reproducible build environment that matches the GitHub 
 3. **Run the Build:**
    Compile the Flatpak while bypassing the FUSE filesystem wrapper (which requires X11/Wayland context):
    ```bash
-   flatpak-builder build-dir org.flexplayer.FlexPlayer.json --force-clean --disable-rofiles-fuse
+   flatpak-builder build-dir io.github.danilovsergei.flex-player.json --force-clean --disable-rofiles-fuse
    ```
 
 4. **Export the Bundle (Inside Docker):**
    Once the build completes, export the application into a standalone `.flatpak` installer:
    ```bash
    flatpak build-export repo build-dir
-   flatpak build-bundle repo flex-player.flatpak org.flexplayer.FlexPlayer
+   flatpak build-bundle repo flex-player.flatpak io.github.danilovsergei.flex-player
    ```
    You can now type `exit` to leave the Docker container.
 
@@ -108,7 +108,7 @@ To guarantee a perfectly reproducible build environment that matches the GitHub 
    Install the newly generated Flatpak bundle directly to your local user environment:
    ```bash
    flatpak install --user -y flex-player.flatpak
-   flatpak run org.flexplayer.FlexPlayer
+   flatpak run io.github.danilovsergei.flex-player
    ```
 
 *(Note: If you prefer not to use Docker, you can install `flatpak-builder` on your host system and install the `org.kde.Platform//6.8` and `org.kde.Sdk//6.8` runtimes via Flathub.)*

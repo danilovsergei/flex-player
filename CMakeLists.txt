@@ -66,17 +66,17 @@ install(TARGETS flex_player_app
 )
 
 # Install Desktop file
-install(FILES org.flexplayer.FlexPlayer.desktop
+install(FILES io.github.danilovsergei.flex-player.desktop
     DESTINATION share/applications
 )
 
 # Install Icon
 install(FILES assets/flex_icon.svg
     DESTINATION share/icons/hicolor/scalable/apps
-    RENAME org.flexplayer.FlexPlayer.svg
+    RENAME io.github.danilovsergei.flex-player.svg
 )
 
 # Install Metainfo
-install(FILES org.flexplayer.FlexPlayer.metainfo.xml
+install(FILES io.github.danilovsergei.flex-player.metainfo.xml
     DESTINATION share/metainfo
 )

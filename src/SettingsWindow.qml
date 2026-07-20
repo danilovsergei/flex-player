@@ -730,7 +730,7 @@ Rectangle {
                             }
                             
                             TextField {
-                                text: "flatpak override --user --talk-name=org.freedesktop.Flatpak org.flexplayer.FlexPlayer"
+                                text: "flatpak override --user --talk-name=org.freedesktop.Flatpak io.github.danilovsergei.flex-player"
                                 readOnly: true
                                 selectByMouse: true
                                 Layout.fillWidth: true

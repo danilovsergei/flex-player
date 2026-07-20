@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-  <id>org.flexplayer.FlexPlayer</id>
+  <id>io.github.danilovsergei.flex-player</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   
@@ -21,6 +21,7 @@
 
   <url type="homepage">https://github.com/danilovsergei/flex-player</url>
   <url type="bugtracker">https://github.com/danilovsergei/flex-player/issues</url>
+  <url type="vcs-browser">https://github.com/danilovsergei/flex-player</url>
 
   <screenshots>
     <screenshot type="default">
@@ -43,8 +44,8 @@
     </screenshot>
   </screenshots>
 
-  <launchable type="desktop-id">org.flexplayer.FlexPlayer.desktop</launchable>
-  <developer id="org.flexplayer">
+  <launchable type="desktop-id">io.github.danilovsergei.flex-player.desktop</launchable>
+  <developer id="io.github.danilovsergei">
     <name>Sergei Danilov</name>
   </developer>
 
@@ -55,4 +56,7 @@
       </description>
     </release>
   </releases>
+
+  <content_rating type="oars-1.1" />
 </component>
+
