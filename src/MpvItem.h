@@ -33,7 +33,12 @@ public:
         // Hardware decoding
         setProperty("hwdec", "auto-safe");
 
-        QString configDir = QDir::homePath() + "/.config/flex-player/mpv";
+        QString configDir;
+        if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
+            configDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.var/app/" + qEnvironmentVariable("FLATPAK_ID") + "/config/flex-player/mpv";
+        } else {
+            configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv";
+        }
         QDir().mkpath(configDir);
         setProperty("config", "yes");
         setProperty("config-dir", configDir);

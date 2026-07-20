@@ -58,6 +58,8 @@ public:
     Q_INVOKABLE void playVideo(const QString &mediaUrl);
     Q_INVOKABLE void fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey);
     Q_INVOKABLE void updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs);
+    Q_INVOKABLE void executeSystemCommand(const QString &command);
+    Q_INVOKABLE void deployHdrScript(bool enable, const QString &enableCmd, const QString &disableCmd);
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);

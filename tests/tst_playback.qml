@@ -409,7 +409,7 @@ TestCase {
     }
 
     function test_20_movie_poster_delegate_extraction() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MoviePosterDelegate.qml");
         verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
         var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
         verify(delegate !== null, "Should be able to create MoviePosterDelegate");
@@ -418,7 +418,7 @@ TestCase {
     }
 
     function test_21_home_view_extraction() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/HomeView.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/HomeView.qml");
         verify(component.status === Component.Ready, "HomeView.qml should exist and be valid");
         var view = component.createObject(mainWindow);
         verify(view !== null, "Should be able to create HomeView");
@@ -427,7 +427,7 @@ TestCase {
     }
 
     function test_22_library_recommend_view_extraction() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/LibraryRecommendView.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/LibraryRecommendView.qml");
         verify(component.status === Component.Ready, "LibraryRecommendView.qml should exist and be valid");
         var view = component.createObject(mainWindow);
         verify(view !== null, "Should be able to create LibraryRecommendView");
@@ -481,7 +481,7 @@ TestCase {
     }
 
     function test_25_collection_movies_view_extraction() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/CollectionMoviesView.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/CollectionMoviesView.qml");
         verify(component.status === Component.Ready, "CollectionMoviesView.qml should exist and be valid");
         var view = component.createObject(mainWindow);
         verify(view !== null, "Should be able to create CollectionMoviesView");
@@ -1179,7 +1179,7 @@ TestCase {
     }
 
     function test_39_context_menu_styling() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MoviePosterDelegate.qml");
         verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
         var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
         verify(delegate !== null, "Should be able to create MoviePosterDelegate");
@@ -1208,7 +1208,7 @@ TestCase {
     }
 
     function test_40_three_dots_menu_button() {
-        var component = Qt.createComponent("qrc:/flex_player_test_module/src/MoviePosterDelegate.qml");
+        var component = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MoviePosterDelegate.qml");
         verify(component.status === Component.Ready, "MoviePosterDelegate.qml should exist and be valid");
         var delegate = component.createObject(mainWindow, {"width": 200, "height": 300});
         verify(delegate !== null, "Should be able to create MoviePosterDelegate");
@@ -1233,7 +1233,7 @@ TestCase {
     }
 
     function test_41_player_view_track_menus() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         verify(pv !== null, "Should be able to create PlayerView");
@@ -1281,7 +1281,7 @@ TestCase {
     }
 
     function test_42_player_view_dynamic_fetch() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         verify(pv !== null, "Should be able to create PlayerView");
@@ -1342,7 +1342,7 @@ TestCase {
     }
 
     function test_43_player_view_tooltips_and_colors() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1374,7 +1374,7 @@ TestCase {
     }
 
     function test_44_auto_selected_track_detection() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1408,7 +1408,7 @@ TestCase {
     }
 
     function test_45_player_track_selection_e2e() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1478,7 +1478,7 @@ TestCase {
     }
 
     function test_46_player_volume_slider() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1502,7 +1502,7 @@ TestCase {
     }
 
     function test_47_slider_click_propagation() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1530,7 +1530,7 @@ TestCase {
     }
 
     function test_48_slider_click_updates_volume() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/PlayerView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/PlayerView.qml");
         verify(pvComponent.status === Component.Ready, "PlayerView.qml should exist and be valid");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 600, "visible": true});
         
@@ -1712,7 +1712,7 @@ TestCase {
     }
 
     function test_51_cast_list_rendering() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/DetailsCastList.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/DetailsCastList.qml");
         verify(pvComponent.status === Component.Ready, "DetailsCastList should exist");
         var pv = pvComponent.createObject(mainWindow, {"width": 800, "height": 300, "visible": true});
         
@@ -1775,7 +1775,7 @@ TestCase {
     }
 
     function test_53_cast_list_actual_visibility() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/MovieDetailsView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MovieDetailsView.qml");
         verify(pvComponent.status === Component.Ready, "MovieDetailsView should exist");
         var pv = pvComponent.createObject(mainWindow, {"width": 1200, "height": 800, "visible": true});
         
@@ -1864,7 +1864,7 @@ TestCase {
     }
 
     function test_55_continue_watching_episode_details() {
-        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/MovieDetailsView.qml");
+        var pvComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MovieDetailsView.qml");
         verify(pvComponent.status === Component.Ready, "MovieDetailsView should exist");
         var pv = pvComponent.createObject(mainWindow, {"width": 1200, "height": 800, "visible": true});
         
@@ -1894,7 +1894,7 @@ TestCase {
     }
 
     function test_56_poster_episode_titles() {
-        var qml = "import QtQuick\nimport QtQuick.Controls\nimport \"qrc:/flex_player_test_module/src/\" as App\nListView { width: 200; height: 300; model: ListModel { ListElement { type: \"episode\"; ratingKey: \"1000\"; grandparentTitle: \"Dinotrux\"; parentIndex: 3; index: 16; title: \"The Big Showdown\"; thumbUrl: \"\" } }\n delegate: App.MoviePosterDelegate {} }";
+        var qml = "import QtQuick\nimport QtQuick.Controls\nimport \"qrc:/qt/qml/flex_player_test_module/src/\" as App\nListView { width: 200; height: 300; model: ListModel { ListElement { type: \"episode\"; ratingKey: \"1000\"; grandparentTitle: \"Dinotrux\"; parentIndex: 3; index: 16; title: \"The Big Showdown\"; thumbUrl: \"\" } }\n delegate: App.MoviePosterDelegate {} }";
         var pvComponent = Qt.createQmlObject(qml, mainWindow, "test56");
         
         wait(200);
@@ -2028,7 +2028,7 @@ TestCase {
     }
 
     function test_59_app_icon_renders() {
-        var sidebarComponent = Qt.createComponent("qrc:/flex_player_test_module/src/SidebarView.qml");
+        var sidebarComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/SidebarView.qml");
         verify(sidebarComponent.status === Component.Ready, "SidebarView should exist");
         
         // SettingsWindow test
@@ -2036,10 +2036,44 @@ TestCase {
         verify(settingsWin !== null, "settingsWindow should exist");
         
         // We can just verify the QRC path works without error.
-        var img = Qt.createQmlObject("import QtQuick; Image { source: \"qrc:/flex_player_test_module/assets/flex_icon.svg\" }", mainWindow, "testImg");
+        var img = Qt.createQmlObject("import QtQuick; Image { source: \"qrc:/qt/qml/flex_player_test_module/assets/flex_icon.svg\" }", mainWindow, "testImg");
         wait(100);
         // If it compiles and runs without QML errors, the asset is included in QRC correctly.
         verify(img !== null, "Image component should load");
         img.destroy();
+    }
+
+    function test_60_playback_hdr_settings() {
+        var sidebarComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/SidebarView.qml");
+        verify(sidebarComponent.status === Component.Ready, "SidebarView should exist");
+        
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        verify(settingsWin !== null, "settingsWindow should exist");
+        
+        settingsWin.visible = true;
+        wait(50);
+        
+        var playbackTab = findChild(settingsWin, "settingsTabPlayback");
+        verify(playbackTab !== null, "Playback tab should exist");
+        
+        mouseClick(playbackTab);
+        wait(50);
+        
+        var hdrEnableCheckbox = findChild(settingsWin, "hdrEnableCheckbox");
+        verify(hdrEnableCheckbox !== null, "HDR enable checkbox should exist");
+        
+        var hdrEnableCommand = findChild(settingsWin, "hdrEnableCommand");
+        verify(hdrEnableCommand !== null, "HDR enable command input should exist");
+        
+        var hdrDisableCommand = findChild(settingsWin, "hdrDisableCommand");
+        verify(hdrDisableCommand !== null, "HDR disable command input should exist");
+        
+        var testHdrEnableButton = findChild(settingsWin, "testHdrEnableButton");
+        verify(testHdrEnableButton !== null, "Test HDR Enable button should exist");
+        
+        var testHdrDisableButton = findChild(settingsWin, "testHdrDisableButton");
+        verify(testHdrDisableButton !== null, "Test HDR Disable button should exist");
+        
+        settingsWin.visible = false;
     }
 }

@@ -218,6 +218,20 @@ Rectangle {
                         onClicked: parent.settingsTab = 2
                     }
 
+                                        Button {
+                        text: "Playback"
+                        objectName: "settingsTabPlayback"
+                        Layout.fillWidth: true
+                        contentItem: Text {
+                            text: parent.text
+                            color: parent.parent.settingsTab === 3 ? "#E5A00D" : "white"
+                            font.pixelSize: 18
+                            font.bold: parent.parent.settingsTab === 3
+                        }
+                        background: Rectangle { color: "transparent" }
+                        onClicked: parent.settingsTab = 3
+                    }
+
                     Item { Layout.fillHeight: true }
                 }
             }
@@ -669,6 +683,104 @@ Rectangle {
                         
                         Item { Layout.fillHeight: true }
                     } // END TAB 2: HOTKEYS
+                    // TAB 3: PLAYBACK
+                    ColumnLayout {
+                        spacing: 20
+
+                        Text {
+                            text: "Playback Configuration"
+                            color: "white"
+                            font.pixelSize: 28
+                            font.bold: true
+                            Layout.bottomMargin: 20
+                        }
+
+                        RowLayout {
+                            spacing: 10
+                            CheckBox {
+                                id: hdrEnableCheckbox
+                                objectName: "hdrEnableCheckbox"
+                                text: "Automatically Toggle system HDR on HDR movie playback"
+                                checked: appSettings.autoToggleHdr || false
+                                onCheckedChanged: {
+                                    appSettings.autoToggleHdr = checked
+                                    mainWindow.deployHdrScript()
+                                }
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: "white"
+                                    font.pixelSize: 16
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: parent.indicator.width + parent.spacing
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: "HDR Enable Command"
+                            color: "gray"
+                            font.pixelSize: 14
+                            Layout.topMargin: 10
+                        }
+                        RowLayout {
+                            spacing: 10
+                            TextField {
+                                id: hdrEnableCommand
+                                objectName: "hdrEnableCommand"
+                                text: appSettings.hdrEnableCommand || "kscreen-doctor output.DP-1.hdr.enable"
+                                color: "white"
+                                font.pixelSize: 16
+                                Layout.preferredWidth: 400
+                                background: Rectangle {
+                                    color: "#333333"
+                                    radius: 5
+                                }
+                                onTextChanged: {
+                                    appSettings.hdrEnableCommand = text
+                                    mainWindow.deployHdrScript()
+                                }
+                            }
+                            Button {
+                                objectName: "testHdrEnableButton"
+                                text: "Test"
+                                onClicked: mainWindow.runHdrCommand(hdrEnableCommand.text)
+                            }
+                        }
+
+                        Text {
+                            text: "HDR Disable Command"
+                            color: "gray"
+                            font.pixelSize: 14
+                            Layout.topMargin: 10
+                        }
+                        RowLayout {
+                            spacing: 10
+                            TextField {
+                                id: hdrDisableCommand
+                                objectName: "hdrDisableCommand"
+                                text: appSettings.hdrDisableCommand || "kscreen-doctor output.DP-1.hdr.disable"
+                                color: "white"
+                                font.pixelSize: 16
+                                Layout.preferredWidth: 400
+                                background: Rectangle {
+                                    color: "#333333"
+                                    radius: 5
+                                }
+                                onTextChanged: {
+                                    appSettings.hdrDisableCommand = text
+                                    mainWindow.deployHdrScript()
+                                }
+                            }
+                            Button {
+                                objectName: "testHdrDisableButton"
+                                text: "Test"
+                                onClicked: mainWindow.runHdrCommand(hdrDisableCommand.text)
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
+                    }
+
                 }
             }
         }

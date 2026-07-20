@@ -40,6 +40,15 @@ Window {
         property string volumeDownHotkey: "Down"
     }
 
+    Settings {
+        id: playbackSettings
+        category: "Playback"
+        location: isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
+        property bool autoToggleHdr: false
+        property string hdrEnableCommand: "kscreen-doctor output.DP-1.hdr.enable output.DP-1.wcg.enable"
+        property string hdrDisableCommand: "kscreen-doctor output.DP-1.hdr.disable output.DP-1.wcg.disable"
+    }
+
     QtObject {
         id: appSettings
         property alias serverUrl: loginSettings.serverUrl
@@ -49,6 +58,9 @@ Window {
         property alias playPauseHotkey: hotkeySettings.playPauseHotkey
         property alias volumeUpHotkey: hotkeySettings.volumeUpHotkey
         property alias volumeDownHotkey: hotkeySettings.volumeDownHotkey
+        property alias autoToggleHdr: playbackSettings.autoToggleHdr
+        property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
+        property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
     }
 
     property string serverUrl: appSettings.serverUrl
@@ -101,6 +113,18 @@ Window {
     function closeSettings() {
         settingsWindow.visible = false
         startupLogic()
+    }
+
+    function runHdrCommand(cmd) {
+        if (continueWatchingModel) {
+            continueWatchingModel.executeSystemCommand(cmd);
+        }
+    }
+
+    function deployHdrScript() {
+        if (continueWatchingModel) {
+            continueWatchingModel.deployHdrScript(appSettings.autoToggleHdr, appSettings.hdrEnableCommand, appSettings.hdrDisableCommand);
+        }
     }
     
     function loadLibraryContent(id, title, type) {

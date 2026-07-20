@@ -7,6 +7,10 @@
 #include <QUrl>
 #include <QDebug>
 #include <QProcess>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
+#include <QTextStream>
 
 PlexModel::PlexModel(QObject *parent)
     : QAbstractListModel(parent), m_networkManager(new QNetworkAccessManager(this)) {
@@ -325,4 +329,147 @@ void PlexModel::fetchItemDetails(const QString &serverUrl, const QString &token,
             emit itemDetailsLoaded("{}");
         }
     });
+}
+
+
+void PlexModel::executeSystemCommand(const QString &command) {
+    if (command.isEmpty()) return;
+    
+    QString actualCommand = command;
+    if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
+        if (!actualCommand.startsWith("flatpak-spawn")) {
+            actualCommand = "flatpak-spawn --host " + command;
+        }
+    }
+    
+    QProcess process;
+    QStringList args = actualCommand.split(" ", Qt::SkipEmptyParts);
+    QString prog = args.takeFirst();
+    process.start(prog, args);
+    process.waitForFinished();
+    
+    QString output = process.readAllStandardOutput();
+    QString error = process.readAllStandardError();
+    
+    qDebug() << "[SystemCommand] Executed:" << actualCommand;
+    if (!output.isEmpty()) qDebug() << "[SystemCommand] Output:" << output.trimmed();
+    if (!error.isEmpty()) qDebug() << "[SystemCommand] Error:" << error.trimmed();
+}
+
+void PlexModel::deployHdrScript(bool enable, const QString &enableCmd, const QString &disableCmd) {
+    qDebug() << "[DeployHdrScript] Called with enable:" << enable << "enableCmd:" << enableCmd << "disableCmd:" << disableCmd;
+    QString configDir;
+    if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
+        configDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.var/app/" + qEnvironmentVariable("FLATPAK_ID") + "/config/flex-player/mpv/scripts";
+    } else {
+        configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv/scripts";
+    }
+    
+    QDir dir(configDir);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    
+    QString scriptPath = configDir + "/kde-hdr-toggle.lua";
+    
+    if (!enable) {
+        if (QFile::exists(scriptPath)) {
+            QFile::remove(scriptPath);
+            qDebug() << "[DeployHdrScript] Removed script:" << scriptPath;
+        } else {
+            qDebug() << "[DeployHdrScript] Script not found for removal.";
+        }
+        return;
+    }
+    
+    QString luaContent = R"(
+-- Auto-generated HDR toggle script
+local mp = require 'mp'
+
+local hdr_was_enabled = false
+local current_file_is_hdr = false
+
+local function split_by_space(str)
+    local result = {}
+    for word in string.gmatch(str, "%S+") do
+        table.insert(result, word)
+    end
+    return result
+end
+
+local function execute_command(cmd)
+    local actual_cmd = cmd
+    local is_flatpak = os.getenv("FLATPAK_ID")
+    if is_flatpak and not string.match(actual_cmd, "^flatpak%-spawn") then
+        actual_cmd = "flatpak-spawn --host " .. cmd
+    end
+    print("[HDR-TOGGLE] Executing: " .. actual_cmd)
+    
+    local args_table = split_by_space(actual_cmd)
+    
+    mp.command_native({
+        name = "subprocess",
+        playback_only = false,
+        args = args_table
+    })
+end
+
+local function check_hdr(name, value)
+    local v_out = mp.get_property_native("video-out-params")
+    local v_params = mp.get_property_native("video-params")
+    
+    local primaries = ""
+    local gamma = ""
+
+    if v_out then
+        primaries = v_out["primaries"] or ""
+        gamma = v_out["gamma"] or ""
+    end
+
+    if primaries == "" and v_params then
+        primaries = v_params["primaries"] or ""
+    end
+    if gamma == "" and v_params then
+        gamma = v_params["gamma"] or ""
+    end
+
+    local is_hdr = false
+    if primaries == "bt.2020" or gamma == "pq" or gamma == "hlg" then
+        is_hdr = true
+    end
+    
+    if is_hdr and not current_file_is_hdr then
+        print("[HDR-TOGGLE] >>> HDR video detected! Enabling System HDR... <<<")
+        execute_command("%1")
+        hdr_was_enabled = true
+        current_file_is_hdr = true
+    elseif not is_hdr and current_file_is_hdr then
+        print("[HDR-TOGGLE] >>> SDR video detected. Disabling System HDR... <<<")
+        execute_command("%2")
+        current_file_is_hdr = false
+    end
+end
+
+mp.observe_property("video-params", "native", check_hdr)
+mp.observe_property("video-out-params", "native", check_hdr)
+
+mp.register_event("shutdown", function()
+    if hdr_was_enabled then
+        print("[HDR-TOGGLE] >>> Disabling System HDR on exit... <<<")
+        execute_command("%2")
+    end
+end)
+)";
+    
+    luaContent = luaContent.arg(enableCmd, disableCmd);
+    
+    QFile file(scriptPath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << luaContent;
+        file.close();
+        qDebug() << "[DeployHdrScript] Successfully wrote script to:" << scriptPath;
+    } else {
+        qDebug() << "[DeployHdrScript] Failed to write script to:" << scriptPath;
+    }
 }
