@@ -11,10 +11,22 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusConnection>
 
 PlexModel::PlexModel(QObject *parent)
     : QAbstractListModel(parent), m_networkManager(new QNetworkAccessManager(this)) {
 }
+bool PlexModel::isFlatpak() const {
+    return qEnvironmentVariableIsSet("FLATPAK_ID");
+}
+
+bool PlexModel::hasFlatpakSpawnPermission() const {
+    if (!isFlatpak()) return true;
+    QDBusInterface iface("org.freedesktop.Flatpak", "/org/freedesktop/Flatpak", "org.freedesktop.Flatpak", QDBusConnection::sessionBus());
+    return iface.isValid();
+}
+
 
 int PlexModel::rowCount(const QModelIndex &parent) const {
     if (parent.isValid()) return 0;

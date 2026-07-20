@@ -1,16 +1,16 @@
 {
     "app-id": "org.flexplayer.FlexPlayer",
     "runtime": "org.kde.Platform",
-    "runtime-version": "6.8",
+    "runtime-version": "6.11",
     "sdk": "org.kde.Sdk",
     "command": "flex_player_app",
     "finish-args": [
         "--share=network",
-        "--socket=wayland",
         "--socket=fallback-x11",
+        "--socket=wayland",
         "--socket=pulseaudio",
         "--device=dri",
-        "--talk-name=org.freedesktop.Flatpak"
+        "--share=ipc"
     ],
     "modules": [
         {
@@ -72,8 +72,8 @@
                 {
                     "type": "git",
                     "url": "https://github.com/haasn/libplacebo.git",
-                    "tag": "v7.349.0",
-                    "commit": "1fd3c7bde7b943fe8985c893310b5269a09b46c5"
+                    "tag": "v7.360.1",
+                    "commit": "cee9b076f2c63104ccfd497fa79c39a867293ec4"
                 }
             ]
         },
@@ -111,5 +111,8 @@
                 }
             ]
         }
-    ]
+    ],
+    "x-metadata": {
+        "homepage": "https://github.com/danilovsergei/flex-player"
+    }
 }

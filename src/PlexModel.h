@@ -27,6 +27,8 @@ struct Movie {
 
 class PlexModel : public QAbstractListModel {
     Q_OBJECT
+    Q_PROPERTY(bool isFlatpak READ isFlatpak CONSTANT)
+    Q_PROPERTY(bool hasFlatpakSpawnPermission READ hasFlatpakSpawnPermission CONSTANT)
 public:
     enum MovieRoles {
         TitleRole = Qt::UserRole + 1,
@@ -47,6 +49,9 @@ public:
     };
 
     explicit PlexModel(QObject *parent = nullptr);
+
+    bool isFlatpak() const;
+    bool hasFlatpakSpawnPermission() const;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -75,3 +80,4 @@ private:
     QString m_serverUrl;
     QString m_token;
 };
+
