@@ -29,6 +29,7 @@ Item {
         }
 
         Rectangle {
+            id: titleRect
             anchors.bottom: parent.bottom
             width: parent.width
             height: {
@@ -36,11 +37,6 @@ Item {
                 return (mType === "show" || mType === "season") ? 50 : 40
             }
             color: "#cc000000"
-
-            HoverHandler {
-                id: titleHover
-                objectName: "titleHover"
-            }
 
             Column {
                 anchors.centerIn: parent
@@ -175,19 +171,28 @@ Item {
         id: posterToolTip
         objectName: "posterToolTip"
         parent: Overlay.overlay
+        z: 1000
         x: posterMouseArea.mapToItem(null, posterMouseArea.mouseX, posterMouseArea.mouseY).x + 15
         y: posterMouseArea.mapToItem(null, posterMouseArea.mouseX, posterMouseArea.mouseY).y + 15
-        visible: titleHover.hovered
+        visible: posterMouseArea.containsMouse && posterMouseArea.mouseY >= (root.height - titleRect.height)
         delay: 500
         text: posterTitleText.text
-        padding: 8
+        
+        padding: 10
+        width: toolTipText.implicitWidth + leftPadding + rightPadding
+        height: toolTipText.implicitHeight + topPadding + bottomPadding
+
         contentItem: Text {
+            id: toolTipText
             text: posterToolTip.text
             color: plexOrange
             font.pixelSize: 14
             font.bold: true
+            wrapMode: Text.NoWrap
         }
+        
         background: Rectangle {
+            anchors.fill: parent
             color: "black"
             radius: 4
             border.color: "#444444"
