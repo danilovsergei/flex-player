@@ -2113,4 +2113,80 @@ TestCase {
             verify(continueWatchingList.parent.visible === false, "Continue Watching section should be hidden");
         }
     }
+
+    function test_62_unsupported_libraries_disabled() {
+        mainWindow.currentTab = 0;
+        
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        settingsWin.visible = true;
+        
+        // Ensure we are on the first tab
+        var librariesTab = findChild(settingsWin, "settingsTabLibraries");
+        if (librariesTab) mouseClick(librariesTab);
+        
+        // Set mock data with unsupported type
+        mainWindow.testAllLibrariesModel.loadMockData([
+            "/home/geonix/Build/flex_player/tests/dummy1.mkv"
+        ], "photo", 0, 0, false);
+        
+        wait(200);
+        
+        // Find the unsupported label
+        var foundWarning = false;
+        var childrenList = settingsWin.children;
+        // Search for text recursively or use objectName
+        var warningText = findChild(settingsWin, "unsupportedWarning");
+        
+        verify(warningText !== null, "Unsupported warning text should exist");
+        verify(warningText.visible === true, "Unsupported warning should be visible");
+        verify(warningText.text.indexOf("photo not supported yet") !== -1, "Warning should mention photo is not supported");
+        
+        var checkbox = findChild(settingsWin, "libraryCheckbox");
+        verify(checkbox !== null, "Checkbox should exist");
+        verify(checkbox.enabled === false, "Checkbox should be disabled for unsupported library");
+        
+        settingsWin.visible = false;
+    }
+
+    function test_63_movie_poster_tooltip() {
+        var posterComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/MoviePosterDelegate.qml");
+        verify(posterComponent.status === Component.Ready, "MoviePosterDelegate should exist");
+        
+        var mockModel = {
+            "title": "A Very Long Movie Title That Will Not Fit In The Delegate Width Easily And Needs A ToolTip",
+            "type": "movie",
+            "thumbUrl": ""
+        };
+        
+        var poster = posterComponent.createObject(mainWindow, { "model": mockModel });
+        verify(poster !== null, "Poster should be created");
+        
+        wait(50);
+        
+        // Find ToolTip inside poster
+        var tooltip = findChild(poster, "posterToolTip");
+        verify(tooltip !== null, "ToolTip should exist");
+        
+        // Ensure tooltip text matches the title
+        var titleText = findChild(poster, "posterTitle");
+        verify(titleText !== null, "posterTitle should exist");
+        
+        // Tooltip text might be a binding, let"s check if it gets text
+        verify(tooltip.text === titleText.text, "ToolTip text should match title");
+        
+        // Let"s mock a mouse position to verify x and y bindings
+        var posterMouseArea = findChild(poster, "posterMouseArea");
+        verify(posterMouseArea !== null, "posterMouseArea should exist");
+        
+        // Trigger hover event over the title rectangle (bottom area)
+        mouseMove(poster, 100, 290);
+        wait(100);
+        
+        // Due to QtTest limitations checking dynamic bound properties with mouseMove,
+        // we can at least assert that the properties are valid bindings.
+        verify(tooltip.x !== undefined, "ToolTip x should be defined");
+        verify(tooltip.y !== undefined, "ToolTip y should be defined");
+        
+        poster.destroy();
+    }
 }

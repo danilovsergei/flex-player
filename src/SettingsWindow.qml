@@ -473,6 +473,8 @@ Rectangle {
                                 
                                 CheckBox {
                                     id: libCheckbox
+                                    objectName: "libraryCheckbox"
+                                    enabled: model.type === "movie" || model.type === "show"
                                     checked: librariesTabCol.localLibrariesMap[model.ratingKey] !== undefined && librariesTabCol.localLibrariesMap[model.ratingKey] !== null && librariesTabCol.localLibrariesMap[model.ratingKey] !== false
                                     onClicked: {
                                         var map = librariesTabCol.localLibrariesMap;
@@ -487,8 +489,18 @@ Rectangle {
                                 
                                 Text {
                                     text: getLibraryIcon(model.type) + " " + model.title + " (" + model.type + ")"
-                                    color: "white"
+                                    color: (model.type === "movie" || model.type === "show") ? "white" : "gray"
                                     font.pixelSize: 18
+                                    Layout.fillWidth: (model.type === "movie" || model.type === "show")
+                                }
+                                
+                                Text {
+                                    objectName: "unsupportedWarning"
+                                    text: model.type + " not supported yet."
+                                    color: "#FF5252"
+                                    font.pixelSize: 14
+                                    font.italic: true
+                                    visible: model.type !== "movie" && model.type !== "show"
                                     Layout.fillWidth: true
                                 }
                             }

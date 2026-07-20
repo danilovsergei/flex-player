@@ -37,11 +37,17 @@ Item {
             }
             color: "#cc000000"
 
+            HoverHandler {
+                id: titleHover
+                objectName: "titleHover"
+            }
+
             Column {
                 anchors.centerIn: parent
                 width: parent.width - 10
                 
                 Text {
+                    id: posterTitleText
                     objectName: "posterTitle"
                     width: parent.width
                     text: {
@@ -162,6 +168,30 @@ Item {
                 var mRatingKey = typeof model !== 'undefined' && typeof model.ratingKey !== 'undefined' ? model.ratingKey : ratingKey
                 root.openDetails(mRatingKey)
             }
+        }
+    }
+
+    ToolTip {
+        id: posterToolTip
+        objectName: "posterToolTip"
+        parent: Overlay.overlay
+        x: posterMouseArea.mapToItem(null, posterMouseArea.mouseX, posterMouseArea.mouseY).x + 15
+        y: posterMouseArea.mapToItem(null, posterMouseArea.mouseX, posterMouseArea.mouseY).y + 15
+        visible: titleHover.hovered
+        delay: 500
+        text: posterTitleText.text
+        padding: 8
+        contentItem: Text {
+            text: posterToolTip.text
+            color: plexOrange
+            font.pixelSize: 14
+            font.bold: true
+        }
+        background: Rectangle {
+            color: "black"
+            radius: 4
+            border.color: "#444444"
+            border.width: 1
         }
     }
 
