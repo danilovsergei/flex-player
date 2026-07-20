@@ -30,11 +30,25 @@ Window {
         property string enabledLibraries: "{}"
     }
 
+    Settings {
+        id: hotkeySettings
+        category: "Hotkeys"
+        location: isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
+        property string fullscreenHotkey: "f"
+        property string playPauseHotkey: "Space"
+        property string volumeUpHotkey: "Up"
+        property string volumeDownHotkey: "Down"
+    }
+
     QtObject {
         id: appSettings
         property alias serverUrl: loginSettings.serverUrl
         property alias token: loginSettings.token
         property alias enabledLibraries: librarySettings.enabledLibraries
+        property alias fullscreenHotkey: hotkeySettings.fullscreenHotkey
+        property alias playPauseHotkey: hotkeySettings.playPauseHotkey
+        property alias volumeUpHotkey: hotkeySettings.volumeUpHotkey
+        property alias volumeDownHotkey: hotkeySettings.volumeDownHotkey
     }
 
     property string serverUrl: appSettings.serverUrl
@@ -162,8 +176,35 @@ Window {
     }
 
     Shortcut {
-        sequence: "f"
+        sequence: appSettings.fullscreenHotkey
         onActivated: toggleFullScreen()
+    }
+    
+    Shortcut {
+        sequence: appSettings.playPauseHotkey
+        onActivated: {
+            if (playerView.visible) {
+                playerView.mpvObject.paused = !playerView.mpvObject.paused;
+            }
+        }
+    }
+    
+    Shortcut {
+        sequence: appSettings.volumeUpHotkey
+        onActivated: {
+            if (playerView.visible) {
+                playerView.mpvObject.volume = Math.min(100, playerView.mpvObject.volume + 5);
+            }
+        }
+    }
+    
+    Shortcut {
+        sequence: appSettings.volumeDownHotkey
+        onActivated: {
+            if (playerView.visible) {
+                playerView.mpvObject.volume = Math.max(0, playerView.mpvObject.volume - 5);
+            }
+        }
     }
 
     // Expose models for testing

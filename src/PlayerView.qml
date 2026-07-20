@@ -21,6 +21,7 @@ Item {
         property var mediaStreams: []
         property string currentAudioId: "auto"
         property string currentSubId: "no"
+        property alias mpvObject: mpvObject
 
 
         signal playbackStopped()

@@ -190,6 +190,20 @@ Rectangle {
                         background: Rectangle { color: "transparent" }
                         onClicked: parent.settingsTab = 1
                     }
+                    
+                    Button {
+                        text: "Hotkeys"
+                        objectName: "settingsTabHotkeys"
+                        Layout.fillWidth: true
+                        contentItem: Text {
+                            text: parent.text
+                            color: parent.parent.settingsTab === 2 ? "#E5A00D" : "white"
+                            font.pixelSize: 18
+                            font.bold: parent.parent.settingsTab === 2
+                        }
+                        background: Rectangle { color: "transparent" }
+                        onClicked: parent.settingsTab = 2
+                    }
 
                     Item { Layout.fillHeight: true }
                 }
@@ -483,6 +497,269 @@ Rectangle {
                                 }
                             }
                         }
+                    } // END TAB 1
+                    
+                    // TAB 2: HOTKEYS
+                    ColumnLayout {
+                        spacing: 20
+                        
+                        Text {
+                            text: "Hotkeys"
+                            color: "white"
+                            font.pixelSize: 28
+                            font.bold: true
+                            Layout.bottomMargin: 20
+                        }
+                        
+                        // Header Row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
+                            Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
+                            Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
+                            Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
+                        }
+                        
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            height: 1
+                            color: "#444444"
+                        }
+                        
+                        // Row 1: Toggle Full Screen
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Toggle Full Screen"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Enter/Exit full screen video playback"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: fsHotkeyText
+                                objectName: "fsHotkeyText"
+                                text: appSettings.fullscreenHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setFsHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "fullscreen"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+                        
+                        // Row 2: Toggle Play/Pause
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Toggle Play/Pause"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Play or pause the active video"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: ppHotkeyText
+                                objectName: "ppHotkeyText"
+                                text: appSettings.playPauseHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setPpHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "playpause"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+                        
+                        // Row 3: Increase Volume
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Increase Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Increase the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: volUpHotkeyText
+                                objectName: "volUpHotkeyText"
+                                text: appSettings.volumeUpHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setVolUpHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "volup"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+                        
+                        // Row 4: Decrease Volume
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 800
+                            spacing: 20
+                            
+                            Text { text: "Decrease Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Decrease the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: volDownHotkeyText
+                                objectName: "volDownHotkeyText"
+                                text: appSettings.volumeDownHotkey 
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            
+                            Button {
+                                text: "Set"
+                                objectName: "setVolDownHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: {
+                                    hotkeyOverlay.actionToBind = "voldown"
+                                    hotkeyOverlay.visible = true
+                                    hotkeyOverlay.forceActiveFocus()
+                                }
+                            }
+                        }
+                        
+                        Item { Layout.fillHeight: true }
+                    } // END TAB 2: HOTKEYS
+                }
+            }
+        }
+        
+        // Hotkey Capture Overlay
+        Rectangle {
+            id: hotkeyOverlay
+            objectName: "hotkeyOverlay"
+            anchors.fill: parent
+            color: "#E6000000"
+            visible: false
+            z: 200
+            
+            property string actionToBind: ""
+            
+            // It needs focus to capture keys
+            focus: visible
+            
+            function bindKey(newKey) {
+                if (!newKey || newKey === "") return;
+                if (actionToBind === "fullscreen") {
+                    appSettings.fullscreenHotkey = newKey;
+                } else if (actionToBind === "playpause") {
+                    appSettings.playPauseHotkey = newKey;
+                } else if (actionToBind === "volup") {
+                    appSettings.volumeUpHotkey = newKey;
+                } else if (actionToBind === "voldown") {
+                    appSettings.volumeDownHotkey = newKey;
+                }
+                visible = false;
+            }
+
+            Keys.onPressed: function(event) {
+                // Ignore modifier keys alone
+                if (event.key === Qt.Key_Shift || event.key === Qt.Key_Control || event.key === Qt.Key_Alt || event.key === Qt.Key_Meta) {
+                    return;
+                }
+                
+                if (event.key === Qt.Key_Escape) {
+                    hotkeyOverlay.visible = false;
+                    event.accepted = true;
+                    return;
+                }
+                
+                var keyStr = "";
+                if (event.modifiers & Qt.ControlModifier) keyStr += "Ctrl+";
+                if (event.modifiers & Qt.AltModifier) keyStr += "Alt+";
+                if (event.modifiers & Qt.ShiftModifier) keyStr += "Shift+";
+                if (event.modifiers & Qt.MetaModifier) keyStr += "Meta+";
+                
+                var baseKey = "";
+                if (event.key === Qt.Key_Space) baseKey = "Space";
+                else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) baseKey = "Return";
+                else if (event.key === Qt.Key_Tab) baseKey = "Tab";
+                else if (event.key === Qt.Key_Backspace) baseKey = "Backspace";
+                else if (event.key === Qt.Key_Delete) baseKey = "Delete";
+                else if (event.key === Qt.Key_Up) baseKey = "Up";
+                else if (event.key === Qt.Key_Down) baseKey = "Down";
+                else if (event.key === Qt.Key_Left) baseKey = "Left";
+                else if (event.key === Qt.Key_Right) baseKey = "Right";
+                else if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F35) {
+                    baseKey = "F" + (event.key - Qt.Key_F1 + 1);
+                } else if (event.key >= 0x20 && event.key <= 0x0ff) {
+                    baseKey = String.fromCharCode(event.key).toUpperCase();
+                } else if (event.text !== "") {
+                    baseKey = event.text.toUpperCase();
+                }
+                
+                if (baseKey === "") return;
+                
+                bindKey(keyStr + baseKey);
+                event.accepted = true;
+            }
+            
+            MouseArea { anchors.fill: parent } // Block clicks
+            
+            Column {
+                anchors.centerIn: parent
+                spacing: 20
+                
+                Text {
+                    text: "Listening for key press..."
+                    color: "white"
+                    font.pixelSize: 32
+                    font.bold: true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+                
+                Text {
+                    text: "Press any key to assign it to this action.\nPress ESC to cancel."
+                    color: "gray"
+                    font.pixelSize: 18
+                    horizontalAlignment: Text.AlignHCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+                
+                Button {
+                    text: "Cancel"
+                    objectName: "cancelHotkeyBtn"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { implicitWidth: 120; implicitHeight: 40; color: "#444444"; radius: 6 }
+                    onClicked: {
+                        hotkeyOverlay.visible = false
                     }
                 }
             }

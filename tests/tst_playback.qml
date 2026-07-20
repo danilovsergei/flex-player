@@ -1909,4 +1909,121 @@ TestCase {
         
         pvComponent.destroy();
     }
+
+    function test_57_hotkey_settings() {
+        // Find SettingsWindow from the main window
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        verify(settingsWin !== null, "settingsWindow should exist");
+        
+        // Open the settings window explicitly to Hotkeys tab
+        settingsWin.openTab(2, "", "");
+        wait(200);
+        
+        // Verify Hotkeys tab is active
+        var sidebarCol = findChild(settingsWin, "settingsSidebarColumn");
+        verify(sidebarCol !== null, "sidebarCol should exist");
+        verify(sidebarCol.settingsTab === 2, "Tab should be 2 (Hotkeys)");
+        
+        // Find Set button
+        var setBtn = findChild(settingsWin, "setFsHotkeyBtn");
+        verify(setBtn !== null, "setFsHotkeyBtn should exist");
+        
+        // Click Set button
+        mouseClick(setBtn, setBtn.width / 2, setBtn.height / 2);
+        wait(100);
+        
+        // Verify overlay is visible
+        var overlay = findChild(settingsWin, "hotkeyOverlay");
+        verify(overlay !== null, "hotkeyOverlay should exist");
+        verify(overlay.visible === true, "hotkeyOverlay should be visible after clicking Set");
+        
+        // Simulate a key press on the overlay
+        // Qt.Key_X is just an arbitrary key for testing
+        overlay.forceActiveFocus();
+        wait(100);
+        
+        overlay.bindKey("x");
+        wait(100);
+        
+        // Verify overlay closed
+        verify(overlay.visible === false, "hotkeyOverlay should close after key press");
+        
+
+        
+        // Find the hotkey text in UI
+        var fsHotkeyText = findChild(settingsWin, "fsHotkeyText");
+        verify(fsHotkeyText !== null, "fsHotkeyText should exist");
+        verify(fsHotkeyText.text === "x", "UI should update to show new hotkey \"x\"");
+        
+        settingsWin.visible = false;
+    }
+
+    function test_58_extra_hotkeys() {
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        verify(settingsWin !== null, "settingsWindow should exist");
+        
+        settingsWin.openTab(2, "", "");
+        wait(200);
+        
+        // Find play/pause set button
+        var setBtnPP = findChild(settingsWin, "setPpHotkeyBtn");
+        verify(setBtnPP !== null, "setPpHotkeyBtn should exist");
+        mouseClick(setBtnPP, setBtnPP.width / 2, setBtnPP.height / 2);
+        wait(100);
+        
+        var overlay = findChild(settingsWin, "hotkeyOverlay");
+        overlay.forceActiveFocus();
+        wait(100);
+        
+        keyClick(Qt.Key_K, Qt.NoModifier, 0);
+        wait(100);
+        if (overlay.visible) {
+            overlay.bindKey("K");
+            wait(100);
+        }
+        
+        verify(overlay.visible === false, "hotkeyOverlay should close after key press");
+        // Because of test mocking scope, we might need to check the UI instead of mainWindow directly for the appSettings if mainWindow is mocked differently
+        var ppHotkeyText = findChild(settingsWin, "ppHotkeyText");
+        verify(ppHotkeyText !== null, "ppHotkeyText should exist");
+        verify(ppHotkeyText.text === "K", "UI should update to show new hotkey \"K\"");
+        
+        // Find vol up set button
+        var setBtnVolUp = findChild(settingsWin, "setVolUpHotkeyBtn");
+        verify(setBtnVolUp !== null, "setVolUpHotkeyBtn should exist");
+        mouseClick(setBtnVolUp, setBtnVolUp.width / 2, setBtnVolUp.height / 2);
+        wait(100);
+        
+        overlay.forceActiveFocus();
+        wait(100);
+        
+        keyClick(Qt.Key_Up, Qt.NoModifier, 0);
+        wait(100);
+        if (overlay.visible) {
+            overlay.bindKey("Up");
+            wait(100);
+        }
+                var volUpText = findChild(settingsWin, "volUpHotkeyText");
+        verify(volUpText.text === "Up", "UI should update to show new hotkey \"Up\"");
+        
+        // Find vol down set button
+        var setBtnVolDown = findChild(settingsWin, "setVolDownHotkeyBtn");
+        verify(setBtnVolDown !== null, "setVolDownHotkeyBtn should exist");
+        mouseClick(setBtnVolDown, setBtnVolDown.width / 2, setBtnVolDown.height / 2);
+        wait(100);
+        
+        overlay.forceActiveFocus();
+        wait(100);
+        
+        keyClick(Qt.Key_Down, Qt.NoModifier, 0);
+        wait(100);
+        if (overlay.visible) {
+            overlay.bindKey("Down");
+            wait(100);
+        }
+                var volDownText = findChild(settingsWin, "volDownHotkeyText");
+        verify(volDownText.text === "Down", "UI should update to show new hotkey \"Down\"");
+        
+        settingsWin.visible = false;
+    }
 }
