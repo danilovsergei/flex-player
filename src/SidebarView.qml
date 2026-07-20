@@ -19,13 +19,25 @@ Rectangle {
                     anchors.margins: mainWindow.sidebarCollapsed ? 10 : 20
                     spacing: 15
 
-                    Text {
-                        text: mainWindow.sidebarCollapsed ? "F" : "FLEX"
-                        color: mainWindow.plexOrange
-                        font.pixelSize: mainWindow.sidebarCollapsed ? 20 : 28
-                        font.bold: true
+                    RowLayout {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.bottomMargin: 30
+                        spacing: 10
+                        
+                        Image {
+                            source: "qrc:/flex_player/assets/flex_icon.svg"
+                            sourceSize.width: mainWindow.sidebarCollapsed ? 48 : 64
+                            sourceSize.height: mainWindow.sidebarCollapsed ? 48 : 64
+                            fillMode: Image.PreserveAspectFit
+                        }
+                        
+                        Text {
+                            text: "FLEX"
+                            color: mainWindow.plexOrange
+                            font.pixelSize: 28
+                            font.bold: true
+                            visible: !mainWindow.sidebarCollapsed
+                        }
                     }
 
                     Button {

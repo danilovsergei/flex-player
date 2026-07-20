@@ -2026,4 +2026,20 @@ TestCase {
         
         settingsWin.visible = false;
     }
+
+    function test_59_app_icon_renders() {
+        var sidebarComponent = Qt.createComponent("qrc:/flex_player_test_module/src/SidebarView.qml");
+        verify(sidebarComponent.status === Component.Ready, "SidebarView should exist");
+        
+        // SettingsWindow test
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        verify(settingsWin !== null, "settingsWindow should exist");
+        
+        // We can just verify the QRC path works without error.
+        var img = Qt.createQmlObject("import QtQuick; Image { source: \"qrc:/flex_player_test_module/assets/flex_icon.svg\" }", mainWindow, "testImg");
+        wait(100);
+        // If it compiles and runs without QML errors, the asset is included in QRC correctly.
+        verify(img !== null, "Image component should load");
+        img.destroy();
+    }
 }

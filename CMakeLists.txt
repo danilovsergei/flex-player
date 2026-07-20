@@ -32,7 +32,7 @@ qt_add_qml_module(flex_player_app
     VERSION 1.0
     QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
     src/MovieDetailsView.qml src/DetailsCastList.qml src/SeriesDetailsView.qml src/SeasonDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
-    RESOURCES assets/imdb_logo.svg
+    RESOURCES assets/imdb_logo.svg assets/flex_icon.svg
 )
 
 target_include_directories(flex_player_app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${MPV_INCLUDE_DIRS} /usr/include/qt6/QtGui/6.11.1)
@@ -47,7 +47,7 @@ qt_add_qml_module(flex_player_test
     VERSION 1.0
     QML_FILES src/Main.qml src/SettingsWindow.qml src/PlayerView.qml src/SidebarView.qml src/LibraryRail.qml src/MoviePosterDelegate.qml
     src/MovieDetailsView.qml src/DetailsCastList.qml src/SeriesDetailsView.qml src/SeasonDetailsView.qml src/LibraryRecommendView.qml src/CollectionMoviesView.qml src/HomeView.qml
-    RESOURCES assets/imdb_logo.svg
+    RESOURCES assets/imdb_logo.svg assets/flex_icon.svg
 )
 
 target_include_directories(flex_player_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${MPV_INCLUDE_DIRS} /usr/include/qt6/QtGui/6.11.1)

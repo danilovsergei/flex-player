@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSurfaceFormat>
@@ -16,6 +17,8 @@ int main(int argc, char *argv[])
     QSurfaceFormat::setDefaultFormat(format);
 
     QGuiApplication app(argc, argv);
+    app.setDesktopFileName("org.flexplayer.FlexPlayer");
+    app.setWindowIcon(QIcon(":/flex_player/assets/flex_icon.svg"));
 
     // libmpv requires LC_NUMERIC to be "C". 
     // Must be called AFTER QGuiApplication, as Qt resets it.

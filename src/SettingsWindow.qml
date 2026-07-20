@@ -152,13 +152,26 @@ Rectangle {
                         onClicked: closeSettings()
                     }
 
-                    Text {
-                        text: "SETTINGS"
-                        color: "#E5A00D" // plexOrange
-                        font.pixelSize: 24
-                        font.bold: true
+                    ColumnLayout {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.bottomMargin: 20
+                        spacing: 10
+                        
+                        Image {
+                            source: "qrc:/flex_player/assets/flex_icon.svg"
+                            sourceSize.width: 64
+                            sourceSize.height: 64
+                            fillMode: Image.PreserveAspectFit
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                        
+                        Text {
+                            text: "SETTINGS"
+                            color: "#E5A00D" // plexOrange
+                            font.pixelSize: 24
+                            font.bold: true
+                            Layout.alignment: Qt.AlignHCenter
+                        }
                     }
 
                     property int settingsTab: 0
