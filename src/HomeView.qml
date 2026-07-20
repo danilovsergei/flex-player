@@ -23,6 +23,7 @@ ScrollView {
         spacing: 20
 
         Item {
+            id: emptyStateView
             objectName: "emptyStateView"
             Layout.fillWidth: true
             Layout.preferredHeight: 300
@@ -64,20 +65,22 @@ ScrollView {
         }
 
         Text {
+            objectName: "continueWatchingHeader"
             text: "Continue Watching"
             color: "white"
             font.pixelSize: 22
             font.bold: true
             Layout.topMargin: 20
             Layout.leftMargin: 20
-            visible: continueWatchingList.count > 0
+            visible: continueWatchingList.count > 0 && !emptyStateView.visible
         }
 
         Item {
+            objectName: "continueWatchingContainer"
             Layout.fillWidth: true
             Layout.preferredHeight: 330
             Layout.leftMargin: 20
-            visible: continueWatchingList.count > 0
+            visible: continueWatchingList.count > 0 && !emptyStateView.visible
 
             ListView {
                 id: continueWatchingList

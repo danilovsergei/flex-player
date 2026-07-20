@@ -2076,4 +2076,41 @@ TestCase {
         
         settingsWin.visible = false;
     }
+
+    function test_61_home_continue_watching_hidden_when_no_libraries() {
+        mainWindow.testAppSettings.serverUrl = "";
+        mainWindow.testAppSettings.token = "";
+        mainWindow.testAppSettings.enabledLibraries = "{}";
+        mainWindow.startupLogic();
+        
+        // ensure mock models are cleared
+        mainWindow.testContinueWatchingModel.loadMockData([], "");
+        
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        settingsWin.visible = true;
+        wait(50);
+        
+        var serverUrlField = findChild(settingsWin, "serverUrlField");
+        var tokenField = findChild(settingsWin, "tokenField");
+        var checkConnectionButton = findChild(settingsWin, "checkConnectionButton");
+        var saveSettingsButton = findChild(settingsWin, "saveSettingsButton");
+        
+        serverUrlField.text = "http://test.url:32400";
+        tokenField.text = "test_token";
+        
+        mouseClick(checkConnectionButton);
+        wait(200);
+        
+        mouseClick(saveSettingsButton);
+        wait(200);
+        
+        var emptyStateView = findChild(mainWindow, "emptyStateView");
+        verify(emptyStateView !== null, "Empty state view should be present");
+        verify(emptyStateView.visible === true, "Empty state view should be visible");
+        
+        var continueWatchingList = findChild(mainWindow, "continueWatchingList");
+        if (continueWatchingList) {
+            verify(continueWatchingList.parent.visible === false, "Continue Watching section should be hidden");
+        }
+    }
 }

@@ -376,12 +376,6 @@ Rectangle {
                                 appSettings.serverUrl = serverUrlField.text
                                 appSettings.token = tokenField.text
                                 closeSettings()
-                                
-                                if (!isTestMode) {
-                                    recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/recentlyAdded")
-                                    continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/onDeck")
-                                    collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/collections")
-                                }
                             }
                         }
 
@@ -520,7 +514,6 @@ Rectangle {
                                 onClicked: {
                                     appSettings.enabledLibraries = JSON.stringify(librariesTabCol.localLibrariesMap);
                                     closeSettings();
-                                    if (!isTestMode) mainWindow.startupLogic();
                                 }
                             }
                         }
