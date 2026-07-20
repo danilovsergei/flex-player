@@ -1862,4 +1862,51 @@ TestCase {
         var castRoot = castListView.parent.parent.parent;
         verify(castRoot.visible === true, "Cast list root should be visible due to inherited data");
     }
+
+    function test_55_continue_watching_episode_details() {
+        var pvComponent = Qt.createComponent("qrc:/flex_player_test_module/src/MovieDetailsView.qml");
+        verify(pvComponent.status === Component.Ready, "MovieDetailsView should exist");
+        var pv = pvComponent.createObject(mainWindow, {"width": 1200, "height": 800, "visible": true});
+        
+        var mockEpisodeJson = {
+            "MediaContainer": {
+                "Metadata": [{
+                    "type": "episode",
+                    "ratingKey": "1000",
+                    "grandparentTitle": "Dinotrux",
+                    "parentIndex": 3,
+                    "index": 16,
+                    "title": "The Big Showdown",
+                    "Role": []
+                }]
+            }
+        };
+        
+        pv.rawJson = JSON.stringify(mockEpisodeJson);
+        wait(300);
+        
+        var titleText = findChild(pv, "detailsTitle");
+        verify(titleText !== null, "detailsTitle should exist");
+        
+        verify(titleText.text === "Dinotrux - S3 E16 - The Big Showdown", "Title should match the format Series - S# E# - Episode Title. Actual: " + titleText.text);
+        
+        pv.destroy();
+    }
+
+    function test_56_poster_episode_titles() {
+        var qml = "import QtQuick\nimport QtQuick.Controls\nimport \"qrc:/flex_player_test_module/src/\" as App\nListView { width: 200; height: 300; model: ListModel { ListElement { type: \"episode\"; ratingKey: \"1000\"; grandparentTitle: \"Dinotrux\"; parentIndex: 3; index: 16; title: \"The Big Showdown\"; thumbUrl: \"\" } }\n delegate: App.MoviePosterDelegate {} }";
+        var pvComponent = Qt.createQmlObject(qml, mainWindow, "test56");
+        
+        wait(200);
+        
+        var pTitle = findChild(pvComponent, "posterTitle");
+        verify(pTitle !== null, "posterTitle should exist");
+        verify(pTitle.text === "Dinotrux - S3", "Top title should be Dinotrux - S3. Actual: " + pTitle.text);
+        
+        var pSubTitle = findChild(pvComponent, "posterSubTitle");
+        verify(pSubTitle !== null, "posterSubTitle should exist");
+        verify(pSubTitle.text === "The Big Showdown - E16", "Bottom title should be The Big Showdown - E16. Actual: " + pSubTitle.text);
+        
+        pvComponent.destroy();
+    }
 }

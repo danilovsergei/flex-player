@@ -17,6 +17,9 @@ struct Movie {
     qint64 duration = 0;   // in milliseconds
     bool isWatched = false;
     QString parentTitle;
+    QString grandparentTitle;
+    int parentIndex = 0;
+    int index = 0;
     int childCount = 0;
     int leafCount = 0;
     int viewedLeafCount = 0;
@@ -35,6 +38,9 @@ public:
         DurationRole,
         IsWatchedRole,
         ParentTitleRole,
+        GrandparentTitleRole,
+        ParentIndexRole,
+        IndexRole,
         ChildCountRole,
         LeafCountRole,
         ViewedLeafCountRole

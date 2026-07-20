@@ -40,6 +40,12 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
         return QVariant::fromValue(movie.isWatched);
     else if (role == ParentTitleRole)
         return movie.parentTitle;
+    else if (role == GrandparentTitleRole)
+        return movie.grandparentTitle;
+    else if (role == ParentIndexRole)
+        return QVariant::fromValue(movie.parentIndex);
+    else if (role == IndexRole)
+        return QVariant::fromValue(movie.index);
     else if (role == ChildCountRole)
         return QVariant::fromValue(movie.childCount);
     else if (role == LeafCountRole)
@@ -61,6 +67,9 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[DurationRole] = "duration";
     roles[IsWatchedRole] = "isWatched";
     roles[ParentTitleRole] = "parentTitle";
+    roles[GrandparentTitleRole] = "grandparentTitle";
+    roles[ParentIndexRole] = "parentIndex";
+    roles[IndexRole] = "index";
     roles[ChildCountRole] = "childCount";
     roles[LeafCountRole] = "leafCount";
     roles[ViewedLeafCountRole] = "viewedLeafCount";
@@ -130,8 +139,11 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         movie.viewOffset = movieObj.contains("viewOffset") ? movieObj["viewOffset"].toVariant().toLongLong() : 0;
         movie.duration = movieObj.contains("duration") ? movieObj["duration"].toVariant().toLongLong() : 0;
         
-        movie.parentTitle = movieObj["parentTitle"].toString();
-        movie.childCount = movieObj.contains("childCount") ? movieObj["childCount"].toInt() : 0;
+        movie.parentTitle = movieObj["parentTitle"].toVariant().toString();
+        movie.grandparentTitle = movieObj["grandparentTitle"].toVariant().toString();
+        movie.parentIndex = movieObj.contains("parentIndex") ? movieObj["parentIndex"].toVariant().toInt() : 0;
+        movie.index = movieObj.contains("index") ? movieObj["index"].toVariant().toInt() : 0;
+        movie.childCount = movieObj.contains("childCount") ? movieObj["childCount"].toVariant().toInt() : 0;
         movie.leafCount = movieObj.contains("leafCount") ? movieObj["leafCount"].toInt() : 0;
         movie.viewedLeafCount = movieObj.contains("viewedLeafCount") ? movieObj["viewedLeafCount"].toInt() : 0;
         

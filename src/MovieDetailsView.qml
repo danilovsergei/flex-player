@@ -101,7 +101,13 @@ Item {
             Text {
                 id: titleText
                 objectName: "detailsTitle"
-                text: detailsData ? detailsData.title : ""
+                text: {
+                    if (!detailsData) return "";
+                    if (detailsData.type === "episode" && detailsData.grandparentTitle) {
+                        return detailsData.grandparentTitle + " - S" + detailsData.parentIndex + " E" + detailsData.index + " - " + detailsData.title;
+                    }
+                    return detailsData.title;
+                }
                 color: "white"
                 font.pixelSize: 42
                 font.bold: true

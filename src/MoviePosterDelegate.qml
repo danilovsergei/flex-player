@@ -42,10 +42,14 @@ Item {
                 width: parent.width - 10
                 
                 Text {
+                    objectName: "posterTitle"
                     width: parent.width
                     text: {
                         var mType = model.type !== undefined ? model.type : type
                         var mTitle = model.title !== undefined ? model.title : title
+                        if (mType === "episode" && model.grandparentTitle) {
+                            return model.grandparentTitle + " - S" + model.parentIndex
+                        }
                         return mType === "season" && model.parentTitle ? model.parentTitle : mTitle
                     }
                     color: "white"
@@ -57,10 +61,14 @@ Item {
                 }
                 
                 Text {
+                    objectName: "posterSubTitle"
                     width: parent.width
                     text: {
                         var mType = model.type !== undefined ? model.type : type
                         var mTitle = model.title !== undefined ? model.title : title
+                        if (mType === "episode") {
+                            return mTitle + " - E" + model.index
+                        }
                         return mType === "season" ? mTitle : (mType === "show" ? model.childCount + " Season" + (model.childCount !== 1 ? "s" : "") : "")
                     }
                     color: "gray"
