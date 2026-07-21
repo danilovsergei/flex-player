@@ -705,7 +705,6 @@ Rectangle {
                                 enabled: !collectionsModel.isFlatpak || collectionsModel.hasFlatpakSpawnPermission
                                 onCheckedChanged: {
                                     appSettings.autoToggleHdr = checked
-                                    mainWindow.deployHdrScript()
                                 }
                                 contentItem: Text {
                                     text: parent.text
@@ -770,7 +769,6 @@ Rectangle {
                                 }
                                 onTextChanged: {
                                     appSettings.hdrEnableCommand = text
-                                    mainWindow.deployHdrScript()
                                 }
                             }
                             Button {
@@ -801,7 +799,6 @@ Rectangle {
                                 }
                                 onTextChanged: {
                                     appSettings.hdrDisableCommand = text
-                                    mainWindow.deployHdrScript()
                                 }
                             }
                             Button {

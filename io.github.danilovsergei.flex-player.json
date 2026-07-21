@@ -10,7 +10,11 @@
         "--socket=wayland",
         "--socket=pulseaudio",
         "--device=dri",
-        "--share=ipc"
+        "--share=ipc",
+        "--talk-name=org.freedesktop.ScreenSaver",
+        "--talk-name=org.freedesktop.PowerManagement",
+        "--talk-name=org.gnome.SessionManager",
+        "--talk-name=org.kde.Solid.PowerManagement"
     ],
     "modules": [
         {
@@ -116,3 +120,4 @@
         "homepage": "https://github.com/danilovsergei/flex-player"
     }
 }
+
