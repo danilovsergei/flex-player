@@ -13,7 +13,7 @@
     <ul>
       <li>Native Wayland support ensuring perfectly smooth playback without X11 overhead</li>
       <li>Proper HDR passthrough to libmpv, with excellent Wayland/HDR support</li>
-      <li>Native Lua scripts to automatically toggle the system HDR state in KDE Plasma when HDR movie playback starts</li>
+      <li>Automated system HDR toggle the system HDR state in KDE Plasma when HDR movie playback starts</li>
       <li>Support for Series and Movies libraries with Watched progress and metadata</li>
       <li>Configurable hotkeys and MPV integration via mpv.conf and custom scripts</li>
     </ul>

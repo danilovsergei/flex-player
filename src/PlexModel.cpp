@@ -17,20 +17,22 @@
 PlexModel::PlexModel(QObject *parent)
     : QAbstractListModel(parent), m_networkManager(new QNetworkAccessManager(this)) {
 }
+
 bool PlexModel::isFlatpak() const {
     return qEnvironmentVariableIsSet("FLATPAK_ID");
-}
-
-void PlexModel::checkPermissions() {
-    emit permissionStatusChanged();
 }
 
 bool PlexModel::hasFlatpakSpawnPermission() const {
     if (!isFlatpak()) return true;
     QDBusInterface iface("org.freedesktop.Flatpak", "/org/freedesktop/Flatpak", "org.freedesktop.Flatpak", QDBusConnection::sessionBus());
-    return iface.isValid();
+    bool valid = iface.isValid();
+    qDebug() << "[PermissionCheck] org.freedesktop.Flatpak valid:" << valid;
+    return valid;
 }
 
+void PlexModel::checkPermissions() {
+    emit permissionStatusChanged();
+}
 
 int PlexModel::rowCount(const QModelIndex &parent) const {
     if (parent.isValid()) return 0;
@@ -42,37 +44,21 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
         return QVariant();
 
     const Movie &movie = m_movies[index.row()];
-    if (role == TitleRole)
-        return movie.title;
-    else if (role == ThumbRole)
-        return movie.thumbUrl;
-    else if (role == MediaUrlRole)
-        return movie.mediaUrl;
-    else if (role == RatingKeyRole)
-        return movie.ratingKey;
-    else if (role == TypeRole)
-        return movie.type;
-    else if (role == ViewOffsetRole)
-        return QVariant::fromValue(movie.viewOffset);
-    else if (role == DurationRole)
-        return QVariant::fromValue(movie.duration);
-    else if (role == IsWatchedRole)
-        return QVariant::fromValue(movie.isWatched);
-    else if (role == ParentTitleRole)
-        return movie.parentTitle;
-    else if (role == GrandparentTitleRole)
-        return movie.grandparentTitle;
-    else if (role == ParentIndexRole)
-        return QVariant::fromValue(movie.parentIndex);
-    else if (role == IndexRole)
-        return QVariant::fromValue(movie.index);
-    else if (role == ChildCountRole)
-        return QVariant::fromValue(movie.childCount);
-    else if (role == LeafCountRole)
-        return QVariant::fromValue(movie.leafCount);
-    else if (role == ViewedLeafCountRole)
-        return QVariant::fromValue(movie.viewedLeafCount);
-
+    if (role == TitleRole) return movie.title;
+    else if (role == ThumbRole) return movie.thumbUrl;
+    else if (role == MediaUrlRole) return movie.mediaUrl;
+    else if (role == RatingKeyRole) return movie.ratingKey;
+    else if (role == TypeRole) return movie.type;
+    else if (role == ViewOffsetRole) return QVariant::fromValue(movie.viewOffset);
+    else if (role == DurationRole) return QVariant::fromValue(movie.duration);
+    else if (role == IsWatchedRole) return QVariant::fromValue(movie.isWatched);
+    else if (role == ParentTitleRole) return movie.parentTitle;
+    else if (role == GrandparentTitleRole) return movie.grandparentTitle;
+    else if (role == ParentIndexRole) return QVariant::fromValue(movie.parentIndex);
+    else if (role == IndexRole) return QVariant::fromValue(movie.index);
+    else if (role == ChildCountRole) return QVariant::fromValue(movie.childCount);
+    else if (role == LeafCountRole) return QVariant::fromValue(movie.leafCount);
+    else if (role == ViewedLeafCountRole) return QVariant::fromValue(movie.viewedLeafCount);
     return QVariant();
 }
 
@@ -97,69 +83,47 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
 }
 
 void PlexModel::fetchEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint) {
-    qDebug() << "[PlexModel] Fetching:" << endpoint;
     m_serverUrl = serverUrl;
     m_token = token;
-    
     QUrl url(m_serverUrl + endpoint);
     QNetworkRequest request(url);
     request.setRawHeader("X-Plex-Token", m_token.toUtf8());
     request.setRawHeader("Accept", "application/json");
-
     QNetworkReply *reply = m_networkManager->get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        onReplyFinished(reply);
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onReplyFinished(reply); });
 }
 
 void PlexModel::playVideo(const QString &mediaUrl) {
     if (mediaUrl.isEmpty()) return;
-    
-    qDebug() << "Playing video:" << mediaUrl;
-    
     QStringList args;
-    args << "--fs" 
-         << "--target-colorspace-hint=yes" 
-         << "--hwdec=auto" 
-         << mediaUrl;
-         
+    args << "--fs" << "--target-colorspace-hint=yes" << "--hwdec=auto" << mediaUrl;
     QProcess::startDetached("mpv", args);
 }
 
 void PlexModel::onReplyFinished(QNetworkReply *reply) {
     if (reply->error() != QNetworkReply::NoError) {
-        qWarning() << "Network Error:" << reply->errorString();
         reply->deleteLater();
         return;
     }
-
-    QByteArray response = reply->readAll();
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
     if (!jsonDoc.isObject()) {
         reply->deleteLater();
         return;
     }
-
-    QJsonObject rootObj = jsonDoc.object();
-    QJsonObject mediaContainer = rootObj["MediaContainer"].toObject();
+    QJsonObject mediaContainer = jsonDoc.object()["MediaContainer"].toObject();
     QJsonArray metadataArray = mediaContainer["Metadata"].toArray();
-    if (metadataArray.isEmpty()) {
-        metadataArray = mediaContainer["Directory"].toArray();
-    }
+    if (metadataArray.isEmpty()) metadataArray = mediaContainer["Directory"].toArray();
 
     beginResetModel();
     m_movies.clear();
-
     for (const QJsonValue &value : metadataArray) {
         QJsonObject movieObj = value.toObject();
         Movie movie;
         movie.title = movieObj["title"].toString();
         movie.ratingKey = movieObj.contains("ratingKey") ? movieObj["ratingKey"].toString() : movieObj["key"].toString();
         movie.type = movieObj["type"].toString();
-        
         movie.viewOffset = movieObj.contains("viewOffset") ? movieObj["viewOffset"].toVariant().toLongLong() : 0;
         movie.duration = movieObj.contains("duration") ? movieObj["duration"].toVariant().toLongLong() : 0;
-        
         movie.parentTitle = movieObj["parentTitle"].toVariant().toString();
         movie.grandparentTitle = movieObj["grandparentTitle"].toVariant().toString();
         movie.parentIndex = movieObj.contains("parentIndex") ? movieObj["parentIndex"].toVariant().toInt() : 0;
@@ -167,62 +131,40 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         movie.childCount = movieObj.contains("childCount") ? movieObj["childCount"].toVariant().toInt() : 0;
         movie.leafCount = movieObj.contains("leafCount") ? movieObj["leafCount"].toInt() : 0;
         movie.viewedLeafCount = movieObj.contains("viewedLeafCount") ? movieObj["viewedLeafCount"].toInt() : 0;
-        
         if (movie.type == "show" || movie.type == "season") {
             movie.isWatched = (movie.leafCount > 0 && movie.viewedLeafCount >= movie.leafCount);
         } else {
             movie.isWatched = movieObj.contains("viewCount") && movieObj["viewCount"].toInt() > 0;
         }
-        
-        qDebug() << "Parsed item:" << movie.title << "type:" << movie.type << "leafCount:" << movie.leafCount << "watched:" << movie.isWatched;
-
-        // Construct full URL for the thumbnail
         QString thumbPath = movieObj["thumb"].toString();
         if (!thumbPath.isEmpty()) {
-            if (thumbPath.contains("?")) {
-                movie.thumbUrl = m_serverUrl + thumbPath + "&X-Plex-Token=" + m_token;
-            } else {
-                movie.thumbUrl = m_serverUrl + thumbPath + "?X-Plex-Token=" + m_token;
-            }
+            movie.thumbUrl = m_serverUrl + thumbPath + (thumbPath.contains("?") ? "&" : "?") + "X-Plex-Token=" + m_token;
         }
-        
-        // Extract Media URL
         QJsonArray mediaArray = movieObj["Media"].toArray();
         if (!mediaArray.isEmpty()) {
             QJsonArray partArray = mediaArray[0].toObject()["Part"].toArray();
             if (!partArray.isEmpty()) {
                 QString partKey = partArray[0].toObject()["key"].toString();
                 if (!partKey.isEmpty()) {
-                    if (partKey.contains("?")) {
-                        movie.mediaUrl = m_serverUrl + partKey + "&X-Plex-Token=" + m_token;
-                    } else {
-                        movie.mediaUrl = m_serverUrl + partKey + "?X-Plex-Token=" + m_token;
-                    }
+                    movie.mediaUrl = m_serverUrl + partKey + (partKey.contains("?") ? "&" : "?") + "X-Plex-Token=" + m_token;
                 }
             }
         }
-        
         m_movies.append(movie);
     }
-
     endResetModel();
-    
-    if (!m_movies.isEmpty()) {
-        emit moviesLoaded(m_movies.first().mediaUrl, m_movies.first().title);
-    }
-    
+    if (!m_movies.isEmpty()) emit moviesLoaded(m_movies.first().mediaUrl, m_movies.first().title);
     reply->deleteLater();
 }
 
 void PlexModel::loadMockData(const QStringList &mockPaths, const QString &type, qint64 mockViewOffset, qint64 mockDuration, bool mockIsWatched) {
     beginResetModel();
     m_movies.clear();
-
     int i = 1;
     for (const QString &path : mockPaths) {
         Movie movie;
         movie.title = QString("Mock %1 %2").arg(type).arg(i);
-        movie.thumbUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="; // 1x1 black pixel
+        movie.thumbUrl = "";
         movie.mediaUrl = path;
         movie.ratingKey = QString::number(i);
         movie.type = type;
@@ -232,70 +174,38 @@ void PlexModel::loadMockData(const QStringList &mockPaths, const QString &type, 
         m_movies.append(movie);
         i++;
     }
-
     endResetModel();
-
-    if (!m_movies.isEmpty()) {
-        emit moviesLoaded(m_movies.first().mediaUrl, m_movies.first().title);
-    }
+    if (!m_movies.isEmpty()) emit moviesLoaded(m_movies.first().mediaUrl, m_movies.first().title);
 }
-
-
 
 void PlexModel::checkConnection(const QString &serverUrl, const QString &token, bool isTestMode) {
     if (isTestMode) {
-        if (serverUrl == "http://test.url:32400" && token == "test_token") {
-            emit connectionChecked(true, "");
-        } else {
-            emit connectionChecked(false, "Test mode: Connection failed");
-        }
+        if (serverUrl == "http://test.url:32400" && token == "test_token") emit connectionChecked(true, "");
+        else emit connectionChecked(false, "Test mode: Connection failed");
         return;
     }
-
-    // Step 1: Validate Token against plex.tv global API first
     QUrl tokenUrl("https://plex.tv/api/v2/user");
     QNetworkRequest tokenReq(tokenUrl);
     tokenReq.setRawHeader("Accept", "application/json");
     tokenReq.setRawHeader("X-Plex-Token", token.toUtf8());
-
     QNetworkReply *tokenReply = m_networkManager->get(tokenReq);
-    connect(tokenReply, &QNetworkReply::finished, this, [this, tokenReply, serverUrl, token, tokenUrl]() {
+    connect(tokenReply, &QNetworkReply::finished, this, [this, tokenReply, serverUrl, token]() {
         tokenReply->deleteLater();
-        int tokenStatus = tokenReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        
-        if (tokenStatus == 401) {
-            emit connectionChecked(false, "API Key is invalid or expired. Cannot make test connection to " + tokenUrl.toString());
-            return;
-        } else if (tokenReply->error() != QNetworkReply::NoError && tokenStatus != 200) {
-            emit connectionChecked(false, "Failed to reach Plex.tv for token validation: " + tokenReply->errorString());
+        if (tokenReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 401) {
+            emit connectionChecked(false, "API Key is invalid or expired.");
             return;
         }
-
-        // Step 2: Token is valid. Now check if the local server is reachable
         QUrl serverCheckUrl(serverUrl + "/");
         QNetworkRequest serverReq(serverCheckUrl);
         serverReq.setRawHeader("Accept", "application/json");
         serverReq.setRawHeader("X-Plex-Token", token.toUtf8());
-
         QNetworkReply *serverReply = m_networkManager->get(serverReq);
         connect(serverReply, &QNetworkReply::finished, this, [this, serverReply]() {
             serverReply->deleteLater();
             if (serverReply->error() != QNetworkReply::NoError) {
-                QString err = serverReply->errorString();
-                int statusCode = serverReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-                if (statusCode > 0) {
-                    err += " (HTTP " + QString::number(statusCode) + ")";
-                } else {
-                    err += " (Check your Server URL and Port)";
-                }
-                emit connectionChecked(false, err);
+                emit connectionChecked(false, serverReply->errorString());
             } else {
-                int statusCode = serverReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-                if (statusCode == 200) {
-                    emit connectionChecked(true, "");
-                } else {
-                    emit connectionChecked(false, "HTTP Error: " + QString::number(statusCode));
-                }
+                emit connectionChecked(true, "");
             }
         });
     });
@@ -303,8 +213,6 @@ void PlexModel::checkConnection(const QString &serverUrl, const QString &token, 
 
 void PlexModel::updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs) {
     if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) return;
-    
-    QString clientId = "flex-player-desktop";
     QUrl url(serverUrl + "/:/timeline");
     QUrlQuery query;
     query.addQueryItem("ratingKey", ratingKey);
@@ -312,69 +220,42 @@ void PlexModel::updateTimeline(const QString &serverUrl, const QString &token, c
     query.addQueryItem("state", state);
     query.addQueryItem("time", QString::number(timeMs));
     query.addQueryItem("duration", QString::number(durationMs));
-    query.addQueryItem("X-Plex-Client-Identifier", clientId);
+    query.addQueryItem("X-Plex-Client-Identifier", "flex-player-desktop");
     url.setQuery(query);
-
     QNetworkRequest request(url);
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-Plex-Token", token.toUtf8());
-
     QNetworkReply *reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
 }
 
 void PlexModel::fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey) {
-    qDebug() << "fetchItemDetails called with ratingKey:" << ratingKey << "serverUrl:" << serverUrl;
-    if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) {
-        qWarning() << "fetchItemDetails missing arguments!";
-        return;
-    }
-    
+    if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) return;
     QUrl url(serverUrl + "/library/metadata/" + ratingKey);
     QNetworkRequest request(url);
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-Plex-Token", token.toUtf8());
-
     QNetworkReply *reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
-        if (reply->error() == QNetworkReply::NoError) {
-            QString json = QString::fromUtf8(reply->readAll());
-            emit itemDetailsLoaded(json);
-        } else {
-            qWarning() << "Failed to fetch details:" << reply->errorString();
-            emit itemDetailsLoaded("{}");
-        }
+        if (reply->error() == QNetworkReply::NoError) emit itemDetailsLoaded(QString::fromUtf8(reply->readAll()));
+        else emit itemDetailsLoaded("{}");
     });
 }
 
-
 void PlexModel::executeSystemCommand(const QString &command) {
     if (command.isEmpty()) return;
-    
     QString actualCommand = command;
-    if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
-        if (!actualCommand.startsWith("flatpak-spawn")) {
-            actualCommand = "flatpak-spawn --host " + command;
-        }
+    if (qEnvironmentVariableIsSet("FLATPAK_ID") && !actualCommand.startsWith("flatpak-spawn")) {
+        actualCommand = "flatpak-spawn --host " + command;
     }
-    
-    QProcess process;
     QStringList args = actualCommand.split(" ", Qt::SkipEmptyParts);
+    if (args.isEmpty()) return;
     QString prog = args.takeFirst();
-    process.start(prog, args);
-    process.waitForFinished();
-    
-    QString output = process.readAllStandardOutput();
-    QString error = process.readAllStandardError();
-    
-    qDebug() << "[SystemCommand] Executed:" << actualCommand;
-    if (!output.isEmpty()) qDebug() << "[SystemCommand] Output:" << output.trimmed();
-    if (!error.isEmpty()) qDebug() << "[SystemCommand] Error:" << error.trimmed();
+    QProcess::startDetached(prog, args);
 }
 
 void PlexModel::deployHdrScript(bool enable, const QString &enableCmd, const QString &disableCmd) {
-    qDebug() << "[DeployHdrScript] Called with enable:" << enable << "enableCmd:" << enableCmd << "disableCmd:" << disableCmd;
     QString configDir;
     if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
         configDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.var/app/" + qEnvironmentVariable("FLATPAK_ID") + "/config/flex-player/mpv/scripts";
@@ -383,80 +264,62 @@ void PlexModel::deployHdrScript(bool enable, const QString &enableCmd, const QSt
     }
     
     QDir dir(configDir);
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
+    if (!dir.exists()) dir.mkpath(".");
     
-    QString scriptPath = configDir + "/flex_hdr.lua";
-    
-    // Hard cleanup of ALL possible script names (legacy and current)
+    // Robust cleanup: Delete EVERY possible variation of the script
     QStringList legacyFiles;
-    legacyFiles << "flex_hdr.lua" << "flex_hdr.lua" << "hdr-toggle.lua" << "kde_hdr_toggle.lua";
+    legacyFiles << "kde-hdr-toggle.lua" << "flex_hdr.lua" << "hdr-toggle.lua" << "kde_hdr_toggle.lua" << "flex-hdr.lua";
     for (const QString &f : legacyFiles) {
         if (QFile::exists(configDir + "/" + f)) {
             QFile::remove(configDir + "/" + f);
-            qDebug() << "[DeployHdrScript] Removed legacy/conflicting script:" << f;
         }
     }
 
     if (!enable) return;
-    
-    QString luaContent = R"(
--- Auto-generated HDR toggle script
-local mp = require 'mp'
 
+    QString scriptPath = configDir + "/flex_hdr.lua";
+    QString luaContent = R"(-- Auto-generated HDR toggle script
+local mp = require "mp"
 local hdr_was_enabled = false
 local current_file_is_hdr = false
+local is_killed = false
 
 local function split_by_space(str)
     local result = {}
-    for word in string.gmatch(str, "%S+") do
-        table.insert(result, word)
-    end
+    for word in string.gmatch(str, "%S+") do table.insert(result, word) end
     return result
 end
 
 local function execute_command(cmd)
     local actual_cmd = cmd
     local is_flatpak = os.getenv("FLATPAK_ID")
-    if is_flatpak and not string.match(actual_cmd, "^flatpak%-spawn") then
+    if is_flatpak and not string.match(actual_cmd, "^flatpak%%-spawn") then
         actual_cmd = "flatpak-spawn --host " .. cmd
     end
     print("[HDR-TOGGLE] Executing: " .. actual_cmd)
-    
     local args_table = split_by_space(actual_cmd)
-    
-    mp.command_native({
-        name = "subprocess",
-        playback_only = false,
-        args = args_table
-    })
+    if #args_table > 0 then
+        mp.command_native({ name = "subprocess", playback_only = false, args = args_table })
+    end
 end
 
-local function check_hdr(name, value)
+local function check_hdr()
+    if is_killed then return end
+    
     local v_out = mp.get_property_native("video-out-params")
     local v_params = mp.get_property_native("video-params")
+    local p = ""
+    local g = ""
+    if v_out and v_out["primaries"] then
+        p = v_out["primaries"]
+        g = v_out["gamma"] or ""
+    end
+    if (p == "" or p == nil) and v_params then
+        p = v_params["primaries"] or ""
+        g = v_params["gamma"] or ""
+    end
     
-    local primaries = ""
-    local gamma = ""
-
-    if v_out then
-        primaries = v_out["primaries"] or ""
-        gamma = v_out["gamma"] or ""
-    end
-
-    if primaries == "" and v_params then
-        primaries = v_params["primaries"] or ""
-    end
-    if gamma == "" and v_params then
-        gamma = v_params["gamma"] or ""
-    end
-
-    local is_stopped = false
-    local is_hdr = false
-    if primaries == "bt.2020" or gamma == "pq" or gamma == "hlg" then
-        is_hdr = true
-    end
+    local is_hdr = (p == "bt.2020" or g == "pq" or g == "hlg")
     
     if is_hdr and not current_file_is_hdr then
         print("[HDR-TOGGLE] >>> HDR video detected! Enabling System HDR... <<<")
@@ -470,10 +333,20 @@ local function check_hdr(name, value)
     end
 end
 
-
 mp.register_script_message("stop-hdr-check", function()
-    print("[HDR-TOGGLE] >>> STOP REQUEST RECEIVED. DISABLING AND CLEANING UP. <<<")
-    is_stopped = true
+    -- Called when video stops (Back button). Reset flags but keep observing.
+    print("[HDR-TOGGLE] >>> RESET REQUEST RECEIVED. DISABLING HDR. <<<")
+    if hdr_was_enabled then
+        execute_command("%2")
+        hdr_was_enabled = false
+    end
+    current_file_is_hdr = false
+end)
+
+mp.register_script_message("kill-hdr-script", function()
+    -- Called when feature disabled or reloading. Kill permanently.
+    print("[HDR-TOGGLE] >>> KILL REQUEST RECEIVED. TERMINATING LOGIC. <<<")
+    is_killed = true
     mp.unobserve_property(check_hdr)
     if hdr_was_enabled then
         execute_command("%2")
@@ -489,18 +362,13 @@ mp.register_event("shutdown", function()
         print("[HDR-TOGGLE] >>> Disabling System HDR on exit... <<<")
         execute_command("%2")
     end
-end)
-)";
-    
+end))";
     luaContent = luaContent.arg(enableCmd, disableCmd);
-    
     QFile file(scriptPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
         out << luaContent;
         file.close();
-        qDebug() << "[DeployHdrScript] Successfully wrote script to:" << scriptPath;
-    } else {
-        qDebug() << "[DeployHdrScript] Failed to write script to:" << scriptPath;
     }
 }
+

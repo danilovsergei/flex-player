@@ -20,6 +20,7 @@ class MpvObject : public MpvAbstractItem
     Q_PROPERTY(QString aid READ aid WRITE setAid NOTIFY aidChanged)
     Q_PROPERTY(QString sid READ sid WRITE setSid NOTIFY sidChanged)
     Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY volumeChanged)
+    Q_PROPERTY(bool videoIsHdr READ videoIsHdr WRITE setVideoIsHdr NOTIFY videoIsHdrChanged)
 
 public:
     explicit MpvObject(QQuickItem *parent = nullptr) : MpvAbstractItem(parent)
@@ -35,16 +36,13 @@ public:
         setProperty("config", "yes");
         setProperty("config-dir", configDir);
 
-        connect(this, &MpvAbstractItem::ready, this, [this]() {
-            loadScripts();
-        });
-
         observeProperty("duration", MPV_FORMAT_DOUBLE);
         observeProperty("time-pos", MPV_FORMAT_DOUBLE);
         observeProperty("pause", MPV_FORMAT_FLAG);
         observeProperty("aid", MPV_FORMAT_STRING);
         observeProperty("sid", MPV_FORMAT_STRING);
         observeProperty("volume", MPV_FORMAT_DOUBLE);
+        observeProperty("video-out-params", MPV_FORMAT_NODE);
         
         connect(mpvController(), &MpvController::propertyChanged, this, [this](const QString &prop, const QVariant &val) {
             if (prop == "duration") {
@@ -65,6 +63,8 @@ public:
             } else if (prop == "volume") {
                 m_volume = val.toDouble();
                 emit volumeChanged();
+            } else if (prop == "video-out-params") {
+                checkHdr(val.toMap());
             }
         });
     }
@@ -84,26 +84,16 @@ public:
     QString sid() const { return m_sid; }
     void setSid(const QString& value) { setProperty("sid", value); }
 
-    Q_INVOKABLE void loadScripts() {
-        QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/flex-player/mpv";
-        
-        // Use message to neutralize old scripts (they are already named 'flex_hdr' in Lua now)
-        command(QVariantList() << "script-message" << "stop-hdr-check");
-        
-        QDir scriptsDir(configDir + "/scripts");
-        if (scriptsDir.exists()) {
-            QStringList scripts = scriptsDir.entryList(QStringList() << "*.lua" << "*.js", QDir::Files);
-            for (const QString &script : scripts) {
-                QString scriptPath = scriptsDir.absoluteFilePath(script);
-                // Standard mpv way to load a script
-                command(QVariantList() << "load-script" << scriptPath);
-            }
-        }
+    bool videoIsHdr() const { return m_videoIsHdr; }
+    void setVideoIsHdr(bool value) {
+        if (m_videoIsHdr == value) return;
+        m_videoIsHdr = value;
+        emit videoIsHdrChanged();
     }
 
-    Q_INVOKABLE void stopHdr() {
-        command(QVariantList() << "script-message" << "stop-hdr-check");
-    }
+    // No-op methods kept for API compatibility during transition
+    Q_INVOKABLE void loadScripts() {}
+    Q_INVOKABLE void stopHdr() {}
 
     double volume() const { return m_volume; }
     void setVolume(double value) { if(m_volume == value) return; m_volume = value; emit volumeChanged(); setProperty("volume", value); }
@@ -129,14 +119,23 @@ signals:
     void aidChanged();
     void sidChanged();
     void volumeChanged();
+    void videoIsHdrChanged();
 
 private:
+    void checkHdr(const QVariantMap &params) {
+        QString primaries = params.value("primaries").toString();
+        QString gamma = params.value("gamma").toString();
+        bool isHdr = (primaries == "bt.2020" || gamma == "pq" || gamma == "hlg");
+        setVideoIsHdr(isHdr);
+    }
+
     double m_duration = 0.0;
     double m_position = 0.0;
     bool m_paused = false;
     QString m_aid = "auto";
     QString m_sid = "no";
     double m_volume = 100.0;
+    bool m_videoIsHdr = false;
 };
 
 #endif

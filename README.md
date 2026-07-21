@@ -34,8 +34,8 @@ Flex Player runs natively on Wayland and optimally passes video to the `libmpv` 
 ### 2. HDR Passthrough
 Flex Player was built explicitly with HDR in mind. The Qt/QML layer performs proper HDR passthrough to `libmpv`, which boasts excellent Wayland/HDR support and can be finely tuned via `mpv.conf`.
 
-Additionally, Flex Player includes native Lua scripts to automatically toggle the system HDR state in `KDE` Plasma when HDR movie playback starts, and toggle it back off when finished.\
-These Lua scripts can be easily customized to support other desktop environments, such as `GNOME`.
+Additionally, Flex Player automatically toggles the system HDR state in `KDE` Plasma when HDR movie playback starts, and toggle it back off when finished.\
+The HDR toggle commands can be easily customized to support other desktop environments, such as `GNOME`.
 
 ## Features
 

@@ -22,9 +22,12 @@ Window {
         isTestMode: mainWindow.isTestMode
     }
 
+    // Expose settings for other components
+    property alias appSettings: appSettings
     property alias serverUrl: appSettings.serverUrl
     property alias token: appSettings.token
     property alias homeLibrariesList: controller.homeLibrariesList
+    property alias controller: controller
 
     GlobalController {
         id: controller
@@ -49,11 +52,17 @@ Window {
     function formatTime(seconds) { return controller.formatTime(seconds) }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
     function runHdrCommand(cmd) { controller.runHdrCommand(cmd) }
-    function deployHdrScript() { controller.deployHdrScript() }
     function closeSettings() { controller.closeSettings() }
 
     Component.onCompleted: {
         controller.startupLogic()
+    }
+
+    onClosing: {
+        if (playerView.hdrWasEnabledByApp) {
+            console.log("Main: App closing while HDR active. Disabling system HDR...")
+            runHdrCommand(appSettings.hdrDisableCommand)
+        }
     }
 
     function toggleFullScreen() {
@@ -304,3 +313,4 @@ Window {
         collectionsModel: controller.collectionsModel
     }
 }
+

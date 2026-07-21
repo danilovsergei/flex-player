@@ -20,6 +20,9 @@ Item {
     property string currentLibraryId: "1"
     property string currentLibraryTitle: "Movies"
 
+    // Testing signals
+    signal hdrCommandExecuted(string command)
+
     // Models
     PlexModel { id: m_recentlyAddedModel }
     PlexModel { id: m_continueWatchingModel }
@@ -109,32 +112,18 @@ Item {
     }
 
     function runHdrCommand(cmd) {
-        if (m_continueWatchingModel) {
+        if (m_continueWatchingModel && cmd !== "") {
+            console.log("GlobalController: Executing system command: " + cmd)
             m_continueWatchingModel.executeSystemCommand(cmd);
+            hdrCommandExecuted(cmd)
         }
     }
 
+    // Now a no-op as logic is moved to QML/C++ properties
     function deployHdrScript() {
-        console.log("GlobalController: deployHdrScript called. autoToggleHdr=" + appSettings.autoToggleHdr)
-        
-        if (playerView && playerView.mpvObject && !appSettings.autoToggleHdr) {
-            console.log("GlobalController: Disabling HDR feature live...")
-            playerView.mpvObject.stopHdr();
-        }
-        
+        console.log("GlobalController: performing legacy HDR script cleanup...")
         if (m_continueWatchingModel) {
-            if (playerView && playerView.mpvObject && !appSettings.autoToggleHdr) {
-            playerView.mpvObject.stopHdr();
-        }
-        m_continueWatchingModel.deployHdrScript(appSettings.autoToggleHdr, appSettings.hdrEnableCommand, appSettings.hdrDisableCommand);
-        if (playerView && playerView.mpvObject) {
-            playerView.mpvObject.loadScripts();
-        }
-            // Signal MPV to reload scripts folder so it picks up the change (load or remove) immediately
-            if (playerView && playerView.mpvObject) {
-                console.log("GlobalController: Signalling mpvObject to load scripts...")
-                playerView.mpvObject.loadScripts();
-            }
+            m_continueWatchingModel.deployHdrScript(false, "", "");
         }
     }
     
