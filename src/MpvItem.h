@@ -21,6 +21,7 @@ class MpvObject : public MpvAbstractItem
     Q_PROPERTY(QString sid READ sid WRITE setSid NOTIFY sidChanged)
     Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool videoIsHdr READ videoIsHdr WRITE setVideoIsHdr NOTIFY videoIsHdrChanged)
+    Q_PROPERTY(bool buffering READ buffering WRITE setBuffering NOTIFY bufferingChanged)
 
 public:
     explicit MpvObject(QQuickItem *parent = nullptr) : MpvAbstractItem(parent)
@@ -43,6 +44,7 @@ public:
         observeProperty("sid", MPV_FORMAT_STRING);
         observeProperty("volume", MPV_FORMAT_DOUBLE);
         observeProperty("video-out-params", MPV_FORMAT_NODE);
+        observeProperty("core-idle", MPV_FORMAT_FLAG);
         
         connect(mpvController(), &MpvController::propertyChanged, this, [this](const QString &prop, const QVariant &val) {
             if (prop == "duration") {
@@ -54,6 +56,7 @@ public:
             } else if (prop == "pause") {
                 m_paused = val.toBool();
                 emit pausedChanged();
+                updateBuffering();
             } else if (prop == "aid") {
                 m_aid = val.toString();
                 emit aidChanged();
@@ -65,6 +68,9 @@ public:
                 emit volumeChanged();
             } else if (prop == "video-out-params") {
                 checkHdr(val.toMap());
+            } else if (prop == "core-idle") {
+                m_coreIdle = val.toBool();
+                updateBuffering();
             }
         });
     }
@@ -91,7 +97,13 @@ public:
         emit videoIsHdrChanged();
     }
 
-    // No-op methods kept for API compatibility during transition
+    bool buffering() const { return m_buffering; }
+    void setBuffering(bool value) {
+        if (m_buffering == value) return;
+        m_buffering = value;
+        emit bufferingChanged();
+    }
+
     Q_INVOKABLE void loadScripts() {}
     Q_INVOKABLE void stopHdr() {}
 
@@ -120,8 +132,14 @@ signals:
     void sidChanged();
     void volumeChanged();
     void videoIsHdrChanged();
+    void bufferingChanged();
 
 private:
+    void updateBuffering() {
+        bool isBuffering = m_coreIdle && !m_paused;
+        setBuffering(isBuffering);
+    }
+
     void checkHdr(const QVariantMap &params) {
         QString primaries = params.value("primaries").toString();
         QString gamma = params.value("gamma").toString();
@@ -136,6 +154,8 @@ private:
     QString m_sid = "no";
     double m_volume = 100.0;
     bool m_videoIsHdr = false;
+    bool m_coreIdle = false;
+    bool m_buffering = false;
 };
 
 #endif

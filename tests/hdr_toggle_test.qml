@@ -54,6 +54,8 @@ TestCase {
 
         // 4. Press back and check disable command
         console.log("TEST: Clicking back button")
+        player.mpvObject.paused = true // Ensure controls are visible for click
+        wait(100)
         var backBtn = findChild(player, "backButton")
         mouseClick(backBtn)
         
@@ -69,6 +71,8 @@ TestCase {
         tryCompare(spy, "count", 3)
         compare(spy.signalArguments[2][0], "MOCK_HDR_ON")
         
+        player.mpvObject.paused = true // Ensure controls are visible
+        wait(100)
         mouseClick(backBtn)
         tryCompare(spy, "count", 4)
         compare(spy.signalArguments[3][0], "MOCK_HDR_OFF")

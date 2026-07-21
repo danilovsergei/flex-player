@@ -186,6 +186,45 @@ Item {
         }
     }
 
+    // Loading Spinner (Buffering Indicator)
+    BusyIndicator {
+        id: loadingSpinner
+        objectName: "loadingSpinner"
+        anchors.centerIn: parent
+        width: 80
+        height: 80
+        running: mpvObject.buffering && playerView.visible
+        visible: running
+        
+        contentItem: Item {
+            implicitWidth: 80
+            implicitHeight: 80
+
+            Canvas {
+                id: canvas
+                anchors.fill: parent
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.strokeStyle = playerView.rootApp ? playerView.rootApp.plexOrange : "#E5A00D";
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.arc(40, 40, 30, 0, Math.PI * 1.5);
+                    ctx.stroke();
+                }
+            }
+
+            RotationAnimation {
+                target: canvas
+                from: 0
+                to: 360
+                duration: 1000
+                running: loadingSpinner.running
+                loops: Animation.Infinite
+            }
+        }
+    }
+
     MouseArea {
         id: playerMouseArea
         objectName: "playerMouseArea"
@@ -222,7 +261,7 @@ Item {
         
         onDoubleClicked: {
             singleClickTimer.stop()
-            mainWindow.toggleFullScreen()
+            if (mainWindow) mainWindow.toggleFullScreen()
         }
     }
 
@@ -252,7 +291,7 @@ Item {
             contentItem: Text {
                 text: backButton.text
                 font: backButton.font
-                color: backButton.down ? (mainWindow ? mainWindow.plexOrange : "orange") : "white"
+                color: backButton.down ? (playerView.rootApp ? playerView.rootApp.plexOrange : "orange") : "white"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
@@ -270,8 +309,8 @@ Item {
                 mpvObject.command(["stop"])
                 playerView.visible = false
                 playbackStopped()
-                if (playerView.isFullScreenMode && mainWindow) {
-                    mainWindow.showNormal()
+                if (playerView.isFullScreenMode && playerView.rootApp) {
+                    playerView.rootApp.showNormal()
                 }
             }
         }
@@ -314,7 +353,7 @@ Item {
                 contentItem: Text {
                     text: playPauseButton.text
                     font: playPauseButton.font
-                    color: playPauseButton.hovered ? (mainWindow ? mainWindow.plexOrange : "orange") : "white"
+                    color: playPauseButton.hovered ? (playerView.rootApp ? playerView.rootApp.plexOrange : "orange") : "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -343,7 +382,7 @@ Item {
                 contentItem: Text {
                     text: playerAudioButton.text
                     font: playerAudioButton.font
-                    color: playerAudioButton.hovered || playerAudioMenu.opened ? (mainWindow ? mainWindow.plexOrange : "orange") : "white"
+                    color: playerAudioButton.hovered || playerAudioMenu.opened ? (playerView.rootApp ? playerView.rootApp.plexOrange : "orange") : "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     opacity: 1.0
@@ -410,7 +449,7 @@ Item {
                 contentItem: Text {
                     text: playerSubtitleButton.text
                     font: playerSubtitleButton.font
-                    color: playerSubtitleButton.hovered || playerSubtitleMenu.opened ? (mainWindow ? mainWindow.plexOrange : "orange") : "white"
+                    color: playerSubtitleButton.hovered || playerSubtitleMenu.opened ? (playerView.rootApp ? playerView.rootApp.plexOrange : "orange") : "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     opacity: 1.0
@@ -487,7 +526,7 @@ Item {
 
             // Current Time
             Text {
-                text: mainWindow ? mainWindow.formatTime(mpvObject.position) : "00:00"
+                text: playerView.rootApp ? playerView.rootApp.formatTime(mpvObject.position) : "00:00"
                 color: "white"
                 font.pixelSize: 14
                 font.bold: true
@@ -522,7 +561,7 @@ Item {
                     Rectangle {
                         width: progressBar.visualPosition * parent.width
                         height: parent.height
-                        color: mainWindow ? mainWindow.plexOrange : "orange"
+                        color: playerView.rootApp ? playerView.rootApp.plexOrange : "orange"
                         radius: 3
                     }
                 }
@@ -533,13 +572,13 @@ Item {
                     implicitWidth: 16
                     implicitHeight: 16
                     radius: 8
-                    color: progressBar.pressed ? "white" : (mainWindow ? mainWindow.plexOrange : "orange")
+                    color: progressBar.pressed ? "white" : (playerView.rootApp ? playerView.rootApp.plexOrange : "orange")
                 }
             }
 
             // Total Time
             Text {
-                text: mainWindow ? mainWindow.formatTime(mpvObject.duration) : "00:00"
+                text: playerView.rootApp ? playerView.rootApp.formatTime(mpvObject.duration) : "00:00"
                 color: "white"
                 font.pixelSize: 14
                 font.bold: true
@@ -578,7 +617,7 @@ Item {
                         Rectangle {
                             width: volumeSlider.visualPosition * parent.width
                             height: parent.height
-                            color: mainWindow ? mainWindow.plexOrange : "orange"
+                            color: playerView.rootApp ? playerView.rootApp.plexOrange : "orange"
                             radius: 2
                         }
                     }
@@ -627,7 +666,7 @@ Item {
                 contentItem: Text {
                     text: fullScreenButton.text
                     font: fullScreenButton.font
-                    color: fullScreenButton.hovered ? (mainWindow ? mainWindow.plexOrange : "orange") : "white"
+                    color: fullScreenButton.hovered ? (playerView.rootApp ? playerView.rootApp.plexOrange : "orange") : "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: 6
@@ -636,7 +675,7 @@ Item {
                     color: "transparent"
                 }
                 onClicked: {
-                    if (mainWindow) mainWindow.toggleFullScreen()
+                    if (playerView.rootApp) playerView.rootApp.toggleFullScreen()
                 }
             }
         }
