@@ -24,7 +24,7 @@ TestCase {
     }
 
     function test_hdr_cycle() {
-        // 0. Enable HDR toggle in settings
+
         app.appSettings.autoToggleHdr = true
         app.appSettings.hdrEnableCommand = "MOCK_HDR_ON"
         app.appSettings.hdrDisableCommand = "MOCK_HDR_OFF"
@@ -37,24 +37,24 @@ TestCase {
         })
         verify(spy)
 
-        // 1. Simulate starting an HDR video
+
         var player = findChild(app, "playerView")
         player.visible = true
         
-        // Ensure player is ready
+
         wait(100)
         
-        // Simulate libmpv detecting HDR
+
         console.log("TEST: Setting videoIsHdr to true")
         player.mpvObject.videoIsHdr = true
         
-        // 3. Check that enable command was called
+
         tryCompare(spy, "count", 1)
         compare(spy.signalArguments[0][0], "MOCK_HDR_ON")
 
-        // 4. Press back and check disable command
+
         console.log("TEST: Clicking back button")
-        player.mpvObject.paused = true // Ensure controls are visible for click
+        player.mpvObject.paused = true
         wait(100)
         var backBtn = findChild(player, "backButton")
         mouseClick(backBtn)
@@ -62,7 +62,7 @@ TestCase {
         tryCompare(spy, "count", 2)
         compare(spy.signalArguments[1][0], "MOCK_HDR_OFF")
         
-        // Test 2: Toggle second time
+
         console.log("TEST: Starting second playback")
         player.visible = true
         player.mpvObject.videoIsHdr = false
@@ -71,7 +71,7 @@ TestCase {
         tryCompare(spy, "count", 3)
         compare(spy.signalArguments[2][0], "MOCK_HDR_ON")
         
-        player.mpvObject.paused = true // Ensure controls are visible
+        player.mpvObject.paused = true
         wait(100)
         mouseClick(backBtn)
         tryCompare(spy, "count", 4)
@@ -95,7 +95,7 @@ TestCase {
         tryCompare(spy, "count", 1)
         compare(spy.signalArguments[0][0], "CLOSE_HDR_ON")
         
-        // Simulate app closing
+
         console.log("TEST: Simulating app closing...")
         app.closing({accepted: true}) // Manually trigger the handler
         

@@ -22,7 +22,7 @@ Window {
         isTestMode: mainWindow.isTestMode
     }
 
-    // Expose settings for other components
+
     property alias appSettings: appSettings
     property alias serverUrl: appSettings.serverUrl
     property alias token: appSettings.token
@@ -123,7 +123,7 @@ Window {
         }
     }
 
-    // Expose models for testing (Redirected to controller)
+
     property var testGlobalRecentModel: controller.globalRecentModel
     property var testLibraryDeckModel: controller.libraryDeckModel
     property var testGlobalDeckModel: controller.globalDeckModel
@@ -132,14 +132,14 @@ Window {
     property var testAllLibrariesModel: controller.allLibrariesModel
     property var testAppSettings: appSettings
 
-    // Movie Poster Delegate
+
     Component {
         id: movieDelegate
         MoviePosterDelegate {
             onOpenCollection: function(ratingKey) {
                 console.log("Opening collection: " + ratingKey)
                 controller.collectionMoviesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/collections/" + ratingKey + "/children")
-                currentTab = 2 // Switch to Collection Movies view
+                currentTab = 2
             }
             onOpenShow: function(ratingKey) {
                 console.log("Opening show/season: " + ratingKey)
@@ -163,7 +163,7 @@ Window {
         anchors.fill: parent
         spacing: 0
 
-        // UPPER TOOLBAR
+
         TopToolbar {
             id: topToolbar
             rootApp: mainWindow
@@ -177,20 +177,20 @@ Window {
             Layout.fillHeight: true
             spacing: 0
 
-            // SIDEBAR
+
             SidebarView {
                 id: sidebar
                 mainWindow: mainWindow
             }
 
-            // MAIN CONTENT
+
             StackLayout {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: currentTab
 
-                // 0: HOME VIEW
+
                 HomeView {
                     id: homeView
                     rootApp: mainWindow
@@ -202,7 +202,7 @@ Window {
                     onOpenSettingsRequested: controller.openSettings(1)
                 }
 
-                // 1: LIBRARY RECOMMEND / COLLECTIONS VIEW
+
                 LibraryRecommendView {
                     id: libraryView
                     currentLibraryTitle: controller.currentLibraryTitle
@@ -212,7 +212,7 @@ Window {
                     movieDelegate: movieDelegate
                 }
                 
-                // 2: COLLECTION MOVIES VIEW
+
                 CollectionMoviesView {
                     id: collectionMoviesView
                     collectionMoviesModel: controller.collectionMoviesModel
@@ -220,7 +220,7 @@ Window {
                     onBackToCollections: currentTab = 1
                 }
 
-                // 3: MOVIE DETAILS VIEW
+
                 MovieDetailsView {
                     id: movieDetailsView
                     rootApp: mainWindow
@@ -232,7 +232,7 @@ Window {
                     }
                 }
                 
-                // 4: SERIES DETAILS VIEW
+
                 SeriesDetailsView {
                     id: seriesDetailsView
                     rootApp: mainWindow
@@ -249,7 +249,7 @@ Window {
                     }
                 }
                 
-                // 5: SEASON DETAILS VIEW
+
                 SeasonDetailsView {
                     id: seasonDetailsView
                     rootApp: mainWindow
@@ -262,7 +262,7 @@ Window {
                 }
             }
             
-            // Listen for details model updates
+
             Connections {
                 target: controller.detailsModel
                 function onItemDetailsLoaded(jsonString) {
@@ -288,7 +288,7 @@ Window {
         }
     }
 
-    // EMBEDDED PLAYER VIEW
+
     PlayerView {
         id: playerView
         rootApp: mainWindow

@@ -104,8 +104,6 @@ public:
         emit bufferingChanged();
     }
 
-    Q_INVOKABLE void loadScripts() {}
-    Q_INVOKABLE void stopHdr() {}
 
     double volume() const { return m_volume; }
     void setVolume(double value) { if(m_volume == value) return; m_volume = value; emit volumeChanged(); setProperty("volume", value); }

@@ -23,7 +23,7 @@ Item {
     property string currentSubId: "no"
     property alias mpvObject: mpvObject
 
-    // HDR state management
+
     property bool hdrWasEnabledByApp: false
 
     signal playbackStopped()
@@ -186,7 +186,7 @@ Item {
         }
     }
 
-    // Loading Spinner (Buffering Indicator)
+
     BusyIndicator {
         id: loadingSpinner
         objectName: "loadingSpinner"
@@ -265,13 +265,13 @@ Item {
         }
     }
 
-    // Top Overlay Controls
+
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         height: 60
-        color: "#B3000000" // 70% opacity black
+        color: "#B3000000"
         visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
 
         MouseArea {
@@ -316,13 +316,13 @@ Item {
         }
     }
 
-    // Bottom Overlay Controls
+
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: 80
-        color: "#B3000000" // 70% opacity black
+        color: "#B3000000"
         visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
 
         MouseArea {
@@ -336,7 +336,7 @@ Item {
             anchors.margins: 20
             spacing: 20
 
-            // Play / Pause Button
+
             Button {
                 id: playPauseButton
                 objectName: "playPauseButton"
@@ -365,7 +365,7 @@ Item {
                 }
             }
 
-            // Audio Selection Button
+
             Button {
                 id: playerAudioButton
                 objectName: "playerAudioButton"
@@ -432,7 +432,7 @@ Item {
                 }
             }
 
-            // Subtitle Selection Button
+
             Button {
                 id: playerSubtitleButton
                 objectName: "playerSubtitleButton"
@@ -524,7 +524,7 @@ Item {
                 }
             }
 
-            // Current Time
+
             Text {
                 text: playerView.rootApp ? playerView.rootApp.formatTime(mpvObject.position) : "00:00"
                 color: "white"
@@ -533,7 +533,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
             }
 
-            // Progress Bar
+
             Slider {
                 id: progressBar
                 objectName: "progressBar"
@@ -543,7 +543,7 @@ Item {
                 to: mpvObject.duration > 0 ? mpvObject.duration : 1
                 value: mpvObject.position
 
-                // Stop updating player position while user is dragging
+
                 onMoved: {
                     mpvObject.position = value
                 }
@@ -576,7 +576,7 @@ Item {
                 }
             }
 
-            // Total Time
+
             Text {
                 text: playerView.rootApp ? playerView.rootApp.formatTime(mpvObject.duration) : "00:00"
                 color: "white"
@@ -585,7 +585,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
             }
 
-            // Volume Slider Wrapper
+
             Item {
                 Layout.preferredWidth: 100
                 Layout.preferredHeight: 40
@@ -643,13 +643,13 @@ Item {
                         var newVal = volumeSlider.from + pos * (volumeSlider.to - volumeSlider.from);
                         console.log("VOLUME MOUSEAREA PRESSED! pos=" + pos + " newVal=" + newVal);
                         mpvObject.volume = newVal;
-                        volumeSlider.value = newVal; // Update slider visually too!
-                        mouse.accepted = false; // Pass through
+                        volumeSlider.value = newVal;
+                        mouse.accepted = false;
                     }
                 }
             }
 
-            // Full Screen Button
+
             Button {
                 id: fullScreenButton
                 objectName: "fullScreenButton"

@@ -54,7 +54,7 @@ Rectangle {
             }
             onAuthError: function(errorMsg) {
                 console.error("Plex Auth Error: " + errorMsg)
-                settingsWindow.connectionState = -1 // Error
+                settingsWindow.connectionState = -1
             }
             onPinCodeChanged: {
                 if (plexAuth.pinCode !== "") {
@@ -68,11 +68,11 @@ Rectangle {
             id: pinOverlay
             objectName: "pinOverlay"
             anchors.fill: parent
-            color: "#E6000000" // 90% black
+            color: "#E6000000"
             z: 100
             visible: plexAuth.isPolling
             
-            // Block mouse clicks from reaching the settings below
+
             MouseArea { anchors.fill: parent }
 
             Column {
@@ -123,7 +123,7 @@ Rectangle {
             anchors.fill: parent
             spacing: 0
 
-            // Settings Sidebar
+
             Rectangle {
                 Layout.preferredWidth: 200
                 Layout.fillHeight: true
@@ -167,7 +167,7 @@ Rectangle {
                         
                         Text {
                             text: "SETTINGS"
-                            color: "#E5A00D" // plexOrange
+                            color: "#E5A00D"
                             font.pixelSize: 24
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -236,7 +236,7 @@ Rectangle {
                 }
             }
 
-            // Main Settings Area
+
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -245,9 +245,9 @@ Rectangle {
                 StackLayout {
                     anchors.fill: parent
                     anchors.margins: 40
-                    currentIndex: settingsSidebarColumn.settingsTab // Access the sidebar's property
+                    currentIndex: settingsSidebarColumn.settingsTab
 
-                    // TAB 0: LOGIN
+
                     ColumnLayout {
                         spacing: 20
 
@@ -445,7 +445,7 @@ Rectangle {
                         Item { Layout.fillHeight: true }
                     }
 
-                    // TAB 1: LIBRARIES
+
                     ColumnLayout {
                         id: librariesTabCol
                         spacing: 20
@@ -524,9 +524,9 @@ Rectangle {
                                 }
                             }
                         }
-                    } // END TAB 1
+                    }
                     
-                    // TAB 2: HOTKEYS
+
                     ColumnLayout {
                         spacing: 20
                         
@@ -538,7 +538,7 @@ Rectangle {
                             Layout.bottomMargin: 20
                         }
                         
-                        // Header Row
+
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.maximumWidth: 800
@@ -557,7 +557,7 @@ Rectangle {
                             color: "#444444"
                         }
                         
-                        // Row 1: Toggle Full Screen
+
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.maximumWidth: 800
@@ -588,7 +588,7 @@ Rectangle {
                             }
                         }
                         
-                        // Row 2: Toggle Play/Pause
+
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.maximumWidth: 800
@@ -619,7 +619,7 @@ Rectangle {
                             }
                         }
                         
-                        // Row 3: Increase Volume
+
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.maximumWidth: 800
@@ -650,7 +650,7 @@ Rectangle {
                             }
                         }
                         
-                        // Row 4: Decrease Volume
+
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.maximumWidth: 800
@@ -682,8 +682,8 @@ Rectangle {
                         }
                         
                         Item { Layout.fillHeight: true }
-                    } // END TAB 2: HOTKEYS
-                    // TAB 3: PLAYBACK
+                    }
+
                     ColumnLayout {
                         spacing: 20
 
@@ -815,7 +815,7 @@ Rectangle {
             }
         }
         
-        // Hotkey Capture Overlay
+
         Rectangle {
             id: hotkeyOverlay
             objectName: "hotkeyOverlay"
@@ -826,7 +826,7 @@ Rectangle {
             
             property string actionToBind: ""
             
-            // It needs focus to capture keys
+
             focus: visible
             
             function bindKey(newKey) {
@@ -844,7 +844,7 @@ Rectangle {
             }
 
             Keys.onPressed: function(event) {
-                // Ignore modifier keys alone
+
                 if (event.key === Qt.Key_Shift || event.key === Qt.Key_Control || event.key === Qt.Key_Alt || event.key === Qt.Key_Meta) {
                     return;
                 }
@@ -885,7 +885,7 @@ Rectangle {
                 event.accepted = true;
             }
             
-            MouseArea { anchors.fill: parent } // Block clicks
+            MouseArea { anchors.fill: parent }
             
             Column {
                 anchors.centerIn: parent

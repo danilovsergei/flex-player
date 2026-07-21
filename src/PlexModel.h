@@ -13,8 +13,8 @@ struct Movie {
     QString mediaUrl;
     QString ratingKey;
     QString type;
-    qint64 viewOffset = 0; // in milliseconds
-    qint64 duration = 0;   // in milliseconds
+    qint64 viewOffset = 0; 
+    qint64 duration = 0;   
     bool isWatched = false;
     QString parentTitle;
     QString grandparentTitle;
@@ -65,7 +65,6 @@ public:
     Q_INVOKABLE void updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs);
     Q_INVOKABLE void executeSystemCommand(const QString &command);
     Q_INVOKABLE void checkPermissions();
-    Q_INVOKABLE void deployHdrScript(bool enable, const QString &enableCmd, const QString &disableCmd);
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);

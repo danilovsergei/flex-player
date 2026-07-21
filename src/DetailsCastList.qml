@@ -113,7 +113,7 @@ Item {
                         Item { Layout.fillHeight: true }
                     }
                 }
-            } // End ListView
+            }
             
             HoverHandler { id: castHover }
 

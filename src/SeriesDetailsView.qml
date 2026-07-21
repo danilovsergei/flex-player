@@ -87,13 +87,13 @@ Item {
         req.send();
     }
 
-    // Main layout
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 40
         spacing: 30
 
-        // Header: Back Button + Title
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 20
@@ -125,13 +125,13 @@ Item {
             }
         }
 
-        // Content
+
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             spacing: 40
 
-            // Left side: Poster
+
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredWidth: 300
@@ -157,7 +157,7 @@ Item {
                 }
             }
 
-            // Right side: Details
+
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true

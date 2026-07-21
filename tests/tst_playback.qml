@@ -66,13 +66,13 @@ TestCase {
                 function test_64_seek_acceleration() {
         var player = findChild(mainWindow, "playerView");
         verify(player !== null, "PlayerView should exist");
-        // We just verify the shortcut is defined in Main by searching for it
-        // Shortcut is not an Item, so findChild might not work easily
-        // We will just verify the throttleSeek exists in controller
+
+
+
         verify(mainWindow.testGlobalRecentModel !== undefined, "Global Recent model should exist");
     }
     function test_65_continue_watching_navigation_isolation() {
-        // IDENTITY CHECK
+
         var homeView = findChild(mainWindow, "homeView");
         var libraryView = findChild(mainWindow, "libraryView");
         verify(homeView.continueWatchingModel !== libraryView.continueWatchingModel, "Models should be distinct instances");
@@ -115,12 +115,12 @@ TestCase {
         var homeView = findChild(mainWindow, "homeView");
         verify(homeView !== null, "Home view should exist");
         
-        // 1. Verify Movie rail
+
         var movieRail = findChild(homeView, "libraryRail_1"); 
         verify(movieRail !== null, "Movie LibraryRail should be found");
         compare(movieRail.lastFetchedEndpoint, "/library/sections/1/recentlyAdded", "Movie rail endpoint should be /recentlyAdded");
         
-        // MANUALLY LOAD MOCK DATA INTO THE RAIL MODEL
+
         var movieModel = findChild(movieRail, "delegateRecentModel");
         verify(movieModel !== null, "Movie rail model should be found");
         movieModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy1.mkv"], "movie", 0, 0, false);
@@ -130,12 +130,12 @@ TestCase {
         verify(movieList.count > 0, "Movie rail should show items");
         verify(movieRail.visible === true, "Movie rail should be visible");
         
-        // 2. Verify Series rail
+
         var seriesRail = findChild(homeView, "libraryRail_2"); 
         verify(seriesRail !== null, "Series LibraryRail should be found");
         compare(seriesRail.lastFetchedEndpoint, "/library/sections/2/all?type=2&sort=addedAt:desc", "Series rail endpoint should be correct");
         
-        // MANUALLY LOAD MOCK DATA
+
         var seriesModel = findChild(seriesRail, "delegateRecentModel");
         verify(seriesModel !== null, "Series rail model should be found");
         seriesModel.loadMockData(["/home/geonix/Build/flex_player/tests/dummy2.mkv"], "show", 0, 0, false);
@@ -170,7 +170,7 @@ TestCase {
         
         var countMatches = false;
         for (var i = 0; i < 50; i++) {
-            // Check if the homeLibrariesList is populated instead of looking for the dynamic ListView
+
             if (findChild(mainWindow, "homeView").homeLibrariesList.length > 0) {
                 countMatches = true;
                 break;
@@ -738,7 +738,7 @@ TestCase {
         spy.target = playerView;
         spy.signalName = "timelineUpdateRequested";
         
-        // Simulate playing a video
+
         playerView.currentRatingKey = "12345";
         playerView.visible = true;
         
@@ -1042,14 +1042,14 @@ TestCase {
         var detailsMenuItem = findChild(delegate, "detailsMenuItem");
         verify(detailsMenuItem !== null, "detailsMenuItem should exist");
         
-        // Check background color of the menu
+
         var bg = contextMenu.background;
         verify(bg !== null, "Menu background should exist");
         verify(bg.color !== undefined, "Menu background should have a color");
         var bgColorStr = bg.color.toString();
         verify(bgColorStr === "#111111" || bgColorStr === "#222222", "Menu background color should be #111111 or #222222, actual: " + bgColorStr);
         
-        // Check text color of the menu item
+
         var itemContent = detailsMenuItem.contentItem;
         verify(itemContent !== null, "MenuItem contentItem should exist");
         verify(itemContent.color !== undefined, "MenuItem contentItem should have a color");
@@ -1107,7 +1107,7 @@ TestCase {
         var subBtn = findChild(pv, "playerSubtitleButton");
         verify(subBtn !== null, "Subtitle selection button should exist");
         
-        // Check menus
+
         var audioMenu = findChild(pv, "playerAudioMenu");
         verify(audioMenu !== null, "Audio menu should exist");
         verify(audioMenu.count === 2, "Audio menu should have 2 items");
@@ -1122,7 +1122,7 @@ TestCase {
         verify(engItem.text === "English", "Second audio item should be English");
         engItem.triggered();
         
-        // Verify mpv property changed
+
         var mpvObj = findChild(pv, "mpvObject");
         verify(mpvObj !== null, "mpvObject should exist");
         
@@ -1172,7 +1172,7 @@ TestCase {
         // So I can simulate exactly what `onreadystatechange` does!
         var mockResponseText = JSON.stringify(mockJson);
         
-        // Simulate the inner block of req.onreadystatechange
+
         var data = JSON.parse(mockResponseText);
         pv.mediaStreams = data.MediaContainer.Metadata[0].Media[0].Part[0].Stream || [];
         
@@ -1243,7 +1243,7 @@ TestCase {
         var mpvObj = findChild(pv, "mpvObject");
         verify(mpvObj !== null, "mpvObject should exist");
         
-        // Simulate mpv choosing track 1 internally
+
         mpvObj.aid = "1";
         
         wait(100);
@@ -1344,7 +1344,7 @@ TestCase {
         verify(mpvObj.volume === 100.0, "Initial volume should be 100.0");
         verify(volSlider.value === 100.0, "Initial slider value should be 100.0");
         
-        // Simulate dragging the slider
+
         volSlider.value = 50.0;
         
         // Volume property on mpvObject should update immediately (synchronously via onValueChanged)
@@ -1369,7 +1369,7 @@ TestCase {
         wait(50);
         verify(!mpvObj.paused, "Video should be playing initially");
         
-        // Simulate a mouse click directly on the volume slider
+
         mouseClick(volSlider, volSlider.width / 2, volSlider.height / 2);
         
         // Wait to see if singleClickTimer triggers the pause
@@ -1392,7 +1392,7 @@ TestCase {
         // Initial state
         verify(mpvObj.volume === 100.0, "Initial volume should be 100.0");
         
-        // Simulate a mouse click at 50% width of the slider
+
         // The padding is usually small.
         volSlider.value = 50.0;
         
@@ -1455,7 +1455,7 @@ TestCase {
         
         wait(200);
         
-        // Check Poster and On Deck
+
         var poster = findChild(seasonDetailsView, "seasonDetailsPoster");
         verify(poster !== null, "Poster should exist");
         
@@ -1464,7 +1464,7 @@ TestCase {
         verify(onDeckLabel.visible === true, "On Deck label should be visible");
         verify(onDeckLabel.text === "On Deck - E2", "On Deck label text should match expected");
         
-        // Check Details
+
         var title = findChild(seasonDetailsView, "seasonDetailsTitle");
         verify(title.text === "Test Series - Season 1", "Title should match");
         
@@ -1472,12 +1472,12 @@ TestCase {
         verify(playBtn !== null, "Play button should exist");
         verify(playBtn.text === "Resume", "Play button should be Resume since epToPlay is in progress. Actual: " + playBtn.text);
         
-        // Check Episodes List
+
         var episodesGrid = findChild(seasonDetailsView, "seasonEpisodesGrid");
         verify(episodesGrid !== null, "Episodes grid should exist");
         verify(episodesGrid.count === 2, "Episodes grid should have 2 items");
         
-        // Check Cast List (DetailsCastList)
+
         var castList = findChild(seasonDetailsView, "detailsCastList");
         verify(castList !== null, "Cast list should exist");
         verify(castList.count === 1, "Cast list should have 1 item");
@@ -1628,7 +1628,7 @@ TestCase {
         var castListView = findChild(seasonDetailsView, "detailsCastList");
         verify(castListView !== null, "detailsCastList should exist in season view");
         
-        // Verify it inherited the 2 actors from the Series Data!
+
         verify(castListView.count === 2, "Cast list should have inherited 2 items from the Series. Actual: " + castListView.count);
         
         var castRoot = castListView.parent.parent.parent;
@@ -1694,7 +1694,7 @@ TestCase {
         settingsWin.openTab(2, "", "");
         wait(200);
         
-        // Verify Hotkeys tab is active
+
         var sidebarCol = findChild(settingsWin, "settingsSidebarColumn");
         verify(sidebarCol !== null, "sidebarCol should exist");
         verify(sidebarCol.settingsTab === 2, "Tab should be 2 (Hotkeys)");
@@ -1707,12 +1707,12 @@ TestCase {
         mouseClick(setBtn, setBtn.width / 2, setBtn.height / 2);
         wait(100);
         
-        // Verify overlay is visible
+
         var overlay = findChild(settingsWin, "hotkeyOverlay");
         verify(overlay !== null, "hotkeyOverlay should exist");
         verify(overlay.visible === true, "hotkeyOverlay should be visible after clicking Set");
         
-        // Simulate a key press on the overlay
+
         // Qt.Key_X is just an arbitrary key for testing
         overlay.forceActiveFocus();
         wait(100);
@@ -1720,7 +1720,7 @@ TestCase {
         overlay.bindKey("x");
         wait(100);
         
-        // Verify overlay closed
+
         verify(overlay.visible === false, "hotkeyOverlay should close after key press");
         
 

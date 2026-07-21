@@ -71,13 +71,13 @@ Item {
         return Math.floor(ms / 60000);
     }
 
-    // Main layout
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 40
         spacing: 30
 
-        // Header: Back Button + Title
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 20
@@ -115,13 +115,13 @@ Item {
             }
         }
 
-        // Content
+
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             spacing: 40
 
-            // Left side: Poster & Progress
+
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredWidth: 300
@@ -136,7 +136,7 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                 }
 
-                // Progress
+
                 Rectangle {
                     Layout.preferredWidth: 300
                     Layout.preferredHeight: 6
@@ -158,15 +158,15 @@ Item {
                     font.pixelSize: 14
                     visible: detailsData && detailsData.viewOffset > 0
                 }
-            } // End Left side
+            }
 
-            // Right side: Details
+
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true
                 spacing: 20
 
-                // Year, Duration, Content Rating, Rating, Genres
+
                 RowLayout {
                     spacing: 20
                     Text { text: detailsData && detailsData.year ? detailsData.year : ""; color: "#aaaaaa"; font.pixelSize: 18 }
@@ -294,7 +294,7 @@ Item {
                     Layout.maximumWidth: 800
                 }
 
-                // Dropdowns (Video, Audio, Subtitles)
+
                 ColumnLayout {
                     spacing: 15
                     Layout.topMargin: 20
@@ -548,9 +548,9 @@ Item {
                         contentItem: Text { text: watchedBtn.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                         background: Rectangle { implicitWidth: 140; implicitHeight: 40; color: "#444444"; radius: 8 }
                     }
-                } // End Buttons RowLayout
-            } // End Right side ColumnLayout
-        } // End Content RowLayout
+                }
+            }
+        }
 
 
                 DetailsCastList {
@@ -561,5 +561,5 @@ Item {
         Item {
             Layout.fillHeight: true
         }
-    } // End Main ColumnLayout
-} // End Root Item
+    }
+}

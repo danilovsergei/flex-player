@@ -10,7 +10,7 @@ Item {
     property var playerView
     property var settingsWindow
     
-    // State properties
+
     property bool isScrubbing: false
     property bool wasPausedBeforeScrub: false
     property real lastSeekTime: 0
@@ -20,10 +20,10 @@ Item {
     property string currentLibraryId: "1"
     property string currentLibraryTitle: "Movies"
 
-    // Testing signals
+
     signal hdrCommandExecuted(string command)
 
-    // Models
+
     PlexModel { id: m_recentlyAddedModel }
     PlexModel { id: m_continueWatchingModel }
     PlexModel { id: m_collectionsModel }
@@ -34,7 +34,7 @@ Item {
     PlexModel { id: m_libraryContinueWatchingModel }
     PlexModel { id: m_libraryCollectionsModel }
 
-    // Expose models for easier access from Main
+
     property alias globalRecentModel: m_recentlyAddedModel
     property alias globalDeckModel: m_continueWatchingModel
     property alias collectionsModel: m_collectionsModel
@@ -119,7 +119,6 @@ Item {
         }
     }
 
-    // Now a no-op as logic is moved to QML/C++ properties
     function deployHdrScript() {
         console.log("GlobalController: performing legacy HDR script cleanup...")
         if (m_continueWatchingModel) {
