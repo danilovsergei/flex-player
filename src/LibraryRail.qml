@@ -5,6 +5,7 @@ import flex.plex 1.0
 
 ColumnLayout {
     id: railRoot
+    Layout.preferredWidth: 1200
     objectName: "libraryRail_" + libraryId
     property var rootApp
     property string libraryTitle: ""
@@ -14,6 +15,13 @@ ColumnLayout {
     property string lastFetchedEndpoint: ""
 
     spacing: 10
+
+        Component {
+        id: internalPosterDelegate
+        MoviePosterDelegate {
+            isTestMode: (typeof rootApp !== 'undefined' && rootApp && rootApp.isTestMode)
+        }
+    }
 
     PlexModel {
         id: delegateRecentModel
@@ -87,7 +95,7 @@ ColumnLayout {
             orientation: ListView.Horizontal
             spacing: 20
             model: delegateRecentModel
-            delegate: rootApp ? rootApp.globalMovieDelegate : null
+            delegate: internalPosterDelegate
             clip: true
             interactive: false
             

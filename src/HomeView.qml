@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import flex.plex 1.0
 
 ScrollView {
+    implicitWidth: 1280
+    implicitHeight: 720
     id: root
     objectName: "homeView"
     clip: true

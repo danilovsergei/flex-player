@@ -49,6 +49,7 @@ Rectangle {
     }
         PlexAuth {
             id: plexAuth
+            objectName: "plexAuth"
             onTokenReceived: function(token) {
                 tokenField.text = token
             }

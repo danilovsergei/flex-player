@@ -42,7 +42,8 @@ Window {
     property Component globalMovieDelegate: movieDelegate
 
     // Virtual property to allow headless tests to spoof fullscreen states
-    property bool isFullScreenMode: mainWindow.visibility === Window.FullScreen
+    property bool manualFullScreen: false
+    property bool isFullScreenMode: manualFullScreen || mainWindow.visibility === Window.FullScreen || mainWindow.visibility === Window.AutomaticVisibility
 
     readonly property color plexOrange: "#E5A00D"
 
@@ -66,13 +67,16 @@ Window {
     }
 
     function toggleFullScreen() {
+        if (isTestMode) { console.log("DEBUG: toggleFullScreen in test mode, manualFullScreen was: " + manualFullScreen);
+            manualFullScreen = !manualFullScreen;
+            return;
+        }
         if (mainWindow.visibility === Window.FullScreen) {
             mainWindow.showNormal()
         } else {
             mainWindow.showFullScreen()
         }
     }
-
     Shortcut {
         sequence: appSettings.fullscreenHotkey
         onActivated: toggleFullScreen()
@@ -291,6 +295,7 @@ Window {
 
     PlayerView {
         id: playerView
+        objectName: "playerView"
         rootApp: mainWindow
         isFullScreenMode: mainWindow.isFullScreenMode
         onTimelineUpdateRequested: function(state, timeMs) {

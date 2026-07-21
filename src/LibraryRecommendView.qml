@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import flex.plex 1.0
 
 Item {
+    implicitWidth: 1280
+    implicitHeight: 720
     id: root
     objectName: "libraryView"
     
@@ -17,7 +19,6 @@ Item {
     property Component movieDelegate
 
     ColumnLayout {
-        anchors.fill: parent
         spacing: 0
 
         // Top Bar

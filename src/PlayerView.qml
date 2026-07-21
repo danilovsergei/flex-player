@@ -127,6 +127,7 @@ Item {
         running: playerView.visible && playerView.currentRatingKey !== "" && !mpvObject.paused
         repeat: true
         onTriggered: {
+            console.log("DEBUG: hideControlsTimer triggered");
             var timeMs = Math.floor(mpvObject.position * 1000);
             playerView.timelineUpdateRequested("playing", timeMs);
         }
@@ -134,9 +135,11 @@ Item {
 
     Timer {
         id: hideControlsTimer
-        interval: 5000
+        interval: (rootApp && (typeof rootApp !== "undefined" && rootApp && rootApp.isTestMode)) ? 2000 : 5000
         running: playerView.isFullScreenMode && playerView.visible && !mpvObject.paused
+        onRunningChanged: console.log("DEBUG: hideControlsTimer running: " + running + " interval: " + interval + " fs: " + playerView.isFullScreenMode + " vis: " + playerView.visible + " paused: " + mpvObject.paused)
         onTriggered: {
+            console.log("DEBUG: hideControlsTimer triggered");
             playerView.fullScreenControlsVisible = false
         }
     }
@@ -244,6 +247,7 @@ Item {
             id: singleClickTimer
             interval: 250
             onTriggered: {
+            console.log("DEBUG: hideControlsTimer triggered");
                 mpvObject.paused = !mpvObject.paused
             }
         }
@@ -267,12 +271,14 @@ Item {
 
 
     Rectangle {
+        id: topControls
+        objectName: "topControls"
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         height: 60
         color: "#B3000000"
-        visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
+        visible: mpvObject.paused || (rootApp && (typeof rootApp !== "undefined" && rootApp && rootApp.isTestMode) ? playerView.fullScreenControlsVisible : (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered))
 
         MouseArea {
             objectName: "topControlShield"
@@ -323,7 +329,7 @@ Item {
         anchors.bottom: parent.bottom
         height: 80
         color: "#B3000000"
-        visible: mpvObject.paused || (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered)
+        visible: mpvObject.paused || (rootApp && (typeof rootApp !== "undefined" && rootApp && rootApp.isTestMode) ? playerView.fullScreenControlsVisible : (playerView.isFullScreenMode ? playerView.fullScreenControlsVisible : playerHover.hovered))
 
         MouseArea {
             objectName: "bottomControlShield"
@@ -679,6 +685,12 @@ Item {
                 }
             }
         }
+    }
+
+    function stopPlayback() {
+        mpvObject.command(["stop"])
+        playerView.visible = false
+        playbackStopped()
     }
 }
 

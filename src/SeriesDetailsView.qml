@@ -4,9 +4,10 @@ import QtQuick.Layouts
 import QtQuick.Effects
 
 Item {
+    implicitWidth: 1280
+    implicitHeight: 720
     id: root
     objectName: "seriesDetailsView"
-    anchors.fill: parent
 
     property var rootApp: null
     property string rawJson: "{}"

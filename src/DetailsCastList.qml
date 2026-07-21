@@ -12,7 +12,7 @@ Item {
     Layout.preferredHeight: visible ? castRoot.implicitHeight : 0
     
     // Hide completely if there is no cast data
-    visible: detailsData && detailsData.Role && detailsData.Role.length > 0
+    visible: !!(detailsData && detailsData.Role && detailsData.Role.length > 0)
 
     ColumnLayout {
         id: castRoot
@@ -38,7 +38,7 @@ Item {
                 spacing: 20
                 clip: true
                 interactive: false
-                model: rootItem.visible ? detailsData.Role : []
+                model: (detailsData && detailsData.Role && detailsData.Role.length > 0) ? detailsData.Role : []
                 
                 Behavior on contentX {
                     NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }

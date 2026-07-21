@@ -39,21 +39,6 @@ Flex Player uses CMake as its build system. Follow these steps to build the appl
    - `flex_player_app` (The main application)
    - `flex_player_test` (The headless TDD UI test suite)
 
-## Running the Automated Tests
-
-Flex Player uses strict Test-Driven Development (TDD). Before deploying or running the application, it is highly recommended to execute the UI test suite to verify the integrity of the application.
-
-```bash
-./flex_player_test
-```
-If running through ssh remotely, you will need to set also
-```bash
-export XDG_RUNTIME_DIR=/run/user/1000
-export WAYLAND_DISPLAY=wayland-0
-```
-
-*Note: A successful test run should finish with `Totals: XX passed, 0 failed`.*
-
 ## Running the Application
 
 To run the application natively on a Wayland display, use the following command:

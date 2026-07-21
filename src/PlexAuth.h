@@ -22,6 +22,9 @@ public:
 
     Q_INVOKABLE void requestPin();
     Q_INVOKABLE void cancelLogin();
+    Q_INVOKABLE void setPinCode(const QString &code);
+    Q_INVOKABLE void setIsPolling(bool polling);
+    
 
 signals:
     void pinCodeChanged();
@@ -42,6 +45,5 @@ private:
     QString m_clientId;
     bool m_isPolling;
     
-    void setPinCode(const QString &code);
-    void setIsPolling(bool polling);
+    
 };

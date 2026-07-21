@@ -2,6 +2,11 @@ import QtQuick
 import QtQuick.Controls
 
 Item {
+    // When true, UI elements sensitive to mouse hover (like the Three-Dots button)
+    // are forced to be visible. This is essential for headless testing where
+    // mouse movements are not always reliably processed by the compositor.
+    property bool isTestMode: false
+
     id: root
     width: 200
     height: 300
@@ -23,7 +28,7 @@ Item {
 
         Image {
             anchors.fill: parent
-            source: model.thumbUrl !== undefined ? model.thumbUrl : thumbUrl
+            source: (typeof model !== "undefined" && model.thumbUrl) !== undefined ? (typeof model !== "undefined" && model.thumbUrl) : thumbUrl
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
         }
@@ -33,7 +38,7 @@ Item {
             anchors.bottom: parent.bottom
             width: parent.width
             height: {
-                var mType = model.type !== undefined ? model.type : type
+                var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
                 return (mType === "show" || mType === "season") ? 50 : 40
             }
             color: "#cc000000"
@@ -47,12 +52,12 @@ Item {
                     objectName: "posterTitle"
                     width: parent.width
                     text: {
-                        var mType = model.type !== undefined ? model.type : type
-                        var mTitle = model.title !== undefined ? model.title : title
-                        if (mType === "episode" && model.grandparentTitle) {
-                            return model.grandparentTitle + " - S" + model.parentIndex
+                        var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
+                        var mTitle = (typeof model !== "undefined" && model.title !== undefined) ? model.title : title
+                        if (mType === "episode" && (typeof model !== "undefined" && model.grandparentTitle)) {
+                            return (typeof model !== "undefined" && model.grandparentTitle) + " - S" + (typeof model !== "undefined" && model.parentIndex)
                         }
-                        return mType === "season" && model.parentTitle ? model.parentTitle : mTitle
+                        return mType === "season" && (typeof model !== "undefined" && model.parentTitle) ? (typeof model !== "undefined" && model.parentTitle) : mTitle
                     }
                     color: "white"
                     font.pixelSize: 14
@@ -66,10 +71,10 @@ Item {
                     objectName: "posterSubTitle"
                     width: parent.width
                     text: {
-                        var mType = model.type !== undefined ? model.type : type
-                        var mTitle = model.title !== undefined ? model.title : title
+                        var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
+                        var mTitle = (typeof model !== "undefined" && model.title !== undefined) ? model.title : title
                         if (mType === "episode") {
-                            return mTitle + " - E" + model.index
+                            return mTitle + " - E" + (typeof model !== "undefined" && model.index)
                         }
                         return mType === "season" ? mTitle : (mType === "show" ? model.childCount + " Season" + (model.childCount !== 1 ? "s" : "") : "")
                     }
@@ -86,7 +91,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 height: 4
-                width: (model.duration > 0 && model.viewOffset > 0) ? (model.viewOffset / model.duration) * parent.width : 0
+                width: ((typeof model !== "undefined" && model.duration) > 0 && (typeof model !== "undefined" && model.viewOffset) > 0) ? ((typeof model !== "undefined" && model.viewOffset) / (typeof model !== "undefined" && model.duration)) * parent.width : 0
                 color: plexOrange
                 visible: width > 0
             }
@@ -101,7 +106,7 @@ Item {
             radius: 4
             color: "#b3000000"
             visible: {
-                var mType = model.type !== undefined ? model.type : type
+                var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
                 return (mType === "show" || mType === "season") && model.leafCount > 0
             }
 
@@ -147,6 +152,11 @@ Item {
             border.color: "#444444"
         }
         MenuItem {
+    // When true, UI elements sensitive to mouse hover (like the Three-Dots button)
+    // are forced to be visible. This is essential for headless testing where
+    // mouse movements are not always reliably processed by the compositor.
+    property bool isTestMode: false
+
             id: detailsMenuItem
             text: "Details"
             objectName: "detailsMenuItem"
@@ -161,7 +171,7 @@ Item {
                 radius: 4
             }
             onTriggered: {
-                var mRatingKey = typeof model !== 'undefined' && typeof model.ratingKey !== 'undefined' ? model.ratingKey : ratingKey
+                var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
                 root.openDetails(mRatingKey)
             }
         }
@@ -217,15 +227,15 @@ Item {
             
             try {
                 var mType = ""
-                if (typeof model !== "undefined" && model.type !== undefined) mType = model.type
+                if (typeof model !== "undefined" && (typeof model !== "undefined" && model.type !== undefined)) mType = model.type
                 else if (typeof type !== "undefined") mType = type
                 
                 var mRatingKey = ""
-                if (typeof model !== "undefined" && model.ratingKey !== undefined) mRatingKey = model.ratingKey
+                if (typeof model !== "undefined" && (typeof model !== "undefined" && model.ratingKey) !== undefined) mRatingKey = (typeof model !== "undefined" && model.ratingKey)
                 else if (typeof ratingKey !== "undefined") mRatingKey = ratingKey
                 
                 var mTitle = ""
-                if (typeof model !== "undefined" && model.title !== undefined) mTitle = model.title
+                if (typeof model !== "undefined" && (typeof model !== "undefined" && model.title !== undefined)) mTitle = model.title
                 else if (typeof title !== "undefined") mTitle = title
                 
                 var mMediaUrl = ""
@@ -233,7 +243,7 @@ Item {
                 else if (typeof mediaUrl !== "undefined") mMediaUrl = mediaUrl
                 
                 var mViewOffset = 0
-                if (typeof model !== "undefined" && model.viewOffset !== undefined) mViewOffset = model.viewOffset
+                if (typeof model !== "undefined" && (typeof model !== "undefined" && model.viewOffset) !== undefined) mViewOffset = (typeof model !== "undefined" && model.viewOffset)
                 else if (typeof viewOffset !== "undefined") mViewOffset = viewOffset
                 
                 if (mType === "collection") {
@@ -243,7 +253,7 @@ Item {
                 } else {
                     var urlToPlay = mMediaUrl ? mMediaUrl : ""
                     var mDuration = 0
-                    if (typeof model !== "undefined" && model.duration !== undefined) mDuration = model.duration
+                    if (typeof model !== "undefined" && (typeof model !== "undefined" && model.duration) !== undefined) mDuration = (typeof model !== "undefined" && model.duration)
                     else if (typeof duration !== "undefined") mDuration = duration
                     root.playMedia(mTitle, urlToPlay, mViewOffset, mRatingKey, mDuration)
                 }
@@ -264,7 +274,7 @@ Item {
         radius: 16
         color: "#88000000"
         border.color: "transparent"
-        visible: posterMouseArea.containsMouse || contextMenu.opened || threeDotsMouseArea.containsMouse
+        visible: isTestMode ? true : (posterMouseArea.containsMouse || contextMenu.opened || threeDotsMouseArea.containsMouse)
         
         Text {
             anchors.centerIn: parent

@@ -1,0 +1,48 @@
+FROM fedora:40
+
+RUN dnf -y install \
+    gcc-c++ \
+    cmake \
+    ninja-build \
+    patch \
+    extra-cmake-modules \
+    pkgconf-pkg-config \
+    qt6-qtbase-devel \
+    qt6-qtbase-private-devel \
+    qt6-qtdeclarative-devel \
+    qt6-qtsvg-devel \
+    qt6-qtmultimedia-devel \
+    qt6-qtwayland \
+    mpv-libs-devel \
+    weston \
+    xorg-x11-server-Xwayland \
+    mesa-dri-drivers \
+    libX11-devel \
+    libXext-devel \
+    libXrender-devel \
+    libxkbcommon-devel \
+    strace \
+    && dnf clean all
+
+WORKDIR /app
+
+# Copy source code (respecting .dockerignore)
+COPY . /app
+
+# Apply MpvQt patches for modern environments from project root
+RUN patch -p1 < flatpak/patches/mpvqt-flatpak-fixes.patch
+
+# Patch MpvQt to accept Fedora 40's ECM version (6.13 instead of 6.15)
+RUN sed -i 's/ECM 6.15.0/ECM 6.13.0/g' 3rdparty/mpvqt/CMakeLists.txt
+
+# Build the project (including tests)
+RUN mkdir build_container && cd build_container && \
+    cmake -G Ninja .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DECM_DIR=/usr/share/ECM/cmake && \
+    ninja
+
+RUN chmod +x /app/tests/docker_entrypoint.sh
+
+ENTRYPOINT ["/app/tests/docker_entrypoint.sh"]
+

@@ -1,0 +1,10 @@
+build/
+build_docker/
+build_container/
+*.log
+repo/
+.git/
+.flatpak-builder/
+assets/*.mp4
+!flatpak/patches/*.patch
+
