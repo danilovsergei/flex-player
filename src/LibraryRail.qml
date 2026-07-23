@@ -13,15 +13,9 @@ ColumnLayout {
     property string libraryType: ""
     
     property string lastFetchedEndpoint: ""
+    property Component movieDelegate
 
     spacing: 10
-
-        Component {
-        id: internalPosterDelegate
-        MoviePosterDelegate {
-            isTestMode: (typeof rootApp !== 'undefined' && rootApp && rootApp.isTestMode)
-        }
-    }
 
     PlexModel {
         id: delegateRecentModel
@@ -38,10 +32,9 @@ ColumnLayout {
         
         var endpoint = "";
         if (libraryType === "show") {
-            // RE-USE the exact logic from Series page: Shows sorted by added date
             endpoint = "/library/sections/" + libraryId + "/all?type=2&sort=addedAt:desc";
         } else {
-            endpoint = "/library/sections/" + libraryId + "/recentlyAdded";
+            endpoint = "/library/sections/" + libraryId + "/all?type=1&sort=addedAt:desc";
         }
         
         lastFetchedEndpoint = endpoint;
@@ -51,15 +44,19 @@ ColumnLayout {
             return;
         }
 
-        if (rootApp.serverUrl && rootApp.serverUrl !== "") {
+        if (rootApp.controller.connectionManager && rootApp.controller.connectionManager.activeUrl !== "") {
             console.log("LibraryRail [" + libraryTitle + "] (Type: " + libraryType + "): Fetching from " + endpoint);
-            delegateRecentModel.fetchEndpoint(rootApp.serverUrl, rootApp.token, endpoint);
+            delegateRecentModel.fetchEndpoint(rootApp.controller.connectionManager.activeUrl, rootApp.appSettings.token, endpoint);
         } else {
             retryTimer.restart();
         }
     }
 
     onRootAppChanged: refresh()
+    Connections {
+        target: rootApp && rootApp.controller.connectionManager ? rootApp.controller.connectionManager : null
+        function onActiveUrlChanged() { railRoot.refresh() }
+    }
     onLibraryIdChanged: refresh()
     onLibraryTypeChanged: refresh()
     onLibraryTitleChanged: refresh()
@@ -95,7 +92,7 @@ ColumnLayout {
             orientation: ListView.Horizontal
             spacing: 20
             model: delegateRecentModel
-            delegate: internalPosterDelegate
+            delegate: movieDelegate
             clip: true
             interactive: false
             

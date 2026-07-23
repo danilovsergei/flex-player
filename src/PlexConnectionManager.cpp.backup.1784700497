@@ -1,0 +1,194 @@
+#include <QSslError>
+#include "PlexConnectionManager.h"
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QDebug>
+#include <QVariantMap>
+
+PlexConnectionManager::PlexConnectionManager(QObject *parent) : QObject(parent) {
+    m_heartbeatTimer.setInterval(30000);
+    connect(&m_heartbeatTimer, &QTimer::timeout, this, &PlexConnectionManager::onHeartbeat);
+    
+    m_remoteGraceTimer.setInterval(500); 
+    m_remoteGraceTimer.setSingleShot(true);
+    connect(&m_remoteGraceTimer, &QTimer::timeout, this, &PlexConnectionManager::onRemoteGraceTimeout);
+}
+
+void PlexConnectionManager::setToken(const QString &token) {
+    if (m_token != token) {
+        m_token = token;
+        emit tokenChanged();
+    }
+}
+
+void PlexConnectionManager::setActiveUrl(const QString &url) {
+    if (m_activeUrl != url) {
+        qDebug() << "[ConnManager] Setting activeUrl to:" << url;
+        m_activeUrl = url;
+        emit activeUrlChanged();
+        updateHeartbeatTimer();
+    }
+}
+
+void PlexConnectionManager::startExhaustiveProbe(const QVariantList &connections) {
+    if (m_isResolving) return;
+    
+    m_lastConnections = connections;
+    m_isResolving = true;
+    m_pendingReplies = 0;
+    m_pendingRemoteWinner = "";
+    m_remoteGraceTimer.stop();
+    emit isResolvingChanged();
+    
+    qDebug() << "[ConnManager] Starting exhaustive probe for" << connections.size() << "candidates";
+
+    if (m_isTestMode) {
+        QString localCandidate;
+        QString remoteCandidate;
+        for (const QVariant &v : connections) {
+            QVariantMap conn = v.toMap();
+            QString url = QString("http://%1:%2").arg(conn["address"].toString()).arg(conn["port"].toInt());
+            if (m_mockResponses.value(url, false)) {
+                if (conn["local"].toBool()) { localCandidate = url; break; }
+                else if (remoteCandidate.isEmpty()) remoteCandidate = url;
+            }
+        }
+        
+        QString winner = !localCandidate.isEmpty() ? localCandidate : remoteCandidate;
+        if (!winner.isEmpty()) {
+            finalizeResolution(winner);
+        } else {
+            m_isResolving = false;
+            emit isResolvingChanged();
+            emit resolutionFinished(false);
+        }
+        return;
+    }
+
+    struct ProbeCandidate { QString url; bool local; };
+    QList<ProbeCandidate> candidates;
+    
+    for (const QVariant &v : connections) {
+        QVariantMap conn = v.toMap();
+        QString addr = conn["address"].toString();
+        int port = conn["port"].toInt();
+        bool local = conn["local"].toBool();
+        if (addr.isEmpty()) continue;
+        
+        // We only use https
+        candidates.append({QString("https://%1:%2").arg(addr).arg(port), local});
+    }
+    
+    for (const auto &c : candidates) {
+        m_pendingReplies++;
+        checkUrl(c.url, c.local);
+    }
+    
+    if (m_pendingReplies == 0) {
+        m_isResolving = false;
+        emit isResolvingChanged();
+        emit resolutionFinished(false);
+    }
+}
+
+void PlexConnectionManager::finalizeResolution(const QString &winner) {
+    if (!m_isResolving && !m_activeUrl.isEmpty()) return; // Already winner set
+
+    setActiveUrl(winner);
+    m_isResolving = false;
+    m_pendingRemoteWinner = "";
+    m_remoteGraceTimer.stop();
+    emit isResolvingChanged();
+    emit resolutionFinished(true);
+}
+
+void PlexConnectionManager::reportFailure(const QString &url) {
+    // CRITICAL FIX: We ONLY trigger re-probe if the CURRENT ACTIVE URL failed.
+    // We ignore failures of Docker/VPN candidates that are in flight.
+    if (!url.isEmpty() && url == m_activeUrl) {
+        qDebug() << "[ConnManager] ACTIVE URL failed:" << url << ". Triggering re-probe.";
+        setActiveUrl("");
+        startExhaustiveProbe(m_lastConnections);
+    }
+}
+
+void PlexConnectionManager::checkUrl(const QString &url, bool isLocal) {
+    QUrl qurl(url + "/identity");
+    QNetworkRequest request(qurl);
+    request.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    request.setTransferTimeout(3000);
+
+    QNetworkReply *reply = m_manager.get(request);
+    reply->setProperty("targetUrl", url);
+    reply->setProperty("isLocal", isLocal);
+    reply->ignoreSslErrors();
+    
+    connect(reply, &QNetworkReply::finished, this, &PlexConnectionManager::onReplyFinished);
+}
+
+void PlexConnectionManager::onReplyFinished() {
+    QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
+    if (!reply) return;
+    reply->deleteLater();
+
+    m_pendingReplies--;
+    QString url = reply->property("targetUrl").toString();
+    bool isLocal = reply->property("isLocal").toBool();
+    
+    // If we already resolved a winner, ignore subsequent candidate replies
+    if (!m_isResolving && !m_activeUrl.isEmpty()) {
+        return;
+    }
+
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[ConnManager] SUCCESS reached:" << url << "(Local:" << isLocal << ")";
+        
+        if (isLocal) {
+            qDebug() << "[ConnManager] Internal IP succeeded, choosing as primary winner.";
+            finalizeResolution(url);
+        } else {
+            if (m_activeUrl.isEmpty() && m_pendingRemoteWinner.isEmpty()) {
+                qDebug() << "[ConnManager] External IP succeeded. Waiting 500ms for local candidate...";
+                m_pendingRemoteWinner = url;
+                m_remoteGraceTimer.start();
+            }
+        }
+    } else {
+        qDebug() << "[ConnManager] Candidate failed (expected for non-routes):" << url << "Error:" << reply->errorString();
+    }
+    
+    if (m_pendingReplies <= 0) {
+        if (m_activeUrl.isEmpty()) {
+            if (!m_pendingRemoteWinner.isEmpty()) {
+                finalizeResolution(m_pendingRemoteWinner);
+            } else {
+                m_isResolving = false;
+                emit isResolvingChanged();
+                emit resolutionFinished(false);
+            }
+        }
+    }
+}
+
+void PlexConnectionManager::onRemoteGraceTimeout() {
+    if (m_activeUrl.isEmpty() && !m_pendingRemoteWinner.isEmpty()) {
+        qDebug() << "[ConnManager] Grace period over. No local success. Using external IP:" << m_pendingRemoteWinner;
+        finalizeResolution(m_pendingRemoteWinner);
+    }
+}
+
+void PlexConnectionManager::onHeartbeat() {
+    if (m_activeUrl.isEmpty() || !m_activeUrl.contains("192.168.")) {
+        qDebug() << "[ConnManager] Heartbeat: Re-probing candidates to find local connection...";
+        startExhaustiveProbe(m_lastConnections);
+    }
+}
+
+void PlexConnectionManager::updateHeartbeatTimer() {
+    if (!m_isTestMode && (m_activeUrl.isEmpty() || !m_activeUrl.contains("192.168."))) {
+        if (!m_heartbeatTimer.isActive()) m_heartbeatTimer.start();
+    } else {
+        m_heartbeatTimer.stop();
+    }
+}
+

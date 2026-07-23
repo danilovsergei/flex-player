@@ -24,18 +24,20 @@ public:
     Q_INVOKABLE void cancelLogin();
     Q_INVOKABLE void setPinCode(const QString &code);
     Q_INVOKABLE void setIsPolling(bool polling);
-    
+    Q_INVOKABLE void fetchServers(const QString &token);
 
 signals:
     void pinCodeChanged();
     void isPollingChanged();
     void tokenReceived(const QString &token);
+    void serversReceived(const QVariantList &servers);
     void authError(const QString &errorMsg);
 
 private slots:
     void onPinRequested();
     void pollPlex();
     void onPollFinished();
+    void onServersFetched();
 
 private:
     QNetworkAccessManager m_manager;
@@ -44,6 +46,5 @@ private:
     QString m_pinCode;
     QString m_clientId;
     bool m_isPolling;
-    
-    
 };
+

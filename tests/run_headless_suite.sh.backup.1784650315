@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Configuration
+IMAGE_NAME="flex-player-test"
+LOCAL_TEST_EXE="./build/flex_player_test"
+PARALLEL_JOBS=4
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -j|--jobs) PARALLEL_JOBS="$2"; shift ;;
+        *) POSITIONALS+=("$1") ;;
+    esac
+    shift
+done
+
+# 1. Ensure docker image exists
+if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
+    echo "Error: Docker image '$IMAGE_NAME' not found. Please build it first:"
+    echo "docker build -t $IMAGE_NAME -f Dockerfile.test ."
+    exit 1
+fi
+
+# 2. Get test functions
+echo "Scanning for test functions..."
+FUNCS=$($LOCAL_TEST_EXE -platform offscreen -functions 2>&1 | grep "SidebarAndPlaybackTest::test_")
+
+if [ -z "$FUNCS" ]; then
+    echo "Error: Could not list test functions. Ensure the project is built locally in ./build"
+    exit 1
+fi
+
+# 3. Setup
+TOTAL_TESTS=$(echo "$FUNCS" | wc -l)
+OUT_DIR="tests/results"
+mkdir -p "$OUT_DIR"
+rm -f "$OUT_DIR"/*.log
+rm -f tests/docker_failed_details.log
+
+echo "--- Starting Weston Headless CI Suite ($TOTAL_TESTS tests) ---"
+echo "Parallelism: $PARALLEL_JOBS jobs"
+
+RESULTS_FILE="tests/run_results.tmp"
+rm -f "$RESULTS_FILE"
+touch "$RESULTS_FILE"
+
+# 4. Execution Loop
+CURRENT_JOBS=0
+
+for FUNC in $FUNCS; do
+    FNAME=$(echo $FUNC | cut -d'(' -f1)
+    
+    (
+        LOG_FILE="$OUT_DIR/$FNAME.log"
+        # Run test in docker
+        docker run --rm --pull=never $IMAGE_NAME "$FNAME" > "$LOG_FILE" 2>&1
+        local_ret=$?
+        
+        # Check for PASS in log. We use a regex that handles the suite prefix.
+        if [ $local_ret -eq 0 ] && grep -q "PASS   : .*$FNAME" "$LOG_FILE"; then
+            echo "PASS|$FNAME" >> "$RESULTS_FILE"
+            echo -e "  [ PASS ] $FNAME"
+        else
+            echo "FAIL|$FNAME" >> "$RESULTS_FILE"
+            echo -e "  [ FAIL ] $FNAME"
+        fi
+    ) &
+    
+    ((CURRENT_JOBS++))
+    
+    if [[ $CURRENT_JOBS -ge $PARALLEL_JOBS ]]; then
+        wait -n
+        ((CURRENT_JOBS--))
+    fi
+done
+
+# Wait for remaining
+wait
+
+# 5. Reporting
+PASS_COUNT=$(grep "^PASS|" "$RESULTS_FILE" 2>/dev/null | wc -l)
+FAIL_COUNT=$(grep "^FAIL|" "$RESULTS_FILE" 2>/dev/null | wc -l)
+
+echo "--------------------------------------------------------"
+echo "Final Summary ($TOTAL_TESTS tests total)"
+echo "--------------------------------------------------------"
+
+if [ $FAIL_COUNT -gt 0 ]; then
+    echo "Failed Tests:"
+    while IFS='|' read -r status name; do
+        if [[ "$status" == "FAIL" ]]; then
+            echo " - $name"
+            echo "--- FAILURE IN $name ---" >> tests/docker_failed_details.log
+            cat "$OUT_DIR/$name.log" >> tests/docker_failed_details.log
+            echo "-------------------------" >> tests/docker_failed_details.log
+        fi
+    done < "$RESULTS_FILE"
+    echo "--------------------------------------------------------"
+    echo "Total: $PASS_COUNT passed, $FAIL_COUNT failed"
+    echo "See tests/docker_failed_details.log for details."
+    rm -f "$RESULTS_FILE"
+    exit 1
+else
+    echo "All $PASS_COUNT tests passed successfully!"
+    rm -f "$RESULTS_FILE"
+    exit 0
+fi
+

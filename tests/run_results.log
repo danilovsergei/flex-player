@@ -1,0 +1,17 @@
+PASS: SidebarAndPlaybackTest::test_64_seek_acceleration
+PASS: SidebarAndPlaybackTest::test_65_continue_watching_navigation_isolation
+PASS: SidebarAndPlaybackTest::test_66_home_global_recently_added_removed
+PASS: SidebarAndPlaybackTest::test_67_multi_library_home_rails
+PASS: SidebarAndPlaybackTest::test_68_home_libraries_structure
+PASS: SidebarAndPlaybackTest::test_1_home_tab_playback
+PASS: SidebarAndPlaybackTest::test_2_movies_tab_and_collections
+PASS: SidebarAndPlaybackTest::test_3_player_controls
+PASS: SidebarAndPlaybackTest::test_4_fullscreen
+PASS: SidebarAndPlaybackTest::test_5_autohide_controls
+PASS: SidebarAndPlaybackTest::test_6_watched_checkmark
+PASS: SidebarAndPlaybackTest::test_7_sidebar_collapse
+PASS: SidebarAndPlaybackTest::test_8_settings_window
+PASS: SidebarAndPlaybackTest::test_10_check_connection
+PASS: SidebarAndPlaybackTest::test_11_check_connection_fail
+PASS: SidebarAndPlaybackTest::test_12_settings_reset_on_open
+PASS: SidebarAndPlaybackTest::test_16_dynamic_sidebar

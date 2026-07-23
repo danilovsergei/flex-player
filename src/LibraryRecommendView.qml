@@ -7,6 +7,30 @@ Item {
     implicitWidth: 1280
     implicitHeight: 720
     id: root
+
+        Timer {
+            running: true
+            repeat: true
+            interval: 2000
+            onTriggered: {
+                if (root.visible && typeof recentlyAddedListLib !== "undefined" && recentlyAddedListLib.contentItem) {
+                    console.log("=== VISUAL GEOMETRY CHECK ===");
+                    var children = recentlyAddedListLib.contentItem.children;
+                    var visibleCount = 0;
+                    for (var i = 0; i < children.length; i++) {
+                        var child = children[i];
+                        if (child.objectName === "movieItem") {
+                            console.log("Poster " + i + ": x=" + child.x + ", w=" + child.width + ", h=" + child.height + ", visibleToUser=" + (child.x < recentlyAddedListLib.width));
+                            if (child.x < recentlyAddedListLib.width && child.width > 0) {
+                                visibleCount++;
+                            }
+                        }
+                    }
+                    console.log("TOTAL POSTERS VISUALLY ON SCREEN: " + visibleCount);
+                }
+            }
+        }
+
     objectName: "libraryView"
     
     property int libraryTab: 0 // 0: Recommend, 1: Collections
@@ -86,6 +110,9 @@ Item {
 
             // 0: Recommended
             ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                contentWidth: root.width
                 clip: true
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
@@ -101,6 +128,22 @@ Item {
                         Layout.topMargin: 20
                         Layout.leftMargin: 20
                         visible: continueWatchingListLib.count > 0
+                    }
+
+                    Timer {
+                        running: true
+                        repeat: true
+                        interval: 1000
+                        onTriggered: {
+                            console.log("---- LibraryRecommendView DEBUG ----");
+                            console.log("recentlyAddedModel rowCount: " + (root.recentlyAddedModel ? root.recentlyAddedModel.rowCount() : "null"));
+                            console.log("raRepeater.count: " + raRepeater.count);
+                            console.log("raRow.width: " + raRow.width);
+                            console.log("recentlyAddedListLib.contentWidth: " + recentlyAddedListLib.contentWidth);
+                            console.log("recentlyAddedListLib.width: " + recentlyAddedListLib.width);
+                            console.log("recentlyAddedListLib.visible: " + recentlyAddedListLib.visible);
+                            console.log("parent width: " + parent.width);
+                        }
                     }
 
                     Item {
@@ -120,6 +163,15 @@ Item {
                             clip: true
                             interactive: false
                             Behavior on contentX { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+                            
+                            // The ultimate StackLayout geometry bug fix:
+                            onWidthChanged: {
+                                if (width > 0 && model) {
+                                    var m = model;
+                                    model = null;
+                                    model = m;
+                                }
+                            }
                         }
                         
                         HoverHandler { id: cwLibHover }
@@ -171,6 +223,15 @@ Item {
                             clip: true
                             interactive: false
                             Behavior on contentX { NumberAnimation { duration: 300; easing.type: Easing.InOutQuad } }
+                            
+                            // The ultimate StackLayout geometry bug fix:
+                            onWidthChanged: {
+                                if (width > 0 && model) {
+                                    var m = model;
+                                    model = null;
+                                    model = m;
+                                }
+                            }
                         }
                         
                         HoverHandler { id: raLibHover }

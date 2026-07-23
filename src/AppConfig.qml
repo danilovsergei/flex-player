@@ -9,6 +9,8 @@ Item {
 
     property alias serverUrl: loginSettings.serverUrl
     property alias token: loginSettings.token
+    property alias localServerUrl: loginSettings.localServerUrl
+    property alias remoteServerUrl: loginSettings.remoteServerUrl
     property alias enabledLibraries: librarySettings.enabledLibraries
     property alias fullscreenHotkey: hotkeySettings.fullscreenHotkey
     property alias playPauseHotkey: hotkeySettings.playPauseHotkey
@@ -20,12 +22,19 @@ Item {
     property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
     property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
 
+    property alias serverList: loginSettings.serverList
+    property alias connectionVersion: loginSettings.connectionVersion
+
     Settings {
         id: loginSettings
         category: "Login"
         location: root.isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property string serverUrl: ""
         property string token: ""
+        property string localServerUrl: ""
+        property string remoteServerUrl: ""
+        property string serverList: "[]"
+        property int connectionVersion: 0
     }
 
     Settings {

@@ -1,0 +1,34 @@
+import QtQuick
+import QtTest
+import flex.plex 1.0
+
+TestCase {
+    name: "SidebarAndPlaybackTest"
+    when: windowShown
+
+    PlexConnectionManager {
+        id: cm
+    }
+
+    function test_99_no_plex_direct_enforcement() {
+        cm.localUrl = "http://192.168.31.2:32400"
+        cm.setIsTestMode(true)
+        cm.setMockResponse("http://192.168.31.2:32400", true)
+        cm.resolve()
+        tryCompare(cm, "activeUrl", "http://192.168.31.2:32400", 5000)
+        verify(!cm.activeUrl.includes("plex.direct"), "Active URL must be raw IP")
+    }
+
+    function test_101_self_healing_at_setter_level() {
+        // Verification that setting a plex.direct URL immediately sanitizes it
+        cm.localUrl = "https://192-168-31-2.abc.plex.direct:32400"
+        compare(cm.localUrl, "http://192.168.31.2:32400", "Setter must sanitize plex.direct immediately")
+        
+        cm.setIsTestMode(true)
+        cm.setMockResponse("http://192.168.31.2:32400", true)
+        
+        cm.resolve()
+        tryCompare(cm, "activeUrl", "http://192.168.31.2:32400", 5000)
+    }
+}
+

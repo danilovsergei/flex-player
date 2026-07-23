@@ -139,6 +139,7 @@ ScrollView {
                 libraryId: modelData.id
                 libraryType: modelData.type
                 rootApp: root.rootApp
+                movieDelegate: root.movieDelegate
                 Layout.fillWidth: true
                 Layout.preferredHeight: 400
                 visible: !emptyStateView.visible

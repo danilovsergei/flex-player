@@ -1,0 +1,72 @@
+import QtQuick
+import QtTest
+import flex.plex 1.0
+import "../src"
+
+TestCase {
+    name: "ConnectivityRaceTest"
+    when: windowShown
+    width: 800
+    height: 600
+
+    Item {
+        id: rootApp 
+        property bool isTestMode: true
+        property var appSettings: AppConfig { 
+            id: appCfg
+            isTestMode: true 
+            connectionVersion: 5
+        }
+        property var connectionManager: PlexConnectionManager { 
+            id: connMgr
+            objectName: "connectionManager" 
+        }
+        
+        anchors.fill: parent
+
+        SettingsWindow {
+            id: settingsWindow
+            anchors.fill: parent
+            visible: true
+            
+            // Explicitly provide dependencies that are usually global
+            property var appSettings: rootApp.appSettings
+            property var connectionManager: rootApp.connectionManager
+        }
+    }
+
+    function test_connectivity_race_and_priority() {
+        var cm = rootApp.connectionManager;
+        
+        // 1. Simulate a Plex resource response with messy data
+        var mockServer = {
+            name: "omv-test",
+            product: "Plex Media Server",
+            connections: [
+                { address: "172.172.0.1", port: 32400, local: true, protocol: "https" },
+                { address: "99.31.213.169", port: 22469, local: false, protocol: "https" },
+                { address: "192.168.31.2", port: 32400, local: true, protocol: "https" }
+            ]
+        };
+
+        // 2. Setup mock responses in the C++ engine
+        cm.setIsTestMode(true);
+        // Docker fails
+        cm.setMockResponse("https://172.172.0.1:32400", false);
+        // External succeeds
+        cm.setMockResponse("https://99.31.213.169:22469", true);
+        // Internal succeeds (This must win because it's Local!)
+        cm.setMockResponse("https://192.168.31.2:32400", true);
+
+        // 3. Trigger the probe logic (as the "Test" button does)
+        console.log("Starting test probe...");
+        rootApp.controller.connectionManager.startExhaustiveProbe(mockServer.connections, true);
+
+        // 4. Assert State transitions (Synchronous in mock mode)
+        compare(cm.activeUrl, "https://192.168.31.2:32400", "Local IP should win even if External succeeds");
+        compare(settingsWindow.connectionState, 2, "UI should show 'Connected' (Green)");
+        
+        console.log("Test passed: Local IP successfully won the race over External IP.");
+    }
+}
+

@@ -5,7 +5,7 @@ chmod 0700 $XDG_RUNTIME_DIR
 
 export WAYLAND_DISPLAY=wayland-0
 export QT_QPA_PLATFORM=wayland
-export FLEX_PLAYER_TEST_MODE=1
+if [ "$FLEX_PLAYER_TEST_MODE" = "0" ]; then unset FLEX_PLAYER_TEST_MODE; elif [ -z "$FLEX_PLAYER_TEST_MODE" ]; then export FLEX_PLAYER_TEST_MODE=1; fi
 export LIBGL_ALWAYS_SOFTWARE=1
 export QT_QUICK_BACKEND=software
 export QT_LOGGING_RULES="qt.qpa.*=false;qt.wayland*=false"
@@ -28,6 +28,22 @@ if [ ! -S "$XDG_RUNTIME_DIR/wayland-0" ]; then
     exit 1
 fi
 
+# Create mock config.ini
+mkdir -p ~/.config/flex-player
+cat << 'EOF' > ~/.config/flex-player/config.ini
+[Login]
+serverList="[{\"connections\":[{\"local\":true,\"uri\":\"https://127.0.0.1:32400\"}],\"enabled\":true,\"name\":\"mockserver\",\"product\":\"Plex Media Server\"}]"
+connectionVersion=5
+token=mocktoken
+
+[Libraries]
+enabledLibraries={}
+EOF
+
+python3 /app/tests/mock_server.py &
+MOCK_SERVER_PID=$!
+sleep 1
+
 cd /app/build_container
 
 # Run the test(s)
@@ -36,6 +52,7 @@ cd /app/build_container
 RET=$?
 
 # Cleanup
+kill $MOCK_SERVER_PID 2>/dev/null
 kill $WESTON_PID
 wait $WESTON_PID 2>/dev/null
 

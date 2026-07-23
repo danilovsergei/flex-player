@@ -1,0 +1,82 @@
+Scanning for test functions...
+--- Starting Weston Headless CI Suite (71 tests) ---
+Parallelism: 8 jobs
+  [ PASS ] BufferingUiTest::test_loading_spinner_visibility_lifecycle
+  [ PASS ] ConnectivityLogicTest::test_102_multi_ip_resolution
+  [ PASS ] ConnectivityLogicTest::test_104_locality_priority
+  [ PASS ] HdrToggleTest::test_hdr_app_close
+  [ PASS ] ConnectivityRaceTest::test_connectivity_race_and_priority
+  [ PASS ] BufferingUiTest::test_spinner_staying_centered_on_resize
+  [ PASS ] HdrToggleTest::test_hdr_disabled_settings
+  [ PASS ] HdrToggleTest::test_hdr_cycle
+  [ FAIL ] HeadlessSslLibrariesTest::test_ssl_library_flow
+  [ PASS ] SidebarAndPlaybackTest::test_64_seek_acceleration
+  [ PASS ] SidebarAndPlaybackTest::test_68_home_libraries_structure
+  [ PASS ] SidebarAndPlaybackTest::test_66_home_global_recently_added_removed
+  [ PASS ] SidebarAndPlaybackTest::test_1_home_tab_playback
+  [ PASS ] SidebarAndPlaybackTest::test_67_multi_library_home_rails
+  [ PASS ] SidebarAndPlaybackTest::test_65_continue_watching_navigation_isolation
+  [ PASS ] SidebarAndPlaybackTest::test_2_movies_tab_and_collections
+  [ PASS ] SidebarAndPlaybackTest::test_3_player_controls
+  [ PASS ] SidebarAndPlaybackTest::test_6_watched_checkmark
+  [ PASS ] SidebarAndPlaybackTest::test_10_check_connection
+  [ PASS ] SidebarAndPlaybackTest::test_4_fullscreen
+  [ PASS ] SidebarAndPlaybackTest::test_11_check_connection_fail
+  [ PASS ] SidebarAndPlaybackTest::test_8_settings_window
+  [ PASS ] SidebarAndPlaybackTest::test_7_sidebar_collapse
+  [ PASS ] SidebarAndPlaybackTest::test_5_autohide_controls
+  [ PASS ] SidebarAndPlaybackTest::test_12_settings_reset_on_open
+  [ PASS ] SidebarAndPlaybackTest::test_16_dynamic_sidebar
+  [ PASS ] SidebarAndPlaybackTest::test_20_movie_poster_delegate_extraction
+  [ PASS ] SidebarAndPlaybackTest::test_21_home_view_extraction
+  [ PASS ] SidebarAndPlaybackTest::test_19_home_recently_added_rails
+  [ PASS ] SidebarAndPlaybackTest::test_17_home_multiple_libraries
+  [ PASS ] SidebarAndPlaybackTest::test_18_click_movie_poster
+  [ PASS ] SidebarAndPlaybackTest::test_22_library_recommend_view_extraction
+  [ PASS ] SidebarAndPlaybackTest::test_25_collection_movies_view_extraction
+  [ PASS ] SidebarAndPlaybackTest::test_26_plex_login_flow
+  [ PASS ] SidebarAndPlaybackTest::test_23_library_recommend_view_content
+  [ PASS ] SidebarAndPlaybackTest::test_24_collections_view_content
+  [ PASS ] SidebarAndPlaybackTest::test_28_settings_save_button_validation
+  [ PASS ] SidebarAndPlaybackTest::test_27_settings_sidebar_items
+  [ PASS ] SidebarAndPlaybackTest::test_31_screensaver_inhibitor
+  [ PASS ] SidebarAndPlaybackTest::test_32_timeline_reporting
+  [ PASS ] SidebarAndPlaybackTest::test_30_empty_state_visibility
+  [ PASS ] SidebarAndPlaybackTest::test_33_movie_details
+  [ PASS ] SidebarAndPlaybackTest::test_34_movie_playback_streams
+  [ PASS ] SidebarAndPlaybackTest::test_35_movie_playback_streams_ui
+  [ PASS ] SidebarAndPlaybackTest::test_29_settings_libraries_save
+  [ PASS ] SidebarAndPlaybackTest::test_36_forced_subtitles_label
+  [ PASS ] SidebarAndPlaybackTest::test_37_audio_track_label
+  [ PASS ] SidebarAndPlaybackTest::test_39_context_menu_styling
+  [ PASS ] SidebarAndPlaybackTest::test_40_three_dots_menu_button
+  [ PASS ] SidebarAndPlaybackTest::test_38_dropdown_dynamic_width
+  [ PASS ] SidebarAndPlaybackTest::test_41_player_view_track_menus
+  [ PASS ] SidebarAndPlaybackTest::test_42_player_view_dynamic_fetch
+  [ PASS ] SidebarAndPlaybackTest::test_43_player_view_tooltips_and_colors
+  [ PASS ] SidebarAndPlaybackTest::test_44_auto_selected_track_detection
+  [ PASS ] SidebarAndPlaybackTest::test_45_player_track_selection_e2e
+  [ PASS ] SidebarAndPlaybackTest::test_46_player_volume_slider
+  [ PASS ] SidebarAndPlaybackTest::test_48_slider_click_updates_volume
+  [ PASS ] SidebarAndPlaybackTest::test_47_slider_click_propagation
+  [ PASS ] SidebarAndPlaybackTest::test_49_series_details_view
+  [ PASS ] SidebarAndPlaybackTest::test_50_season_details_view
+  [ PASS ] SidebarAndPlaybackTest::test_51_cast_list_rendering
+  [ PASS ] SidebarAndPlaybackTest::test_52_cast_list_visibility
+  [ PASS ] SidebarAndPlaybackTest::test_53_cast_list_actual_visibility
+  [ SKIP ] RealConnectionTest::test_real_server_connection (Physical test requires host network)
+  [ PASS ] SidebarAndPlaybackTest::test_55_continue_watching_episode_details
+  [ PASS ] SidebarAndPlaybackTest::test_56_poster_episode_titles
+  [ PASS ] SidebarAndPlaybackTest::test_54_season_details_cast_inheritance
+  [ PASS ] SidebarAndPlaybackTest::test_57_hotkey_settings
+  [ PASS ] SidebarAndPlaybackTest::test_59_app_icon_renders
+  [ PASS ] SidebarAndPlaybackTest::test_60_playback_hdr_settings
+  [ PASS ] SidebarAndPlaybackTest::test_58_extra_hotkeys
+--------------------------------------------------------
+Final Summary (71 tests total)
+--------------------------------------------------------
+--------------------------------------------------------
+Total: 70 passed, 1 failed
+Failed tests: 
+ - HeadlessSslLibrariesTest::test_ssl_library_flow
+See tests/docker_failed_details.log for details.

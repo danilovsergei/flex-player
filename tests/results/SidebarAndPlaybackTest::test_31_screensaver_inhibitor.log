@@ -1,0 +1,204 @@
+Date: 2026-07-23 UTC
+[22:57:45.039] weston 13.0.3
+               https://wayland.freedesktop.org
+               Bug reports to: https://gitlab.freedesktop.org/wayland/weston/issues/
+               Build: 13.0.3
+[22:57:45.039] Command line: weston --backend=headless --socket=wayland-0 --width=1280 --height=720
+[22:57:45.039] OS: Linux, 7.0.12-gentoo-dist, #1 SMP PREEMPT_DYNAMIC Fri Jun 19 12:59:53 PDT 2026, x86_64
+[22:57:45.039] Flight recorder: enabled
+[22:57:45.039] Starting with no config file.
+[22:57:45.039] Output repaint window is 7 ms maximum.
+[22:57:45.039] Loading module '/usr/lib64/libweston-13/headless-backend.so'
+[22:57:45.042] Registered plugin API 'weston_windowed_output_api_v2' of size 16
+[22:57:45.042] Color manager: no-op
+[22:57:45.042] Output 'headless' attempts EOTF mode: SDR
+[22:57:45.042] Output 'headless' using color profile: stock sRGB color profile
+[22:57:45.042] Output 'headless' enabled with head(s) headless
+[22:57:45.042] Compositor capabilities:
+               arbitrary surface rotation: no
+               screen capture uses y-flip: no
+               cursor planes: no
+               arbitrary resolutions: no
+               view mask clipping: no
+               explicit sync: no
+               color operations: no
+               presentation clock: CLOCK_MONOTONIC_RAW, id 4
+               presentation clock resolution: 0.000000001 s
+[22:57:45.042] Loading module '/usr/lib64/weston/desktop-shell.so'
+[22:57:45.042] launching '/usr/libexec/weston-keyboard'
+[22:57:45.042] launching '/usr/libexec/weston-desktop-shell'
+could not load cursor 'dnd-copy'
+could not load cursor 'dnd-none'
+could not load cursor 'dnd-copy'
+could not load cursor 'dnd-none'
+********* Start testing of FlexPlayerTest *********
+Config: Using QtTest library 6.8.2, Qt 6.8.2 (x86_64-little_endian-lp64 shared (dynamic) release build; by GCC 14.2.1 20240912 (Red Hat 14.2.1-3)), fedora 40
+[cplayer] Set property: msg-level="all=v" -> 1
+[cplayer] Set property: vo="null" -> 1
+[cplayer] Set property: target-colorspace-hint="yes" -> 1
+[cplayer] Set property: hwdec="auto-safe" -> 1
+[cplayer] Set property: config="yes" -> 1
+[cplayer] Set property: config-dir="/root/.config/flex-player/mpv" -> 1
+[cplayer] Done loading scripts.
+QWARN  : FlexPlayerTest::SidebarAndPlaybackTest::initTestCase() qrc:/qt/qml/flex_player_test_module/src/MovieDetailsView.qml:458:33: QML Connections: Detected function "onPressedChanged" in Connections element. This is probably intended to be a signal handler but no signal of the target matches the name.
+QWARN  : FlexPlayerTest::SidebarAndPlaybackTest::initTestCase() qrc:/qt/qml/flex_player_test_module/src/MovieDetailsView.qml:390:33: QML Connections: Detected function "onPressedChanged" in Connections element. This is probably intended to be a signal handler but no signal of the target matches the name.
+QWARN  : FlexPlayerTest::SidebarAndPlaybackTest::initTestCase() qrc:/qt/qml/flex_player_test_module/src/MovieDetailsView.qml:322:33: QML Connections: Detected function "onPressedChanged" in Connections element. This is probably intended to be a signal handler but no signal of the target matches the name.
+PASS   : FlexPlayerTest::SidebarAndPlaybackTest::initTestCase()
+QWARN  : FlexPlayerTest::SidebarAndPlaybackTest::test_31_screensaver_inhibitor() ScreenSaver DBus interface not available
+[cplayer] Set property: aid="auto" -> 1
+[cplayer] Set property: sid="no" -> 1
+[cplayer] Running hook: ytdl_hook/on_load
+[ytdl_hook] ytdl:// hook 
+[ytdl_hook] not a ytdl:// url 
+[cplayer] Running hook: ytdl_hook/on_load
+[ytdl_hook] playlist hook 
+[cplayer] Set property: pause=false -> 1
+[ifo_dvdnav] Opening /app/tests/dummy1.mkv
+[bdmv/bluray] Opening /app/tests/dummy1.mkv
+[cplayer] Set property: pause=true -> 1
+[file] Opening /app/tests/dummy1.mkv
+[demux] Trying demuxers for level=normal.
+[mkv] Deferring reading cues.
+[mkv] All headers are parsed!
+[demux] Detected file format: Matroska
+[cplayer] Opening done: /app/tests/dummy1.mkv
+[find_files] Loading external files in /app/tests/
+[cplayer] Running hook: ytdl_hook/on_preloaded
+[mkv] select track 0
+[mkv] select track 1
+ (+) Video --vid=1 (h264 1280x720 30.000fps)
+ (+) Audio --aid=1 (aac 1ch 44100Hz)
+[vd] Container reported FPS: 30.000000
+[vd] Codec list:
+[vd]     libopenh264 (h264) - OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[vd] Opening decoder libopenh264
+[vd] Using software decoding.
+[vd] Detected 32 logical cores.
+[vd] Requesting 16 threads for decoding.
+[vd] Selected codec: OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[vf] User filter list:
+[vf]   (empty)
+[ad] Codec list:
+[ad]     libfdk_aac (aac) - Fraunhofer FDK AAC
+[ad] Opening decoder libfdk_aac
+[ad] Requesting 1 threads for decoding.
+[ad] Selected codec: Fraunhofer FDK AAC
+[af] User filter list:
+[af]   (empty)
+[cplayer] Starting playback...
+[af] [in] 44100Hz mono 1ch s16
+[af] [userspeed] 44100Hz mono 1ch s16
+[af] [userspeed] (disabled)
+[af] [convert] 44100Hz mono 1ch s16
+[vd] DR failed - disabling.
+[vd] Using software decoding.
+[vd] Decoder format: 1280x720 [0:1] yuv420p auto/auto/auto/auto/auto CL=unknown crop=1280x720+0+0
+[vd] Using container aspect ratio.
+[vf] [in] 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+[vf] [userdeint] 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+[vf] [userdeint] (disabled)
+[vf] [autorotate] 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+[vf] [autorotate] (disabled)
+[vf] [convert] 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+No video PTS! Making something up. Using 30.000000 FPS.
+[vf] [convert] (disabled)
+[vf] [out] 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+[ao] Trying audio driver 'pipewire'
+[ao/pipewire] requested format: 44100 Hz, mono channels, s16
+[ao/pipewire] Headers version: 1.0.3
+[ao/pipewire] Library version: 1.0.9
+[ao/pipewire] Could not connect to context '(null)': Host is down
+[ao] Trying audio driver 'pulse'
+[ao/pulse] requested format: 44100 Hz, mono channels, s16
+[ao/pulse] Library version: 16.1.0
+[ao/pulse] Proto: 35
+[ao/pulse] Server proto: 4294967295
+[ao] Trying audio driver 'alsa'
+[ao/alsa] requested format: 44100 Hz, mono channels, s16
+[ao/alsa] using ALSA version: 1.2.13
+[ao/alsa] opening device 'default'
+ALSA lib confmisc.c:855:(parse_card) cannot find card '0'
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) error evaluating strings
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) error evaluating name
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5728:(snd_config_expand) Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) Unknown PCM default
+[ao/alsa] Playback open error: No such file or directory
+[ao] Trying audio driver 'jack'
+[ao/jack] requested format: 44100 Hz, mono channels, s16
+[ao/jack] Channel layouts:
+[ao/jack]  - waveext
+[ao/jack] result: mono
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+[ao] Trying audio driver 'openal'
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+[ao/jack] cannot open server
+[ao/openal] requested format: 44100 Hz, mono channels, s16
+[ALSOFT] (EE) Failed to connect PipeWire event context (errno: 112)
+ALSA lib confmisc.c:855:(parse_card) cannot find card '0'
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) error evaluating strings
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) error evaluating name
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5728:(snd_config_expand) Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) Unknown PCM default
+[ao/openal] could not open device
+[ao] Trying audio driver 'sdl'
+[ao/sdl] requested format: 44100 Hz, mono channels, s16
+[ao/sdl] Channel layouts:
+[ao/sdl]  - mono
+[ao/sdl]  - stereo
+[ao/sdl]  - 2.1
+[ao/sdl]  - 4.0
+[ao/sdl]  - 5.0
+[ao/sdl]  - 5.1
+[ao/sdl]  - 6.1
+[ao/sdl]  - 7.1
+[ao/sdl]  - unknown9
+[ao/sdl]  - unknown10
+[ao/sdl]  - unknown11
+[ao/sdl]  - unknown12
+[ao/sdl]  - unknown13
+[ao/sdl]  - unknown14
+[ao/sdl]  - unknown15
+[ao/sdl]  - unknown16
+[ao/sdl]  - unknown17
+[ao/sdl]  - unknown18
+[ao/sdl]  - unknown19
+[ao/sdl]  - unknown20
+[ao/sdl] result: mono
+[ao/sdl] requested format: 44100 Hz, 1 channels, 8010, buffer size: 0 samples
+ALSA lib confmisc.c:855:(parse_card) cannot find card '0'
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) error evaluating strings
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) error evaluating name
+ALSA lib conf.c:5205:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5728:(snd_config_expand) Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) Unknown PCM default
+[ao/sdl] could not open audio: ALSA: Couldn't open audio device: No such file or directory
+[ao] Failed to initialize audio driver 'sdl'
+Could not open/initialize audio device -> no sound.
+[mkv] deselect track 1
+Audio: no audio
+VO: [null] 1280x720 yuv420p
+[cplayer] VO: Description: Null video output
+[vo/null] reconfig to 1280x720 yuv420p bt.709/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=1280x720+0+0
+[cplayer] first video frame after restart shown
+[cplayer] playback restart complete @ 0.000000, audio=eof, video=playing (paused)
+Invalid video timestamp: 0.000000 -> 0.000000
+[cplayer] EOF code: 4  
+[cplayer] finished playback, success (reason 2)
+PASS   : FlexPlayerTest::SidebarAndPlaybackTest::test_31_screensaver_inhibitor()
+PASS   : FlexPlayerTest::SidebarAndPlaybackTest::cleanupTestCase()
+Totals: 3 passed, 0 failed, 0 skipped, 0 blacklisted, 207ms
+********* Finished testing of FlexPlayerTest *********
+[22:57:46.675] caught signal 15
+[22:57:46.675] BUG: finalizing a layer with views still on it.
+[22:57:46.675] no-op renderer SHM seed: 81

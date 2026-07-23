@@ -1,0 +1,136 @@
+import http.server
+import ssl
+import json
+import threading
+from urllib.parse import urlparse, parse_qs
+
+class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        with open("/app/tests/mock_server_requests.log", "a") as logf:
+            logf.write(format % args + "\n")
+
+    def do_GET(self):
+        with open("/app/tests/mock_server_requests.log", "a") as logf:
+            logf.write("GET " + self.path + "\n")
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        query = parse_qs(parsed_path.query)
+        
+        response_data = {}
+        
+        if path == "/library/sections":
+            response_data = {
+                "MediaContainer": {
+                    "size": 2,
+                    "Directory": [
+                        {"type": "movie", "title": "Mock Movies", "key": "1", "uuid": "uuid-movies"},
+                        {"type": "show", "title": "Mock Shows", "key": "2", "uuid": "uuid-shows"}
+                    ]
+                }
+            }
+        elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path:
+            response_data = {
+                "MediaContainer": {
+                    "size": 2,
+                    "Metadata": [
+                        {"type": "movie", "title": "Mock Movie 1", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]},
+                        {"type": "show", "title": "Mock Show 1", "ratingKey": "200", "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]}
+                    ]
+                }
+            }
+        elif path == "/library/onDeck" or path.endswith("/onDeck"):
+            response_data = {
+                "MediaContainer": {
+                    "size": 2,
+                    "Metadata": [
+                        {"type": "movie", "title": "Mock Movie Deck", "ratingKey": "101", "duration": 60000, "viewOffset": 30000, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
+                        {"type": "show", "title": "Mock Show Deck", "ratingKey": "201", "duration": 60000, "viewOffset": 30000, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]}
+                    ]
+                }
+            }
+        elif path.endswith("/collections"):
+            response_data = {
+                "MediaContainer": {
+                    "size": 1,
+                    "Metadata": [
+                        {"type": "collection", "title": "Mock Collection", "ratingKey": "300"}
+                    ]
+                }
+            }
+        elif "/library/collections/" in path and path.endswith("/children"):
+            response_data = {
+                "MediaContainer": {
+                    "size": 1,
+                    "Metadata": [
+                        {"type": "movie", "title": "Collection Movie", "ratingKey": "102", "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]}
+                    ]
+                }
+            }
+        elif "/library/metadata/" in path:
+            ratingKey = path.split("/")[-1]
+            if ratingKey == "999": # test_38_dropdown_dynamic_width
+                response_data = {
+                    "MediaContainer": {
+                        "Metadata": [{
+                            "ratingKey": "999",
+                            "title": "Stream Test Movie Width",
+                            "viewOffset": 15000,
+                            "duration": 50000,
+                            "Media": [{
+                                "Part": [{
+                                    "key": "/library/parts/999/1234/file.mkv",
+                                    "file": "/app/tests/dummy1.mkv",
+                                    "Stream": [
+                                        { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
+                                        { "id": 11, "streamType": 2, "language": "Русский", "displayTitle": "Русский (EAC3 5.1)", "extendedDisplayTitle": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly (Русский EAC3 5.1)", "title": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly", "index": 1 }
+                                    ]
+                                }]
+                            }]
+                        }]
+                    }
+                }
+            elif ratingKey == "1": # Generic detail mock
+                response_data = {
+                    "MediaContainer": {
+                        "Metadata": [{
+                            "ratingKey": "1",
+                            "title": "Mock Detail Title",
+                            "duration": 5400000,
+                            "viewOffset": 600000,
+                            "Genre": [{"tag": "Action"}],
+                            "Role": [{"tag": "Actor"}],
+                            "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
+                        }]
+                    }
+                }
+            else:
+                response_data = {
+                    "MediaContainer": {
+                        "Metadata": [{
+                            "ratingKey": ratingKey,
+                            "title": "Mock Title " + ratingKey,
+                            "duration": 3600000,
+                            "viewOffset": 0,
+                            "type": "movie",
+                            "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
+                        }]
+                    }
+                }
+        else:
+            response_data = {"MediaContainer": {"size": 0, "Metadata": []}}
+            
+        self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
+httpd = http.server.HTTPServer(('127.0.0.1', 32400), MockPlexHandler)
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile='/app/tests/mock_cert.pem', keyfile='/app/tests/mock_key.pem')
+httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+
+print("Starting Mock HTTPS Server on 127.0.0.1:32400")
+httpd.serve_forever()

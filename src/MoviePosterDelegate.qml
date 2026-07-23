@@ -28,7 +28,8 @@ Item {
 
         Image {
             anchors.fill: parent
-            source: (typeof model !== "undefined" && model.thumbUrl) !== undefined ? (typeof model !== "undefined" && model.thumbUrl) : thumbUrl
+            property string rawUrl: (typeof model !== "undefined" && model.thumbUrl) !== undefined ? (typeof model !== "undefined" && model.thumbUrl) : thumbUrl
+            source: rawUrl
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
         }

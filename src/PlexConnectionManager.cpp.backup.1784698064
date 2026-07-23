@@ -1,0 +1,150 @@
+#include <QSslError>
+#include "PlexConnectionManager.h"
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QDebug>
+
+PlexConnectionManager::PlexConnectionManager(QObject *parent) : QObject(parent) {
+    m_heartbeatTimer.setInterval(30000); // 30 seconds
+    connect(&m_heartbeatTimer, &QTimer::timeout, this, &PlexConnectionManager::onHeartbeat);
+}
+
+void PlexConnectionManager::setLocalUrl(const QString &url) {
+    if (m_localUrl != url) {
+        m_localUrl = url;
+        emit localUrlChanged();
+        updateHeartbeatTimer();
+    }
+}
+
+void PlexConnectionManager::setRemoteUrl(const QString &url) {
+    if (m_remoteUrl != url) {
+        m_remoteUrl = url;
+        emit remoteUrlChanged();
+        updateHeartbeatTimer();
+    }
+}
+
+void PlexConnectionManager::setToken(const QString &token) {
+    if (m_token != token) {
+        m_token = token;
+        emit tokenChanged();
+    }
+}
+
+void PlexConnectionManager::setActiveUrl(const QString &url) {
+    if (m_activeUrl != url) {
+        m_activeUrl = url;
+        emit activeUrlChanged();
+        updateHeartbeatTimer();
+    }
+}
+
+void PlexConnectionManager::resolve() {
+    if (m_isResolving) return;
+    
+    if (m_isTestMode) {
+        if (m_mockResponses.value(m_localUrl, false)) {
+            setActiveUrl(m_localUrl);
+            emit resolutionFinished(true);
+        } else if (m_mockResponses.value(m_remoteUrl, false)) {
+            setActiveUrl(m_remoteUrl);
+            emit resolutionFinished(true);
+        } else {
+            emit resolutionFinished(false);
+        }
+        return;
+    }
+
+    m_isResolving = true;
+    m_pendingReplies = 0;
+    emit isResolvingChanged();
+    
+    if (!m_localUrl.isEmpty()) { m_pendingReplies++; checkUrl(m_localUrl); }
+    if (!m_remoteUrl.isEmpty()) { m_pendingReplies++; checkUrl(m_remoteUrl); }
+    
+    if (m_pendingReplies == 0) {
+        m_isResolving = false;
+        emit isResolvingChanged();
+        emit resolutionFinished(false);
+    }
+}
+
+void PlexConnectionManager::reportFailure(const QString &url) {
+    if (url == m_activeUrl && !url.isEmpty()) {
+        qDebug() << "[ConnManager] Active URL failed:" << url << ". Triggering re-resolve.";
+        setActiveUrl("");
+        resolve();
+    }
+}
+
+void PlexConnectionManager::checkUrl(const QString &url) {
+    if (url.isEmpty()) return;
+    qDebug() << "[ConnManager] Checking URL:" << url;
+    QUrl qurl(url + "/identity");
+    QNetworkRequest request(qurl);
+    request.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    request.setTransferTimeout(5000); 
+
+    QNetworkReply *reply = m_manager.get(request);
+    reply->setProperty("targetUrl", url);
+    reply->ignoreSslErrors();
+    
+    connect(reply, &QNetworkReply::finished, this, &PlexConnectionManager::onReplyFinished);
+}
+
+void PlexConnectionManager::onReplyFinished() {
+    QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
+    if (!reply) return;
+    reply->deleteLater();
+
+    QString url = reply->property("targetUrl").toString();
+    int code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    
+    qDebug() << "[ConnManager] Reply received for" << url << "Code:" << code << "Error:" << reply->error();
+    
+    m_pendingReplies--;
+    bool isLocal = (url == m_localUrl);
+
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[ConnManager] Successfully reached" << url;
+        if (isLocal) {
+            setActiveUrl(url);
+            m_isResolving = false;
+            emit isResolvingChanged();
+            emit resolutionFinished(true);
+        } else {
+            if (m_activeUrl != m_localUrl) {
+                setActiveUrl(url);
+                emit resolutionFinished(true);
+            }
+        }
+    } else {
+        qDebug() << "[ConnManager] Failed to reach" << url << ":" << reply->errorString();
+        if (code == 401) {
+             qDebug() << "[ConnManager] 401 Unauthorized - Check token!";
+        }
+        
+        if (m_pendingReplies <= 0 && m_activeUrl.isEmpty()) {
+            m_isResolving = false;
+            emit isResolvingChanged();
+            emit resolutionFinished(false);
+        }
+    }
+}
+
+void PlexConnectionManager::onHeartbeat() {
+    if (m_activeUrl == m_remoteUrl && !m_localUrl.isEmpty()) {
+        qDebug() << "[ConnManager] Heartbeat: Checking if local is available...";
+        checkUrl(m_localUrl);
+    }
+}
+
+void PlexConnectionManager::updateHeartbeatTimer() {
+    if (!m_isTestMode && m_activeUrl == m_remoteUrl && !m_localUrl.isEmpty()) {
+        if (!m_heartbeatTimer.isActive()) m_heartbeatTimer.start();
+    } else {
+        m_heartbeatTimer.stop();
+    }
+}
+

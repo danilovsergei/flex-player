@@ -5,8 +5,26 @@
 #include <QSurfaceFormat>
 #include "PlexModel.h"
 #include "PlexAuth.h"
+#include "PlexConnectionManager.h"
 #include "ScreenSaverInhibitor.h"
 #include "MpvItem.h"
+
+#include <QQmlNetworkAccessManagerFactory>
+
+class MyNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory
+{
+public:
+    QNetworkAccessManager *create(QObject *parent) override
+    {
+        QNetworkAccessManager *nam = new QNetworkAccessManager(parent);
+        QObject::connect(nam, &QNetworkAccessManager::sslErrors,
+                         nam, [](QNetworkReply *reply, const QList<QSslError> &errors) {
+            reply->ignoreSslErrors();
+        });
+        return nam;
+    }
+};
+
 
 int main(int argc, char *argv[])
 {
@@ -26,11 +44,13 @@ int main(int argc, char *argv[])
     
     // Register our custom MPV QML Type
     qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
+    qmlRegisterType<PlexConnectionManager>("flex.plex", 1, 0, "PlexConnectionManager");
     qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
     qmlRegisterType<PlexAuth>("flex.plex", 1, 0, "PlexAuth");
     qmlRegisterType<ScreenSaverInhibitor>("flex.plex", 1, 0, "ScreenSaverInhibitor");
 
     QQmlApplicationEngine engine;
+    engine.setNetworkAccessManagerFactory(new MyNetworkAccessManagerFactory());
 
     QObject::connect(
         &engine,

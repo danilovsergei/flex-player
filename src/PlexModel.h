@@ -6,6 +6,7 @@
 #include <QList>
 #include <QString>
 #include <QStringList>
+#include "PlexConnectionManager.h"
 
 struct Movie {
     QString title;
@@ -29,6 +30,8 @@ class PlexModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(bool isFlatpak READ isFlatpak CONSTANT)
     Q_PROPERTY(bool hasFlatpakSpawnPermission READ hasFlatpakSpawnPermission NOTIFY permissionStatusChanged)
+    Q_PROPERTY(PlexConnectionManager* connectionManager READ connectionManager WRITE setConnectionManager NOTIFY connectionManagerChanged)
+    Q_PROPERTY(QString currentServerUrl READ currentServerUrl NOTIFY currentServerUrlChanged)
 public:
     enum MovieRoles {
         TitleRole = Qt::UserRole + 1,
@@ -52,6 +55,11 @@ public:
 
     bool isFlatpak() const;
     bool hasFlatpakSpawnPermission() const;
+    
+    PlexConnectionManager* connectionManager() const { return m_connectionManager; }
+    void setConnectionManager(PlexConnectionManager *cm);
+    
+    QString currentServerUrl() const;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -71,14 +79,19 @@ signals:
     void connectionChecked(bool success, const QString &errorMessage);
     void itemDetailsLoaded(const QString &jsonString);
     void permissionStatusChanged();
+    void connectionManagerChanged();
+    void currentServerUrlChanged();
 
 private slots:
     void onReplyFinished(QNetworkReply *reply);
 
 private:
+    QString resolveUrl(const QString &requestedUrl) const;
+
     QList<Movie> m_movies;
     QNetworkAccessManager *m_networkManager;
     QString m_serverUrl;
     QString m_token;
+    PlexConnectionManager *m_connectionManager = nullptr;
 };
 

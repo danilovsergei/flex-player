@@ -19,6 +19,7 @@ endif()
 set(APP_SOURCES
     src/PlexModel.cpp
     src/PlexAuth.cpp
+    src/PlexConnectionManager.cpp
     src/PlexAuth.h
     src/ScreenSaverInhibitor.cpp
     src/ScreenSaverInhibitor.h

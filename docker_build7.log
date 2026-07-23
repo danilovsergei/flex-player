@@ -1,0 +1,233 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.test
+#1 transferring dockerfile: 1.18kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/fedora:40
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 153B done
+#3 DONE 0.0s
+
+#4 [1/8] FROM docker.io/library/fedora:40@sha256:3c86d25fef9d2001712bc3d9b091fc40cf04be4767e48f1aa3b785bf58d300ed
+#4 resolve docker.io/library/fedora:40@sha256:3c86d25fef9d2001712bc3d9b091fc40cf04be4767e48f1aa3b785bf58d300ed 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 406.62kB 0.6s done
+#5 DONE 0.6s
+
+#6 [2/8] RUN dnf -y install     gcc-c++     cmake     ninja-build     patch     extra-cmake-modules     pkgconf-pkg-config     qt6-qtbase-devel     qt6-qtbase-private-devel     qt6-qtdeclarative-devel     qt6-qtsvg-devel     qt6-qtmultimedia-devel     qt6-qtwayland     mpv-libs-devel     weston     xorg-x11-server-Xwayland     mesa-dri-drivers     libX11-devel     libXext-devel     libXrender-devel     libxkbcommon-devel     strace     && dnf clean all
+#6 CACHED
+
+#7 [3/8] WORKDIR /app
+#7 CACHED
+
+#8 [4/8] COPY . /app
+#8 DONE 0.1s
+
+#9 [5/8] RUN patch -p1 < flatpak/patches/mpvqt-flatpak-fixes.patch
+#9 0.206 patching file 3rdparty/mpvqt/CMakeLists.txt
+#9 0.206 patching file 3rdparty/mpvqt/src/CMakeLists.txt
+#9 0.206 patching file 3rdparty/mpvqt/src/mpvrenderer.cpp
+#9 DONE 0.2s
+
+#10 [6/8] RUN sed -i 's/ECM 6.15.0/ECM 6.13.0/g' 3rdparty/mpvqt/CMakeLists.txt
+#10 DONE 0.3s
+
+#11 [7/8] RUN mkdir build_container && cd build_container &&     cmake -G Ninja ..     -DCMAKE_BUILD_TYPE=Release     -DECM_DIR=/usr/share/ECM/cmake &&     ninja
+#11 0.386 -- The CXX compiler identification is GNU 14.2.1
+#11 0.393 -- Detecting CXX compiler ABI info
+#11 0.435 -- Detecting CXX compiler ABI info - done
+#11 0.440 -- Check for working CXX compiler: /usr/bin/c++ - skipped
+#11 0.440 -- Detecting CXX compile features
+#11 0.440 -- Detecting CXX compile features - done
+#11 0.448 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+#11 0.489 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+#11 0.490 -- Found Threads: TRUE
+#11 0.493 -- Performing Test HAVE_STDATOMIC
+#11 0.550 -- Performing Test HAVE_STDATOMIC - Success
+#11 0.550 -- Found WrapAtomic: TRUE
+#11 0.561 -- Found OpenGL: /usr/lib64/libOpenGL.so
+#11 0.562 -- Found WrapOpenGL: TRUE
+#11 0.644 -- Found XKB: /usr/lib64/libxkbcommon.so (found suitable version "1.6.0", minimum required is "0.5.0")
+#11 0.660 -- Found WrapVulkanHeaders: /usr/include
+#11 0.713 -- Found PkgConfig: /usr/bin/pkg-config (found version "2.1.1")
+#11 0.713 -- Checking for module 'mpv'
+#11 0.735 --   Found mpv, version 2.2.0
+#11 0.830 -- Installing in the same prefix as Qt, adopting their path scheme.
+#11 0.842 -- Looking for __GLIBC__
+#11 0.886 -- Looking for __GLIBC__ - found
+#11 0.886 -- Performing Test _OFFT_IS_64BIT
+#11 0.928 -- Performing Test _OFFT_IS_64BIT - Success
+#11 0.928 -- Performing Test HAVE_DATE_TIME
+#11 0.965 -- Performing Test HAVE_DATE_TIME - Success
+#11 1.073 -- Found Libmpv: /usr/lib64/libmpv.so (found version "2.2.0")
+#11 1.075 -- The following OPTIONAL packages have been found:
+#11 1.075 
+#11 1.075  * OpenGL
+#11 1.075  * XKB (required version >= 0.5.0), XKB API common to servers and clients., <http://xkbcommon.org>
+#11 1.075  * Qt6GuiTools (required version >= 6.8.2)
+#11 1.075  * Qt6CoreTools (required version >= 6.8.2)
+#11 1.075  * Qt6DBusTools (required version >= 6.8.2)
+#11 1.075  * WrapVulkanHeaders
+#11 1.075  * Qt6Test
+#11 1.075  * Qt6QuickTest
+#11 1.075  * Qt6QmlTools (required version >= 6.8.2)
+#11 1.075  * Qt6QuickTools (required version >= 6.8.2)
+#11 1.075 
+#11 1.075 -- The following REQUIRED packages have been found:
+#11 1.075 
+#11 1.075  * ECM (required version >= 6.13.0), Extra modules and scripts for CMake, <https://api.kde.org/ecm/>
+#11 1.075  * Qt6
+#11 1.075  * Qt6Quick (required version >= 6.5.0)
+#11 1.075  * PkgConfig
+#11 1.075  * Libmpv, mpv media player client library, <https://mpv.io>
+#11 1.075 
+#11 1.076 -- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+#11 1.115 -- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+#11 1.115 -- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+#11 1.156 -- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+#11 1.156 -- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+#11 1.195 -- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+#11 1.318 -- Configuring done (1.0s)
+#11 1.354 -- Generating done (0.0s)
+#11 1.354 -- Build files have been written to: /app/build_container
+#11 1.369 [1/119] Copying flex_player_app qml resources into build dir
+#11 1.369 [2/119] Copying flex_player_test qml resources into build dir
+#11 1.369 [3/119] Copying flex_player_app qml sources into build dir
+#11 1.369 [4/119] Copying flex_player_test qml sources into build dir
+#11 1.416 [5/119] Running qmlimportscanner for flex_player_app
+#11 1.416 [6/119] Running qmlimportscanner for flex_player_test
+#11 1.524 [7/119] Automatic MOC for target MpvQt
+#11 1.531 [8/119] Building CXX object 3rdparty/mpvqt/src/CMakeFiles/MpvQt.dir/MpvQt_autogen/mocs_compilation.cpp.o
+#11 2.364 [9/119] Building CXX object 3rdparty/mpvqt/src/CMakeFiles/MpvQt.dir/mpvrenderer.cpp.o
+#11 2.374 [10/119] Building CXX object 3rdparty/mpvqt/src/CMakeFiles/MpvQt.dir/mpvcontroller.cpp.o
+#11 2.567 [11/119] Building CXX object 3rdparty/mpvqt/src/CMakeFiles/MpvQt.dir/mpvabstractitem.cpp.o
+#11 2.682 [12/119] Linking CXX shared library bin/libMpvQt.so.1.2.0
+#11 2.687 [13/119] Creating library symlink bin/libMpvQt.so.3 bin/libMpvQt.so
+#11 3.199 [14/119] Automatic MOC and UIC for target flex_player_app
+#11 3.200 [15/119] Running AUTOMOC file extraction for target flex_player_app
+#11 3.202 [16/119] Automatic MOC and UIC for target flex_player_test
+#11 3.203 [17/119] Running rcc for resource qmake_flex_player
+#11 3.203 [18/119] Running rcc for resource flex_player_app_raw_qml_0_extra_qmldirs
+#11 3.203 [19/119] Running AUTOMOC file extraction for target flex_player_test
+#11 3.205 [20/119] Running rcc for resource qmake_flex_player_test_module
+#11 3.205 [21/119] Running rcc for resource flex_player_test_raw_qml_0_extra_qmldirs
+#11 3.205 [22/119] Running moc --collect-json for target flex_player_app
+#11 3.207 [23/119] Running moc --collect-json for target flex_player_test
+#11 3.211 [24/119] Generating .rcc/qmlcache/flex_player_app_qmlcache_loader.cpp
+#11 3.215 [25/119] Generating .rcc/qmlcache/flex_player_test_qmlcache_loader.cpp
+#11 3.230 [26/119] Automatic QML type registration for target flex_player_app
+#11 3.236 [27/119] Automatic QML type registration for target flex_player_test
+#11 3.244 [28/119] Running rcc for resource flex_player_app_raw_qml_0
+#11 3.244 [29/119] Running rcc for resource flex_player_test_raw_qml_0
+#11 3.296 [30/119] Generating .rcc/qmlcache/flex_player_app_src/CollectionMoviesView_qml.cpp, .rcc/qmlcache/flex_player_app_src/CollectionMoviesView_qml.cpp.aotstats
+#11 3.303 [31/119] Generating .rcc/qmlcache/flex_player_app_src/AppConfig_qml.cpp, .rcc/qmlcache/flex_player_app_src/AppConfig_qml.cpp.aotstats
+#11 3.304 [32/119] Generating .rcc/qmlcache/flex_player_test_src/SeriesDetailsView_qml.cpp, .rcc/qmlcache/flex_player_test_src/SeriesDetailsView_qml.cpp.aotstats
+#11 3.307 [33/119] Generating .rcc/qmlcache/flex_player_test_src/SidebarView_qml.cpp, .rcc/qmlcache/flex_player_test_src/SidebarView_qml.cpp.aotstats
+#11 3.307 [34/119] Generating .rcc/qmlcache/flex_player_app_src/GlobalController_qml.cpp, .rcc/qmlcache/flex_player_app_src/GlobalController_qml.cpp.aotstats
+#11 3.307 [35/119] Generating .rcc/qmlcache/flex_player_app_src/MoviePosterDelegate_qml.cpp, .rcc/qmlcache/flex_player_app_src/MoviePosterDelegate_qml.cpp.aotstats
+#11 3.307 [36/119] Generating .rcc/qmlcache/flex_player_test_src/GlobalController_qml.cpp, .rcc/qmlcache/flex_player_test_src/GlobalController_qml.cpp.aotstats
+#11 3.308 [37/119] Generating .rcc/qmlcache/flex_player_test_src/CollectionMoviesView_qml.cpp, .rcc/qmlcache/flex_player_test_src/CollectionMoviesView_qml.cpp.aotstats
+#11 3.308 [38/119] Generating .rcc/qmlcache/flex_player_app_src/DetailsCastList_qml.cpp, .rcc/qmlcache/flex_player_app_src/DetailsCastList_qml.cpp.aotstats
+#11 3.308 [39/119] Generating .rcc/qmlcache/flex_player_app_src/LibraryRail_qml.cpp, .rcc/qmlcache/flex_player_app_src/LibraryRail_qml.cpp.aotstats
+#11 3.310 [40/119] Generating .rcc/qmlcache/flex_player_test_src/TopToolbar_qml.cpp, .rcc/qmlcache/flex_player_test_src/TopToolbar_qml.cpp.aotstats
+#11 3.310 [41/119] Generating .rcc/qmlcache/flex_player_app_src/TopToolbar_qml.cpp, .rcc/qmlcache/flex_player_app_src/TopToolbar_qml.cpp.aotstats
+#11 3.311 [42/119] Generating .rcc/qmlcache/flex_player_test_src/DetailsCastList_qml.cpp, .rcc/qmlcache/flex_player_test_src/DetailsCastList_qml.cpp.aotstats
+#11 3.313 [43/119] Generating .rcc/qmlcache/flex_player_app_src/SeriesDetailsView_qml.cpp, .rcc/qmlcache/flex_player_app_src/SeriesDetailsView_qml.cpp.aotstats
+#11 3.316 [44/119] Generating .rcc/qmlcache/flex_player_app_src/SidebarView_qml.cpp, .rcc/qmlcache/flex_player_app_src/SidebarView_qml.cpp.aotstats
+#11 3.317 [45/119] Generating .rcc/qmlcache/flex_player_app_src/LibraryRecommendView_qml.cpp, .rcc/qmlcache/flex_player_app_src/LibraryRecommendView_qml.cpp.aotstats
+#11 3.318 [46/119] Generating .rcc/qmlcache/flex_player_test_src/MoviePosterDelegate_qml.cpp, .rcc/qmlcache/flex_player_test_src/MoviePosterDelegate_qml.cpp.aotstats
+#11 3.319 [47/119] Generating .rcc/qmlcache/flex_player_app_src/HomeView_qml.cpp, .rcc/qmlcache/flex_player_app_src/HomeView_qml.cpp.aotstats
+#11 3.319 [48/119] Generating .rcc/qmlcache/flex_player_test_src/SeasonDetailsView_qml.cpp, .rcc/qmlcache/flex_player_test_src/SeasonDetailsView_qml.cpp.aotstats
+#11 3.325 [49/119] Generating .rcc/qmlcache/flex_player_test_src/HomeView_qml.cpp, .rcc/qmlcache/flex_player_test_src/HomeView_qml.cpp.aotstats
+#11 3.326 [50/119] Generating .rcc/qmlcache/flex_player_test_src/LibraryRecommendView_qml.cpp, .rcc/qmlcache/flex_player_test_src/LibraryRecommendView_qml.cpp.aotstats
+#11 3.326 [51/119] Generating .rcc/qmlcache/flex_player_test_src/AppConfig_qml.cpp, .rcc/qmlcache/flex_player_test_src/AppConfig_qml.cpp.aotstats
+#11 3.328 [52/119] Generating .rcc/qmlcache/flex_player_app_src/PlayerView_qml.cpp, .rcc/qmlcache/flex_player_app_src/PlayerView_qml.cpp.aotstats
+#11 3.330 [53/119] Generating .rcc/qmlcache/flex_player_test_src/LibraryRail_qml.cpp, .rcc/qmlcache/flex_player_test_src/LibraryRail_qml.cpp.aotstats
+#11 3.331 [54/119] Generating .rcc/qmlcache/flex_player_test_src/MovieDetailsView_qml.cpp, .rcc/qmlcache/flex_player_test_src/MovieDetailsView_qml.cpp.aotstats
+#11 3.332 [55/119] Generating .rcc/qmlcache/flex_player_test_src/PlayerView_qml.cpp, .rcc/qmlcache/flex_player_test_src/PlayerView_qml.cpp.aotstats
+#11 3.335 [56/119] Generating .rcc/qmlcache/flex_player_app_src/SeasonDetailsView_qml.cpp, .rcc/qmlcache/flex_player_app_src/SeasonDetailsView_qml.cpp.aotstats
+#11 3.340 [57/119] Generating .rcc/qmlcache/flex_player_app_src/MovieDetailsView_qml.cpp, .rcc/qmlcache/flex_player_app_src/MovieDetailsView_qml.cpp.aotstats
+#11 3.346 [58/119] Generating .rcc/qmlcache/flex_player_test_src/SettingsWindow_qml.cpp, .rcc/qmlcache/flex_player_test_src/SettingsWindow_qml.cpp.aotstats
+#11 3.356 [59/119] Generating .rcc/qmlcache/flex_player_app_src/SettingsWindow_qml.cpp, .rcc/qmlcache/flex_player_app_src/SettingsWindow_qml.cpp.aotstats
+#11 3.381 [60/119] Generating .rcc/qmlcache/flex_player_app_src/Main_qml.cpp, .rcc/qmlcache/flex_player_app_src/Main_qml.cpp.aotstats
+#11 3.402 [61/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.qt/rcc/qrc_qmake_flex_player.cpp.o
+#11 3.402 [62/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.qt/rcc/qrc_flex_player_app_raw_qml_0_extra_qmldirs.cpp.o
+#11 3.426 [63/119] Generating .rcc/qmlcache/flex_player_test_src/Main_qml.cpp, .rcc/qmlcache/flex_player_test_src/Main_qml.cpp.aotstats
+#11 3.438 [64/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.qt/rcc/qrc_flex_player_app_raw_qml_0.cpp.o
+#11 3.484 [65/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.qt/rcc/qrc_qmake_flex_player_test_module.cpp.o
+#11 4.469 [66/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/TopToolbar_qml.cpp.o
+#11 4.550 [67/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/CollectionMoviesView_qml.cpp.o
+#11 4.686 [68/119] Building CXX object CMakeFiles/flex_player_app.dir/src/ScreenSaverInhibitor.cpp.o
+#11 4.696 [69/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/GlobalController_qml.cpp.o
+#11 4.773 [70/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/AppConfig_qml.cpp.o
+#11 5.047 [71/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/LibraryRail_qml.cpp.o
+#11 5.058 [72/119] Building CXX object CMakeFiles/flex_player_test.dir/src/ScreenSaverInhibitor.cpp.o
+#11 5.062 [73/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/SidebarView_qml.cpp.o
+#11 5.068 [74/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/SeriesDetailsView_qml.cpp.o
+#11 5.075 [75/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/MovieDetailsView_qml.cpp.o
+#11 5.082 [76/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/Main_qml.cpp.o
+#11 5.085 [77/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/HomeView_qml.cpp.o
+#11 5.106 [78/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/MoviePosterDelegate_qml.cpp.o
+#11 5.116 [79/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_qmlcache_loader.cpp.o
+#11 5.168 [80/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/PlayerView_qml.cpp.o
+#11 5.204 [81/119] Building CXX object CMakeFiles/flex_player_app.dir/src/PlexAuth.cpp.o
+#11 5.258 [82/119] Building CXX object CMakeFiles/flex_player_test.dir/src/MpvItem.cpp.o
+#11 5.304 [83/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/SeasonDetailsView_qml.cpp.o
+#11 5.312 [84/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/SettingsWindow_qml.cpp.o
+#11 5.340 [85/119] Building CXX object CMakeFiles/flex_player_test.dir/src/PlexConnectionManager.cpp.o
+#11 5.345 [86/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.qt/rcc/qrc_flex_player_test_raw_qml_0_extra_qmldirs.cpp.o
+#11 5.365 [87/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.qt/rcc/qrc_flex_player_test_raw_qml_0.cpp.o
+#11 5.481 [88/119] Building CXX object CMakeFiles/flex_player_test.dir/src/PlexAuth.cpp.o
+#11 5.486 [89/119] Building CXX object CMakeFiles/flex_player_app.dir/src/PlexConnectionManager.cpp.o
+#11 5.649 [90/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/TopToolbar_qml.cpp.o
+#11 5.706 [91/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_qmlcache_loader.cpp.o
+#11 5.727 [92/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/DetailsCastList_qml.cpp.o
+#11 5.734 [93/119] Building CXX object CMakeFiles/flex_player_app.dir/src/MpvItem.cpp.o
+#11 5.925 [94/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/Main_qml.cpp.o
+#11 5.988 [95/119] Building CXX object CMakeFiles/flex_player_app.dir/build_container/.rcc/qmlcache/flex_player_app_src/LibraryRecommendView_qml.cpp.o
+#11 6.019 [96/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/GlobalController_qml.cpp.o
+#11 6.177 [97/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/CollectionMoviesView_qml.cpp.o
+#11 6.202 [98/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/SidebarView_qml.cpp.o
+#11 6.213 [99/119] Building CXX object CMakeFiles/flex_player_app.dir/flex_player_app_autogen/mocs_compilation.cpp.o
+#11 6.228 [100/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/AppConfig_qml.cpp.o
+#11 6.234 [101/119] Building CXX object CMakeFiles/flex_player_test.dir/flex_player_test_autogen/mocs_compilation.cpp.o
+#11 6.305 [102/119] Building CXX object CMakeFiles/flex_player_app.dir/flex_player_app_qmltyperegistrations.cpp.o
+#11 6.388 [103/119] Building CXX object CMakeFiles/flex_player_test.dir/flex_player_test_qmltyperegistrations.cpp.o
+#11 6.390 [104/119] Building CXX object CMakeFiles/flex_player_app.dir/src/PlexModel.cpp.o
+#11 6.391 [105/119] Building CXX object CMakeFiles/flex_player_app.dir/src/main.cpp.o
+#11 6.423 [106/119] Building CXX object CMakeFiles/flex_player_test.dir/src/PlexModel.cpp.o
+#11 6.449 [107/119] Building CXX object CMakeFiles/flex_player_test.dir/tests/main_test.cpp.o
+#11 6.460 [108/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/HomeView_qml.cpp.o
+#11 6.489 [109/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/MovieDetailsView_qml.cpp.o
+#11 6.513 [110/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/MoviePosterDelegate_qml.cpp.o
+#11 6.525 [111/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/LibraryRail_qml.cpp.o
+#11 6.526 [112/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/SeasonDetailsView_qml.cpp.o
+#11 6.538 [113/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/DetailsCastList_qml.cpp.o
+#11 6.589 [114/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/PlayerView_qml.cpp.o
+#11 6.655 [115/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/SeriesDetailsView_qml.cpp.o
+#11 6.773 [116/119] Linking CXX executable flex_player_app
+#11 6.878 [117/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/SettingsWindow_qml.cpp.o
+#11 7.034 [118/119] Building CXX object CMakeFiles/flex_player_test.dir/build_container/.rcc/qmlcache/flex_player_test_src/LibraryRecommendView_qml.cpp.o
+#11 7.347 [119/119] Linking CXX executable flex_player_test
+#11 DONE 7.4s
+
+#12 [8/8] RUN chmod +x /app/tests/docker_entrypoint.sh
+#12 DONE 0.3s
+
+#13 exporting to image
+#13 exporting layers
+#13 exporting layers 1.8s done
+#13 exporting manifest sha256:faa2519ffcba84e01273a2e61aad5b6b3edc205d51a57cbfec299055afff6927 0.0s done
+#13 exporting config sha256:1d497cf4396d9abe21094f04732385f1a39c2259d07870f651bf0de9806351be 0.0s done
+#13 exporting attestation manifest sha256:8a3fbb30ad46d65ec6cd5e63056bd559854766ee8f44c5588fa1a0438a5bdf9c 0.1s done
+#13 exporting manifest list sha256:2a2fa8c3a59414da2c426c4221b67fba8e0a022210a12bdb3790c2dcee747796
+#13 exporting manifest list sha256:2a2fa8c3a59414da2c426c4221b67fba8e0a022210a12bdb3790c2dcee747796 0.0s done
+#13 naming to docker.io/library/flex-player-test:latest done
+#13 unpacking to docker.io/library/flex-player-test:latest
+#13 unpacking to docker.io/library/flex-player-test:latest 7.1s done
+#13 DONE 9.1s

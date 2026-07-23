@@ -17,6 +17,20 @@ Window {
 
     property bool isTestMode: false
 
+        PlexConnectionManager {
+        id: connectionManager
+        objectName: "connectionManager"
+        // localUrl removed
+        // remoteUrl removed
+        token: appSettings.token
+        
+        onActiveUrlChanged: {
+            if (activeUrl !== "" && activeUrl !== appSettings.serverUrl) {
+                appSettings.serverUrl = activeUrl
+            }
+        }
+    }
+
     AppConfig {
         id: appSettings
         isTestMode: mainWindow.isTestMode
@@ -30,6 +44,7 @@ Window {
     property alias controller: controller
 
     GlobalController {
+        connectionManager: connectionManager
         id: controller
         mainWindow: mainWindow
         appSettings: appSettings
@@ -317,5 +332,18 @@ Window {
         allLibrariesModel: controller.allLibrariesModel
         collectionsModel: controller.collectionsModel
     }
-}
 
+    Timer {
+        running: true
+        interval: 6000
+        onTriggered: {
+            var libs = controller.homeLibrariesList;
+            if (libs.length > 0) {
+                console.log("AUTO LOADING FIRST LIBRARY (Movies) TO SCREEN...");
+                controller.loadLibraryContent(libs[0].id, libs[0].title, libs[0].type);
+                currentTab = 1;
+            }
+        }
+    }
+
+}

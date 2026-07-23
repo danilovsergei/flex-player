@@ -5,6 +5,7 @@ import QtQuick.Layouts
 
 Rectangle {
     id: settingsWindow
+    property bool isTestEnvironment: (typeof rootApp !== "undefined" && rootApp && rootApp.isTestMode)
     objectName: "settingsWindow"
     anchors.fill: parent
     color: "#1e1e1e"
@@ -13,8 +14,12 @@ Rectangle {
 
     property int connectionState: 0
     property string connectionError: ""
-    property var allLibrariesModel: null
+    property PlexModel allLibrariesModel: null
+    property alias librariesTabCol: librariesTabCol
     property var collectionsModel: null
+    
+    property var discoveredServers: []
+    property var localServersList: []
 
     function openTab(tabIndex, serverUrl, token) {
         if (tabIndex !== undefined) {
@@ -22,24 +27,30 @@ Rectangle {
         } else {
             settingsSidebarColumn.settingsTab = 0
         }
-        serverUrlField.text = serverUrl
-        tokenField.text = token
+        
+        tokenField.text = appSettings.token
+        
+        try {
+            settingsWindow.localServersList = JSON.parse(appSettings.serverList || "[]");
+        } catch(e) {
+            settingsWindow.localServersList = [];
+        }
+
         connectionState = 0
         connectionError = ""
         visible = true
     }
 
-    Connections {
-        target: collectionsModel
-        function onConnectionChecked(success, errorMessage) {
-            if (success) {
-                settingsWindow.connectionState = 2
-                settingsWindow.connectionError = ""
-            } else {
-                settingsWindow.connectionState = 3
-                settingsWindow.connectionError = errorMessage
-            }
-        }
+    function closeSettings() {
+        visible = false
+    }
+
+    function getLibraryIcon(type) {
+        if (type === "movie") return "🎬"
+        if (type === "show") return "📺"
+        if (type === "artist") return "🎵"
+        if (type === "photo") return "📷"
+        return "📁"
     }
 
     MouseArea {
@@ -47,303 +58,319 @@ Rectangle {
         hoverEnabled: true
         onWheel: {}
     }
-        PlexAuth {
-            id: plexAuth
-            objectName: "plexAuth"
-            onTokenReceived: function(token) {
-                tokenField.text = token
-            }
-            onAuthError: function(errorMsg) {
-                console.error("Plex Auth Error: " + errorMsg)
-                settingsWindow.connectionState = -1
-            }
-            onPinCodeChanged: {
-                if (plexAuth.pinCode !== "") {
-                    var authUrl = "https://app.plex.tv/auth#?clientID=" + plexAuth.clientId + "&code=" + plexAuth.pinCode + "&context[device][product]=Flex%20Player"
-                    Qt.openUrlExternally(authUrl)
-                }
+
+    PlexAuth {
+        id: plexAuth
+        objectName: "plexAuth"
+        onTokenReceived: function(token) {
+            tokenField.text = token
+            if (!settingsWindow.isTestEnvironment) {
+                appSettings.token = token
+                plexAuth.fetchServers(token)
             }
         }
-
-        Rectangle {
-            id: pinOverlay
-            objectName: "pinOverlay"
-            anchors.fill: parent
-            color: "#E6000000"
-            z: 100
-            visible: plexAuth.isPolling
+        onAuthError: function(errorMsg) {
+            console.error("Plex Auth Error: " + errorMsg)
+            settingsWindow.connectionState = -1
+        }
+        onPinCodeChanged: {
+            if (plexAuth.pinCode !== "") {
+                var authUrl = "https://app.plex.tv/auth#?clientID=" + plexAuth.clientId + "&code=" + plexAuth.pinCode + "&context[device][product]=Flex%20Player"
+                Qt.openUrlExternally(authUrl)
+            }
+        }
+        onServersReceived: function(servers) {
+            console.log("[Settings] Received " + servers.length + " servers from Plex");
+            if (servers.length === 0) {
+                settingsWindow.connectionError = "No Plex servers found on this account."
+                settingsWindow.connectionState = 3
+                return
+            }
             
+            var currentList = []
+            try { currentList = JSON.parse(appSettings.serverList || "[]") } catch(e) { currentList = [] }
+            
+            var updatedList = []
+            for (var i = 0; i < servers.length; i++) {
+                var s = servers[i]
+                var existing = currentList.find(function(item) { return item.name === s.name })
+                updatedList.push({
+                    name: s.name,
+                    product: s.product,
+                    connections: s.connections,
+                    enabled: existing ? existing.enabled : true
+                })
+            }
+            
+            appSettings.serverList = JSON.stringify(updatedList)
+            localServersList = updatedList
+            discoveredServers = servers
+            
+            if (updatedList.length > 1) {
+                serverSelectionPopup.open()
+            } else if (updatedList.length === 1) {
+                testAndSetBestConnection(updatedList[0])
+            }
+        }
+    }
 
-            MouseArea { anchors.fill: parent }
+    function testAndSetBestConnection(serverData) {
+        settingsWindow.connectionState = 1
+        discoverStatusText.text = "Testing connection to " + serverData.name + "..."
+        connectionManager.token = tokenField.text
+        connectionManager.startExhaustiveProbe(serverData.connections || [])
+    }
 
-            Column {
-                anchors.centerIn: parent
-                spacing: 30
+    Connections {
+        target: connectionManager
+        function onResolutionFinished(success) {
+            if (success) {
+                settingsWindow.connectionState = 2
+                discoverStatusText.text = "Connected to " + connectionManager.activeUrl
+            } else {
+                settingsWindow.connectionState = 3
+                settingsWindow.connectionError = "Could not reach server."
+                discoverStatusText.text = "Connection failed."
+            }
+        }
+    }
 
-                Text {
-                    text: "Authenticating..."
-                    color: "white"
-                    font.pixelSize: 36
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
 
-                Text {
-                    text: "A secure browser window has opened.<br>Please sign in to Plex to continue."
-                    color: "gray"
-                    font.pixelSize: 24
-                    horizontalAlignment: Text.AlignHCenter
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    textFormat: Text.RichText
-                }
-                
+        // Sidebar
+        Rectangle {
+            Layout.preferredWidth: 250
+            Layout.fillHeight: true
+            color: "#151515"
+
+            ColumnLayout {
+                id: settingsSidebarColumn; objectName: "settingsSidebarColumn"
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 15
+
                 Button {
-                    text: "Cancel"
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    id: settingsBackButton
+                    text: "← Back"
+                    Layout.alignment: Qt.AlignLeft
                     contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 18
+                        text: settingsBackButton.text
+                        color: settingsBackButton.hovered ? "#E5A00D" : "white"
+                        font.pixelSize: 22
                         font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle { 
-                        implicitWidth: 160
-                        implicitHeight: 45
-                        color: "#444444"
-                        radius: 8 
-                    }
-                    onClicked: plexAuth.cancelLogin()
+                    background: Rectangle { color: "transparent" }
+                    onClicked: closeSettings()
                 }
+
+                Item { Layout.preferredHeight: 20 }
+
+                property int settingsTab: 0
+
+                Repeater {
+                    model: ["Login Configuration", "Manage Libraries", "Hotkeys", "Playback"]
+                    delegate: Button {
+                        text: modelData
+                        objectName: "settingsTab" + index
+                        Layout.fillWidth: true
+                        contentItem: Text {
+                            text: parent.text
+                            color: settingsSidebarColumn.settingsTab === index ? "#E5A00D" : "white"
+                            font.pixelSize: 18
+                            font.bold: settingsSidebarColumn.settingsTab === index
+                        }
+                        background: Rectangle { color: "transparent" }
+                        onClicked: settingsSidebarColumn.settingsTab = index
+                    }
+                }
+
+                Item { Layout.fillHeight: true }
             }
         }
 
-        RowLayout {
-            anchors.fill: parent
-            spacing: 0
+        // Main Content Area
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: "transparent"
 
+            StackLayout {
+                anchors.fill: parent
+                anchors.margins: 40
+                currentIndex: settingsSidebarColumn.settingsTab
 
-            Rectangle {
-                Layout.preferredWidth: 200
-                Layout.fillHeight: true
-                color: "#151515"
-
+                // TAB 0: Login
                 ColumnLayout {
-                    id: settingsSidebarColumn
-                    objectName: "settingsSidebarColumn"
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 15
-
-                    Button {
-                        id: settingsBackButton
-                        text: "←"
-                        Layout.alignment: Qt.AlignLeft
-                        contentItem: Text {
-                            text: settingsBackButton.text
-                            color: settingsBackButton.hovered ? "#E5A00D" : "white"
-                            font.pixelSize: 28
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: closeSettings()
-                    }
-
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.bottomMargin: 20
-                        spacing: 10
-                        
-                        Image {
-                            source: "../assets/flex_icon.svg"
-                            sourceSize.width: 64
-                            sourceSize.height: 64
-                            fillMode: Image.PreserveAspectFit
-                            Layout.alignment: Qt.AlignHCenter
-                        }
-                        
-                        Text {
-                            text: "SETTINGS"
-                            color: "#E5A00D"
-                            font.pixelSize: 24
-                            font.bold: true
-                            Layout.alignment: Qt.AlignHCenter
-                        }
-                    }
-
-                    property int settingsTab: 0
-
-                    Button {
-                        text: "Login Configuration"
-                        objectName: "settingsTabLogin"
-                        Layout.fillWidth: true
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.parent.settingsTab === 0 ? "#E5A00D" : "white"
-                            font.pixelSize: 18
-                            font.bold: parent.parent.settingsTab === 0
-                        }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: parent.settingsTab = 0
-                    }
-
-                    Button {
-                        text: "Manage Libraries"
-                        objectName: "settingsTabLibraries"
-                        Layout.fillWidth: true
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.parent.settingsTab === 1 ? "#E5A00D" : "white"
-                            font.pixelSize: 18
-                            font.bold: parent.parent.settingsTab === 1
-                        }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: parent.settingsTab = 1
-                    }
+                    spacing: 25
                     
-                    Button {
-                        text: "Hotkeys"
-                        objectName: "settingsTabHotkeys"
-                        Layout.fillWidth: true
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.parent.settingsTab === 2 ? "#E5A00D" : "white"
-                            font.pixelSize: 18
-                            font.bold: parent.parent.settingsTab === 2
-                        }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: parent.settingsTab = 2
+                    Text {
+                        text: "Login Configuration"
+                        color: "white"
+                        font.pixelSize: 32
+                        font.bold: true
+                        Layout.bottomMargin: 10
                     }
-
-                                        Button {
-                        text: "Playback"
-                        objectName: "settingsTabPlayback"
-                        Layout.fillWidth: true
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.parent.settingsTab === 3 ? "#E5A00D" : "white"
-                            font.pixelSize: 18
-                            font.bold: parent.parent.settingsTab === 3
-                        }
-                        background: Rectangle { color: "transparent" }
-                        onClicked: parent.settingsTab = 3
-                    }
-
-                    Item { Layout.fillHeight: true }
-                }
-            }
-
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: "transparent"
-
-                StackLayout {
-                    anchors.fill: parent
-                    anchors.margins: 40
-                    currentIndex: settingsSidebarColumn.settingsTab
-
 
                     ColumnLayout {
-                        spacing: 20
-
-                        Text {
-                            text: "Login Configuration"
-                            color: "white"
-                            font.pixelSize: 28
-                            font.bold: true
-                            Layout.bottomMargin: 20
-                        }
-
-                    Text {
-                        text: "Server URL"
-                        color: "gray"
-                        font.pixelSize: 14
-                    }
-                    TextField {
-                        id: serverUrlField
-                        objectName: "serverUrlField"
-                        Layout.fillWidth: true
-                        Layout.maximumWidth: 600
-                        placeholderText: "http://192.168.x.x:32400"
-                        text: appSettings.serverUrl
-                        color: "white"
-                        font.pixelSize: 16
-                        background: Rectangle { color: "#2e2e2e"; radius: 8 }
-                        leftPadding: 15
-                        topPadding: 10
-                        bottomPadding: 10
-                        onTextEdited: settingsWindow.connectionState = 0
-                    }
-
-                    Text {
-                        text: "API Token"
-                        color: "gray"
-                        font.pixelSize: 14
-                        Layout.topMargin: 10
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.maximumWidth: 600
-                        spacing: 10
-                        
-                        TextField {
-                            id: tokenField
-                            objectName: "tokenField"
-                            Layout.fillWidth: true
-                            placeholderText: "Plex Token"
-                            text: appSettings.token
-                            color: "white"
-                            font.pixelSize: 16
-                            echoMode: TextInput.Password
-                            background: Rectangle { color: "#2e2e2e"; radius: 8 }
-                            leftPadding: 15
-                            topPadding: 10
-                            bottomPadding: 10
-                            onTextEdited: settingsWindow.connectionState = 0
-                        }
-                        
-                        Button {
-                            text: "Login with Plex"
-                            objectName: "plexLoginButton"
-                            contentItem: Text {
-                                text: parent.text
+                        spacing: 8
+                        Text { text: "Plex API Token"; color: "gray"; font.pixelSize: 14 }
+                        RowLayout {
+                            spacing: 15
+                            TextField {
+                                id: tokenField
+                                objectName: "tokenField"
+                                Layout.preferredWidth: 450
+                                placeholderText: "Paste your Plex token here"
+                                text: appSettings.token
                                 color: "white"
                                 font.pixelSize: 16
-                                font.bold: true
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                background: Rectangle { color: "#2e2e2e"; radius: 8 }
+                                leftPadding: 15
+                                topPadding: 10
+                                bottomPadding: 10
+                                onTextEdited: settingsWindow.connectionState = 0
                             }
-                            background: Rectangle { 
-                                implicitWidth: 160
-                                implicitHeight: 40
-                                color: "#2e2e2e"
-                                radius: 8
-                                border.color: "#E5A00D"
-                                border.width: 1
+                            Button {
+                                objectName: "getFromPlexButton"
+                                text: "Login with Plex"
+                                contentItem: Text { 
+                                    text: parent.text
+                                    color: "white"
+                                    font.pixelSize: 16
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter 
+                                }
+                                background: Rectangle { 
+                                    implicitWidth: 160
+                                    implicitHeight: 44
+                                    color: "#E5A00D"
+                                    radius: 8 
+                                }
+                                onClicked: plexAuth.requestPin()
                             }
-                            onClicked: plexAuth.requestPin()
                         }
                     }
+
+                    ColumnLayout {
+                        spacing: 15
+                        Layout.topMargin: 10
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text { text: "Servers"; color: "white"; font.pixelSize: 22; font.bold: true; Layout.fillWidth: true }
+                            Button {
+                                text: "🔄 Refresh"
+                                visible: tokenField.text !== ""
+                                onClicked: plexAuth.fetchServers(tokenField.text)
+                                background: Rectangle { color: "transparent" }
+                                contentItem: Text { text: parent.text; color: "#E5A00D"; font.pixelSize: 14; font.bold: true }
+                            }
+                        }
+                        
+                        ListView {
+                            id: serverCheckList
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(localServersList.length * 50 + 10, 300)
+                            model: localServersList
+                            clip: true
+                            delegate: RowLayout {
+                                    Component.onCompleted: console.log("[Settings] Created library delegate: " + model.title)
+                                width: serverCheckList.width
+                                height: 45
+                                spacing: 15
+                                CheckBox {
+                                    checked: modelData.enabled
+                                    onCheckedChanged: {
+                                        var list = localServersList
+                                        list[index].enabled = checked
+                                        localServersList = list
+                                        appSettings.serverList = JSON.stringify(list)
+                                    }
+                                }
+                                Text { text: "🖥️ " + modelData.name; color: "white"; font.pixelSize: 18; Layout.fillWidth: true }
+                                Button {
+                                    text: "Test"
+                                    onClicked: testAndSetBestConnection(modelData)
+                                    background: Rectangle { 
+                                        implicitWidth: 80
+                                        implicitHeight: 32
+                                        color: "#333333"
+                                        radius: 6
+                                        border.color: "#444444" 
+                                    }
+                                    contentItem: Text { 
+                                        text: parent.text
+                                        color: "white"
+                                        font.pixelSize: 13
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter 
+                                    }
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: "+ Add Manual Server"
+                            onClicked: manualServerPopup.open()
+                            background: Rectangle { 
+                                implicitWidth: 200
+                                implicitHeight: 40
+                                color: "#252525"
+                                radius: 8
+                                border.color: "#333333" 
+                            }
+                            contentItem: Text { 
+                                text: parent.text
+                                color: "#E5A00D"
+                                font.pixelSize: 15
+                                font.bold: true
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter 
+                            }
+                        }
+                    }
+
+                    Text {
+                        id: discoverStatusText
+                        objectName: "discoverStatusText"
+                        text: ""
+                        color: "#E5A00D"
+                        font.pixelSize: 14
+                        visible: text !== ""
+                    }
+
+                    RowLayout {
+                        spacing: 10
+                        visible: settingsWindow.connectionState !== 0
+                        Rectangle {
+                            width: 12
+                            height: 12
+                            radius: 6
+                            color: settingsWindow.connectionState === 1 ? "#E5A00D" : (settingsWindow.connectionState === 2 ? "#4CAF50" : "#FF5252")
+                        }
+                        Text {
+                            text: settingsWindow.connectionState === 1 ? "Connecting..." : (settingsWindow.connectionState === 2 ? "Connection Successful!" : "Connection Failed: " + settingsWindow.connectionError)
+                            color: "white"
+                            font.pixelSize: 14
+                        }
+                    }
+
+                    TextField { id: serverUrlField; objectName: "serverUrlField"; visible: false; text: appSettings.serverUrl }
 
                     RowLayout {
                         Layout.topMargin: 20
                         spacing: 15
-                        
                         Button {
                             text: "Cancel"
-                            contentItem: Text {
+                            contentItem: Text { 
                                 text: parent.text
                                 color: "white"
                                 font.pixelSize: 16
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                verticalAlignment: Text.AlignVCenter 
                             }
                             background: Rectangle { 
                                 implicitWidth: 120
@@ -353,571 +380,561 @@ Rectangle {
                             }
                             onClicked: closeSettings()
                         }
-                        
                         Button {
                             id: saveSettingsButton
-                            text: "Save & Apply"
                             objectName: "saveSettingsButton"
-                            enabled: settingsWindow.connectionState === 2
-                            contentItem: Text {
-                                text: saveSettingsButton.text
-                                color: saveSettingsButton.enabled ? "white" : "#888888"
+                            text: "Save & Apply"
+                            contentItem: Text { 
+                                text: parent.text
+                                color: "white"
                                 font.pixelSize: 16
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                verticalAlignment: Text.AlignVCenter 
                             }
                             background: Rectangle { 
                                 implicitWidth: 160
                                 implicitHeight: 40
-                                color: saveSettingsButton.enabled ? "#E5A00D" : "#222222"
+                                color: "#E5A00D"
                                 radius: 8 
                             }
                             onClicked: {
-                                appSettings.serverUrl = serverUrlField.text
                                 appSettings.token = tokenField.text
                                 closeSettings()
-                                
-                                if (!isTestMode) {
-                                    recentlyAddedModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/recentlyAdded")
-                                    continueWatchingModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/onDeck")
-                                    collectionsModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/sections/1/collections")
-                                }
+                                if (!isTestEnvironment) mainWindow.startupLogic()
                             }
                         }
+                    }
+                    Item { Layout.fillHeight: true }
+                }
 
+                // TAB 1: Libraries
+                ColumnLayout {
+                    id: librariesTabCol
+                    objectName: "librariesTabCol"
+                    spacing: 20
+                    property var localLibrariesMap: ({})
+                    
+                    Component.onCompleted: {
+                        try { localLibrariesMap = JSON.parse(appSettings.enabledLibraries || "{}") } catch(e) { localLibrariesMap = {} }
+                    }
+                    
+                    onVisibleChanged: {
+                        if (visible) {
+                            try { localLibrariesMap = JSON.parse(appSettings.enabledLibraries || "{}") } catch(e) { localLibrariesMap = {} }
+                            if (connectionManager.activeUrl !== "" && allLibrariesModel) {
+                                console.log("[Settings] Fetching libraries from active URL: " + connectionManager.activeUrl);
+                                allLibrariesModel.fetchEndpoint(connectionManager.activeUrl, appSettings.token, "/library/sections");
+                            } else {
+                                console.log("[Settings] Cannot fetch libraries: activeUrl empty or model null");
+                            }
+                        }
+                    }
+
+                    Text { text: "Library Configuration"; color: "white"; font.pixelSize: 32; font.bold: true }
+                    Text { text: "Select which libraries to display on the Home screen:"; color: "gray"; font.pixelSize: 16 }
+
+                    ListView {
+                        id: serverLibrariesList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        model: localServersList.filter(function(s) { return s.enabled })
+                        clip: true
+                        spacing: 30
+                        delegate: ColumnLayout {
+                            width: serverLibrariesList.width
+                            spacing: 12
+                            Text { text: "📁 Server: " + modelData.name; color: "#E5A00D"; font.pixelSize: 22; font.bold: true }
+                            Repeater {
+                                model: { console.log("[Settings] Repeater binding to model, count=" + (allLibrariesModel ? allLibrariesModel.rowCount() : "null")); return allLibrariesModel }
+                                delegate: RowLayout {
+                                    Component.onCompleted: console.log("[Settings] Created library delegate: " + model.title)
+                                    Layout.leftMargin: 30
+                                    spacing: 15
+                                    CheckBox {
+                                        checked: !!librariesTabCol.localLibrariesMap[model.ratingKey]
+                                        onToggled: {
+                                            var map = Object.assign({}, librariesTabCol.localLibrariesMap)
+                                            if (checked) { map[model.ratingKey] = { "type": model.type, "title": model.title, "serverName": modelData.name } }
+                                            else { delete map[model.ratingKey] }
+                                            librariesTabCol.localLibrariesMap = map
+                                        }
+                                    }
+                                    Text { text: getLibraryIcon(model.type) + " " + model.title; color: "white"; font.pixelSize: 18 }
+                                }
+                            }
+                            Rectangle { Layout.fillWidth: true; height: 1; color: "#333333"; Layout.topMargin: 10 }
+                        }
+                    }
+                    RowLayout {
+                        Layout.topMargin: 20
+                        spacing: 15
                         Button {
-                            id: checkConnectionButton
-                            objectName: "checkConnectionButton"
-                            enabled: serverUrlField.text.trim() !== "" && tokenField.text.trim() !== ""
-                            text: settingsWindow.connectionState === 1 ? "Checking..." : "Check connection"
-                            contentItem: Text {
-                                text: checkConnectionButton.text
-                                color: checkConnectionButton.enabled ? "white" : "#888888"
+                            text: "Cancel"
+                            contentItem: Text { 
+                                text: parent.text
+                                color: "white"
                                 font.pixelSize: 16
                                 font.bold: true
                                 horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                verticalAlignment: Text.AlignVCenter 
+                            }
+                            background: Rectangle { 
+                                implicitWidth: 120
+                                implicitHeight: 40
+                                color: "#444444"
+                                radius: 8 
+                            }
+                            onClicked: closeSettings()
+                        }
+                        Button {
+                            id: saveLibrariesButton
+                            objectName: "saveLibrariesButton"
+                            text: "Save & Apply"
+                            contentItem: Text { 
+                                text: parent.text
+                                color: "white"
+                                font.pixelSize: 16
+                                font.bold: true
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter 
                             }
                             background: Rectangle { 
                                 implicitWidth: 160
                                 implicitHeight: 40
-                                color: checkConnectionButton.enabled ? "#444444" : "#222222"
+                                color: "#E5A00D"
                                 radius: 8 
                             }
                             onClicked: {
-                                settingsWindow.connectionState = 1
-                                settingsWindow.connectionError = ""
-                                collectionsModel.checkConnection(serverUrlField.text, tokenField.text, isTestMode)
+                                appSettings.enabledLibraries = JSON.stringify(librariesTabCol.localLibrariesMap)
+                                closeSettings()
+                                if (!isTestEnvironment) mainWindow.startupLogic()
                             }
                         }
-
-                        Text {
-                            objectName: "connectionStatusIcon"
-                            text: settingsWindow.connectionState === 2 ? "✓" : (settingsWindow.connectionState === 3 ? "✗" : "")
-                            color: settingsWindow.connectionState === 2 ? "#4CAF50" : "#FF5252"
-                            font.pixelSize: 24
-                            font.bold: true
-                            Layout.alignment: Qt.AlignVCenter
-                            visible: settingsWindow.connectionState === 2 || settingsWindow.connectionState === 3
-                        }
                     }
+                }
 
-                    Text {
-                        objectName: "requiredFieldsWarning"
-                        text: (serverUrlField.text.trim() === "" || tokenField.text.trim() === "") ? "Server URL and API Token are required for Plex to operate." : "Please check connection successfully before saving."
-                        color: "#E5A00D"
-                        font.pixelSize: 14
-                        Layout.topMargin: 10
-                        visible: !saveSettingsButton.enabled
-                    }
-
-                    Text {
-                        objectName: "connectionErrorLog"
-                        text: settingsWindow.connectionError
-                        color: "#FF5252"
-                        font.pixelSize: 14
-                        Layout.topMargin: 10
-                        visible: settingsWindow.connectionState === 3
-                        wrapMode: Text.Wrap
+                // TAB 2: Hotkeys
+                ColumnLayout {
+                    spacing: 20
+                    Text { text: "Hotkeys"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
+                    RowLayout {
                         Layout.fillWidth: true
-                    }
-
-                        Item { Layout.fillHeight: true }
-                    }
-
-
-                    ColumnLayout {
-                        id: librariesTabCol
+                        Layout.maximumWidth: 800
                         spacing: 20
-                        
-                        property var localLibrariesMap: {
-                            try { return JSON.parse(appSettings.enabledLibraries || "{}"); } catch(e) { return {}; }
-                        }
-                        
-                        onVisibleChanged: {
-                            if (visible) {
-                                try { localLibrariesMap = JSON.parse(appSettings.enabledLibraries || "{}"); } catch(e) { localLibrariesMap = {}; }
-                            }
-                        }
-
-                        Text {
-                            text: "Manage Libraries"
-                            color: "white"
-                            font.pixelSize: 28
-                            font.bold: true
-                            Layout.bottomMargin: 20
-                        }
-
-                        ListView {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            model: allLibrariesModel
-                            clip: true
-                            delegate: RowLayout {
-                                width: ListView.view.width
-                                spacing: 15
-                                
-                                CheckBox {
-                                    id: libCheckbox
-                                    checked: librariesTabCol.localLibrariesMap[model.ratingKey] !== undefined && librariesTabCol.localLibrariesMap[model.ratingKey] !== null && librariesTabCol.localLibrariesMap[model.ratingKey] !== false
-                                    onClicked: {
-                                        var map = librariesTabCol.localLibrariesMap;
-                                        if (checked) {
-                                            map[model.ratingKey] = { "type": model.type, "title": model.title };
-                                        } else {
-                                            delete map[model.ratingKey];
-                                        }
-                                        librariesTabCol.localLibrariesMap = map;
-                                    }
-                                }
-                                
-                                Text {
-                                    text: getLibraryIcon(model.type) + " " + model.title + " (" + model.type + ")"
-                                    color: "white"
-                                    font.pixelSize: 18
-                                    Layout.fillWidth: true
-                                }
-                            }
-                        }
-                        
-                        RowLayout {
-                            Layout.topMargin: 20
-                            spacing: 15
-                            
-                            Button {
-                                text: "Cancel"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 120; implicitHeight: 40; color: "#444444"; radius: 8 }
-                                onClicked: closeSettings()
-                            }
-                            
-                            Button {
-                                id: saveLibrariesButton
-                                objectName: "saveLibrariesButton"
-                                text: "Save & Apply"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 160; implicitHeight: 40; color: "#E5A00D"; radius: 8 }
-                                onClicked: {
-                                    appSettings.enabledLibraries = JSON.stringify(librariesTabCol.localLibrariesMap);
-                                    closeSettings();
-                                    if (!isTestMode) mainWindow.startupLogic();
-                                }
-                            }
-                        }
+                        Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
+                        Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
+                        Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
+                        Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
                     }
+                    Rectangle { Layout.fillWidth: true; Layout.maximumWidth: 800; height: 1; color: "#444444" }
                     
-
-                    ColumnLayout {
-                        spacing: 20
-                        
-                        Text {
-                            text: "Hotkeys"
-                            color: "white"
-                            font.pixelSize: 28
+                    // Fullscreen
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Toggle Full Screen"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Enter/Exit full screen video playback"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { 
+                            id: fsHotkeyText
+                            objectName: "fsHotkeyText"
+                            text: appSettings.fullscreenHotkey
+                            color: "#E5A00D"
+                            font.pixelSize: 18
                             font.bold: true
-                            Layout.bottomMargin: 20
+                            Layout.preferredWidth: 150 
                         }
-                        
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
-                            Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
-                            Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
-                            Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
+                        Button {
+                            text: "Set"
+                            objectName: "setFsHotkeyBtn"
+                            contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "fullscreen"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
                         }
-                        
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            height: 1
-                            color: "#444444"
-                        }
-                        
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Toggle Full Screen"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Enter/Exit full screen video playback"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: fsHotkeyText
-                                objectName: "fsHotkeyText"
-                                text: appSettings.fullscreenHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setFsHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "fullscreen"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-                        
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Toggle Play/Pause"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Play or pause the active video"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: ppHotkeyText
-                                objectName: "ppHotkeyText"
-                                text: appSettings.playPauseHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setPpHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "playpause"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-                        
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Increase Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Increase the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: volUpHotkeyText
-                                objectName: "volUpHotkeyText"
-                                text: appSettings.volumeUpHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setVolUpHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "volup"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-                        
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: 800
-                            spacing: 20
-                            
-                            Text { text: "Decrease Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
-                            Text { text: "Decrease the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
-                            Text { 
-                                id: volDownHotkeyText
-                                objectName: "volDownHotkeyText"
-                                text: appSettings.volumeDownHotkey 
-                                color: "#E5A00D"
-                                font.pixelSize: 18
-                                font.bold: true
-                                Layout.preferredWidth: 150 
-                            }
-                            
-                            Button {
-                                text: "Set"
-                                objectName: "setVolDownHotkeyBtn"
-                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
-                                onClicked: {
-                                    hotkeyOverlay.actionToBind = "voldown"
-                                    hotkeyOverlay.visible = true
-                                    hotkeyOverlay.forceActiveFocus()
-                                }
-                            }
-                        }
-                        
-                        Item { Layout.fillHeight: true }
                     }
-
-                    ColumnLayout {
-                        spacing: 20
-
-                        Text {
-                            text: "Playback Configuration"
-                            color: "white"
-                            font.pixelSize: 28
+                    // Play/Pause
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Toggle Play/Pause"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Play or pause the active video"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { 
+                            id: ppHotkeyText
+                            objectName: "ppHotkeyText"
+                            text: appSettings.playPauseHotkey
+                            color: "#E5A00D"
+                            font.pixelSize: 18
                             font.bold: true
-                            Layout.bottomMargin: 20
+                            Layout.preferredWidth: 150 
                         }
-
-                        RowLayout {
-                            spacing: 10
-                            CheckBox {
-                                id: hdrEnableCheckbox
-                                objectName: "hdrEnableCheckbox"
-                                text: "Automatically Toggle system HDR on HDR movie playback"
-                                checked: appSettings.autoToggleHdr || false
-                                enabled: !collectionsModel.isFlatpak || collectionsModel.hasFlatpakSpawnPermission
-                                onCheckedChanged: {
-                                    appSettings.autoToggleHdr = checked
-                                }
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: hdrEnableCheckbox.enabled ? "white" : "gray"
-                                    font.pixelSize: 16
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: parent.indicator.width + parent.spacing
-                                }
-                            }
+                        Button {
+                            text: "Set"
+                            objectName: "setPpHotkeyBtn"
+                            contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "playpause"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
                         }
-
-                        ColumnLayout {
-                            visible: collectionsModel.isFlatpak && !collectionsModel.hasFlatpakSpawnPermission
-                            spacing: 5
-                            Layout.fillWidth: true
-                            
-                            Text {
-                                text: "Flatpak permission required to enable automatic HDR. Run this command and **restart the application**:"
-                                color: "#FF5252"
-                                font.pixelSize: 13
-                                font.bold: true
-                            }
-                            
-                            TextField {
-                                text: "flatpak override --user --talk-name=org.freedesktop.Flatpak io.github.danilovsergei.flex-player"
-                                readOnly: true
-                                selectByMouse: true
-                                Layout.fillWidth: true
-                                font.family: "Monospace"
-                                font.pixelSize: 12
-                                background: Rectangle {
-                                    color: "#000000"
-                                    radius: 4
-                                    border.color: "#FF5252"
-                                    border.width: 1
-                                }
-                                color: "#00FF00"
-                                topPadding: 8
-                                bottomPadding: 8
-                                leftPadding: 10
-                            }
-
-                            }
-                        Text {
-                            text: "HDR Enable Command"
-                            color: "gray"
-                            font.pixelSize: 14
-                            Layout.topMargin: 10
-                        }
-                        RowLayout {
-                            spacing: 10
-                            TextField {
-                                id: hdrEnableCommand
-                                objectName: "hdrEnableCommand"
-                                text: appSettings.hdrEnableCommand || "kscreen-doctor output.DP-1.hdr.enable"
-                                color: "white"
-                                font.pixelSize: 16
-                                Layout.preferredWidth: 400
-                                background: Rectangle {
-                                    color: "#333333"
-                                    radius: 5
-                                }
-                                onTextChanged: {
-                                    appSettings.hdrEnableCommand = text
-                                }
-                            }
-                            Button {
-                                objectName: "testHdrEnableButton"
-                                text: "Test"
-                                onClicked: mainWindow.runHdrCommand(hdrEnableCommand.text)
-                            }
-                        }
-
-                        Text {
-                            text: "HDR Disable Command"
-                            color: "gray"
-                            font.pixelSize: 14
-                            Layout.topMargin: 10
-                        }
-                        RowLayout {
-                            spacing: 10
-                            TextField {
-                                id: hdrDisableCommand
-                                objectName: "hdrDisableCommand"
-                                text: appSettings.hdrDisableCommand || "kscreen-doctor output.DP-1.hdr.disable"
-                                color: "white"
-                                font.pixelSize: 16
-                                Layout.preferredWidth: 400
-                                background: Rectangle {
-                                    color: "#333333"
-                                    radius: 5
-                                }
-                                onTextChanged: {
-                                    appSettings.hdrDisableCommand = text
-                                }
-                            }
-                            Button {
-                                objectName: "testHdrDisableButton"
-                                text: "Test"
-                                onClicked: mainWindow.runHdrCommand(hdrDisableCommand.text)
-                            }
-                        }
-
-                        Item { Layout.fillHeight: true }
                     }
+                    // Volume Up
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Increase Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Increase the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { 
+                            id: volUpHotkeyText
+                            objectName: "volUpHotkeyText"
+                            text: appSettings.volumeUpHotkey
+                            color: "#E5A00D"
+                            font.pixelSize: 18
+                            font.bold: true
+                            Layout.preferredWidth: 150 
+                        }
+                        Button {
+                            text: "Set"
+                            objectName: "setVolUpHotkeyBtn"
+                            contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "volup"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    // Volume Down
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Decrease Volume"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Decrease the video playback volume"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { 
+                            id: volDownHotkeyText
+                            objectName: "volDownHotkeyText"
+                            text: appSettings.volumeDownHotkey
+                            color: "#E5A00D"
+                            font.pixelSize: 18
+                            font.bold: true
+                            Layout.preferredWidth: 150 
+                        }
+                        Button {
+                            text: "Set"
+                            objectName: "setVolDownHotkeyBtn"
+                            contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "voldown"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
+                }
 
+                // TAB 3: Playback
+                ColumnLayout {
+                    spacing: 20
+                    Text { text: "Playback Configuration"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
+                    CheckBox {
+                        id: hdrEnableCheckbox
+                        objectName: "hdrEnableCheckbox"
+                        text: "Automatically Toggle system HDR on HDR movie playback"
+                        checked: appSettings ? appSettings.autoToggleHdr : false
+                        enabled: collectionsModel && (!collectionsModel.isFlatpak || collectionsModel.hasFlatpakSpawnPermission)
+                        onCheckedChanged: { appSettings.autoToggleHdr = checked }
+                        contentItem: Text { 
+                            text: parent.text
+                            color: hdrEnableCheckbox.enabled ? "white" : "gray"
+                            font.pixelSize: 16
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: parent.indicator.width + parent.spacing 
+                        }
+                    }
+                    ColumnLayout {
+                        visible: collectionsModel.isFlatpak && !collectionsModel.hasFlatpakSpawnPermission
+                        spacing: 5
+                        Layout.fillWidth: true
+                        Text { 
+                            text: "Flatpak permission required to enable automatic HDR. Run this command and **restart the application**:"
+                            color: "#FF5252"
+                            font.pixelSize: 13
+                            font.bold: true 
+                        }
+                        TextField {
+                            text: "flatpak override --user --talk-name=org.freedesktop.Flatpak io.github.danilovsergei.flex-player"
+                            readOnly: true
+                            selectByMouse: true
+                            Layout.fillWidth: true
+                            font.family: "Monospace"
+                            font.pixelSize: 12
+                            background: Rectangle { 
+                                color: "#000000"
+                                radius: 4
+                                border.color: "#FF5252"
+                                border.width: 1 
+                            }
+                            color: "#00FF00"
+                            topPadding: 8
+                            bottomPadding: 8
+                            leftPadding: 10
+                        }
+                    }
+                    Text { text: "HDR Enable Command"; color: "gray"; font.pixelSize: 14; Layout.topMargin: 10 }
+                    RowLayout {
+                        spacing: 10
+                        TextField {
+                            id: hdrEnableCommand
+                            objectName: "hdrEnableCommand"
+                            text: appSettings.hdrEnableCommand || "kscreen-doctor output.DP-1.hdr.enable"
+                            color: "white"
+                            font.pixelSize: 16
+                            Layout.preferredWidth: 400
+                            background: Rectangle { color: "#333333"; radius: 5 }
+                            onTextChanged: { appSettings.hdrEnableCommand = text }
+                        }
+                        Button {
+                            objectName: "testHdrEnableButton"
+                            text: "Test"
+                            onClicked: mainWindow.runHdrCommand(hdrEnableCommand.text)
+                        }
+                    }
+                    Text { text: "HDR Disable Command"; color: "gray"; font.pixelSize: 14; Layout.topMargin: 10 }
+                    RowLayout {
+                        spacing: 10
+                        TextField {
+                            id: hdrDisableCommand
+                            objectName: "hdrDisableCommand"
+                            text: appSettings.hdrDisableCommand || "kscreen-doctor output.DP-1.hdr.disable"
+                            color: "white"
+                            font.pixelSize: 16
+                            Layout.preferredWidth: 400
+                            background: Rectangle { color: "#333333"; radius: 5 }
+                            onTextChanged: { appSettings.hdrDisableCommand = text }
+                        }
+                        Button {
+                            objectName: "testHdrDisableButton"
+                            text: "Test"
+                            onClicked: mainWindow.runHdrCommand(hdrDisableCommand.text)
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
                 }
             }
         }
-        
+    }
 
-        Rectangle {
-            id: hotkeyOverlay
-            objectName: "hotkeyOverlay"
-            anchors.fill: parent
-            color: "#E6000000"
-            visible: false
-            z: 200
-            
-            property string actionToBind: ""
-            
-
-            focus: visible
-            
-            function bindKey(newKey) {
-                if (!newKey || newKey === "") return;
-                if (actionToBind === "fullscreen") {
-                    appSettings.fullscreenHotkey = newKey;
-                } else if (actionToBind === "playpause") {
-                    appSettings.playPauseHotkey = newKey;
-                } else if (actionToBind === "volup") {
-                    appSettings.volumeUpHotkey = newKey;
-                } else if (actionToBind === "voldown") {
-                    appSettings.volumeDownHotkey = newKey;
-                }
-                visible = false;
+    // Overlays & Popups
+    Rectangle {
+        id: pinOverlay
+        objectName: "pinOverlay"
+        anchors.fill: parent
+        color: "#E6000000"
+        z: 100
+        visible: plexAuth.isPolling
+        MouseArea { anchors.fill: parent }
+        Column {
+            anchors.centerIn: parent
+            spacing: 30
+            Text { 
+                text: "Authenticating..."
+                color: "white"
+                font.pixelSize: 36
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                anchors.horizontalCenter: parent.horizontalCenter 
             }
-
-            Keys.onPressed: function(event) {
-
-                if (event.key === Qt.Key_Shift || event.key === Qt.Key_Control || event.key === Qt.Key_Alt || event.key === Qt.Key_Meta) {
-                    return;
-                }
-                
-                if (event.key === Qt.Key_Escape) {
-                    hotkeyOverlay.visible = false;
-                    event.accepted = true;
-                    return;
-                }
-                
-                var keyStr = "";
-                if (event.modifiers & Qt.ControlModifier) keyStr += "Ctrl+";
-                if (event.modifiers & Qt.AltModifier) keyStr += "Alt+";
-                if (event.modifiers & Qt.ShiftModifier) keyStr += "Shift+";
-                if (event.modifiers & Qt.MetaModifier) keyStr += "Meta+";
-                
-                var baseKey = "";
-                if (event.key === Qt.Key_Space) baseKey = "Space";
-                else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) baseKey = "Return";
-                else if (event.key === Qt.Key_Tab) baseKey = "Tab";
-                else if (event.key === Qt.Key_Backspace) baseKey = "Backspace";
-                else if (event.key === Qt.Key_Delete) baseKey = "Delete";
-                else if (event.key === Qt.Key_Up) baseKey = "Up";
-                else if (event.key === Qt.Key_Down) baseKey = "Down";
-                else if (event.key === Qt.Key_Left) baseKey = "Left";
-                else if (event.key === Qt.Key_Right) baseKey = "Right";
-                else if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F35) {
-                    baseKey = "F" + (event.key - Qt.Key_F1 + 1);
-                } else if (event.key >= 0x20 && event.key <= 0x0ff) {
-                    baseKey = String.fromCharCode(event.key).toUpperCase();
-                } else if (event.text !== "") {
-                    baseKey = event.text.toUpperCase();
-                }
-                
-                if (baseKey === "") return;
-                
-                bindKey(keyStr + baseKey);
-                event.accepted = true;
+            Text { 
+                text: "A secure browser window has opened.<br>Please sign in to Plex to continue."
+                color: "gray"
+                font.pixelSize: 24
+                horizontalAlignment: Text.AlignHCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+                textFormat: Text.RichText 
             }
-            
-            MouseArea { anchors.fill: parent }
-            
-            Column {
-                anchors.centerIn: parent
-                spacing: 20
-                
-                Text {
-                    text: "Listening for key press..."
+            Button {
+                text: "Cancel"
+                anchors.horizontalCenter: parent.horizontalCenter
+                contentItem: Text { 
+                    text: parent.text
                     color: "white"
-                    font.pixelSize: 32
-                    font.bold: true
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-                
-                Text {
-                    text: "Press any key to assign it to this action.\nPress ESC to cancel."
-                    color: "gray"
                     font.pixelSize: 18
+                    font.bold: true
                     horizontalAlignment: Text.AlignHCenter
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    verticalAlignment: Text.AlignVCenter 
                 }
-                
+                background: Rectangle { 
+                    implicitWidth: 160
+                    implicitHeight: 48
+                    color: "#444444"
+                    radius: 8 
+                }
+                onClicked: plexAuth.cancelLogin()
+            }
+        }
+    }
+
+    Rectangle {
+        id: hotkeyOverlay
+        objectName: "hotkeyOverlay"
+        anchors.fill: parent
+        color: "#E6000000"
+        visible: false
+        z: 200
+        property string actionToBind: ""
+        focus: visible
+        function bindKey(newKey) {
+            if (!newKey || newKey === "") return
+            if (actionToBind === "fullscreen") appSettings.fullscreenHotkey = newKey
+            else if (actionToBind === "playpause") appSettings.playPauseHotkey = newKey
+            else if (actionToBind === "volup") appSettings.volumeUpHotkey = newKey
+            else if (actionToBind === "voldown") appSettings.volumeDownHotkey = newKey
+            visible = false
+        }
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Shift || event.key === Qt.Key_Control || event.key === Qt.Key_Alt || event.key === Qt.Key_Meta) return
+            if (event.key === Qt.Key_Escape) { hotkeyOverlay.visible = false; event.accepted = true; return }
+            var keyStr = ""
+            if (event.modifiers & Qt.ControlModifier) keyStr += "Ctrl+"
+            if (event.modifiers & Qt.AltModifier) keyStr += "Alt+"
+            if (event.modifiers & Qt.ShiftModifier) keyStr += "Shift+"
+            if (event.modifiers & Qt.MetaModifier) keyStr += "Meta+"
+            var baseKey = ""
+            if (event.key === Qt.Key_Space) baseKey = "Space"
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) baseKey = "Return"
+            else if (event.key === Qt.Key_Tab) baseKey = "Tab"
+            else if (event.key === Qt.Key_Backspace) baseKey = "Backspace"
+            else if (event.key === Qt.Key_Delete) baseKey = "Delete"
+            else if (event.key === Qt.Key_Up) baseKey = "Up"
+            else if (event.key === Qt.Key_Down) baseKey = "Down"
+            else if (event.key === Qt.Key_Left) baseKey = "Left"
+            else if (event.key === Qt.Key_Right) baseKey = "Right"
+            else if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F35) baseKey = "F" + (event.key - Qt.Key_F1 + 1)
+            else if (event.key >= 0x20 && event.key <= 0x0ff) baseKey = String.fromCharCode(event.key).toUpperCase()
+            else if (event.text !== "") baseKey = event.text.toUpperCase()
+            if (baseKey === "") return
+            bindKey(keyStr + baseKey)
+            event.accepted = true
+        }
+        MouseArea { anchors.fill: parent }
+        Column {
+            anchors.centerIn: parent
+            spacing: 20
+            Text { 
+                text: "Listening for key press..."
+                color: "white"
+                font.pixelSize: 32
+                font.bold: true
+                anchors.horizontalCenter: parent.horizontalCenter 
+            }
+            Text { 
+                text: "Press any key to assign it to this action.\nPress ESC to cancel."
+                color: "gray"
+                font.pixelSize: 18
+                horizontalAlignment: Text.AlignHCenter
+                anchors.horizontalCenter: parent.horizontalCenter 
+            }
+            Button { 
+                text: "Cancel"
+                objectName: "cancelHotkeyBtn"
+                anchors.horizontalCenter: parent.horizontalCenter
+                contentItem: Text { 
+                    text: parent.text
+                    color: "white"
+                    font.pixelSize: 16
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter 
+                }
+                background: Rectangle { 
+                    implicitWidth: 120
+                    implicitHeight: 40
+                    color: "#444444"
+                    radius: 6 
+                }
+                onClicked: { hotkeyOverlay.visible = false } 
+            }
+        }
+    }
+
+    Popup {
+        id: serverSelectionPopup
+        objectName: "serverSelectionPopup"
+        anchors.centerIn: parent
+        width: 450
+        height: 450
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { color: "#2e2e2e"; radius: 12; border.color: "#E5A00D"; border.width: 1 }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 25
+            spacing: 20
+            Text { text: "Select Plex Server"; color: "white"; font.pixelSize: 26; font.bold: true; Layout.alignment: Qt.AlignHCenter }
+            ListView {
+                id: serverListView
+                objectName: "serverListView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                model: discoveredServers
+                clip: true
+                spacing: 10
+                delegate: ItemDelegate {
+                    width: serverListView.width
+                    height: 60
+                    background: Rectangle { 
+                        color: hovered ? "#444444" : "#333333"
+                        radius: 8 
+                    }
+                    contentItem: ColumnLayout {
+                        spacing: 2
+                        Text { text: modelData.name; color: "white"; font.pixelSize: 18; font.bold: true }
+                        Text { text: modelData.product; color: "gray"; font.pixelSize: 14 }
+                    }
+                    onClicked: { testAndSetBestConnection(modelData); serverSelectionPopup.close() }
+                }
+            }
+            Button { 
+                text: "Cancel"
+                Layout.alignment: Qt.AlignHCenter
+                onClicked: serverSelectionPopup.close()
+                background: Rectangle { implicitWidth: 100; implicitHeight: 40; color: "#444444"; radius: 8 }
+                contentItem: Text { text: parent.text; color: "white"; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
+            }
+        }
+    }
+
+    Popup {
+        id: manualServerPopup
+        anchors.centerIn: parent
+        width: 400
+        height: 250
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { color: "#2e2e2e"; radius: 12; border.color: "#444444" }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 25
+            spacing: 20
+            Text { text: "Add Manual Server"; color: "white"; font.pixelSize: 22; font.bold: true }
+            TextField { 
+                id: manualServerIp
+                Layout.fillWidth: true
+                placeholderText: "192.168.x.x:32400"
+                color: "white"
+                background: Rectangle { color: "#1e1e1e"; radius: 8; border.color: "#333333" }
+                leftPadding: 12; topPadding: 10; bottomPadding: 10 
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: 12
+                Button { text: "Cancel"; onClicked: manualServerPopup.close() }
                 Button {
-                    text: "Cancel"
-                    objectName: "cancelHotkeyBtn"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                    background: Rectangle { implicitWidth: 120; implicitHeight: 40; color: "#444444"; radius: 6 }
+                    text: "Add"
                     onClicked: {
-                        hotkeyOverlay.visible = false
+                        var ip = manualServerIp.text.trim()
+                        if (ip !== "") {
+                            if (!ip.startsWith("http")) ip = "http://" + ip
+                            var list = localServersList
+                            list.push({ name: "Manual: " + manualServerIp.text, localUrl: ip, remoteUrl: "", enabled: true })
+                            localServersList = list
+                            appSettings.serverList = JSON.stringify(list)
+                            manualServerPopup.close()
+                            manualServerIp.text = ""
+                        }
                     }
                 }
             }
         }
     }
+}

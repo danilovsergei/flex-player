@@ -8,3 +8,13 @@ cmake_install.cmake
 Makefile
 compile_commands.json
 
+
+# Flatpak
+.flatpak-builder/
+repo/
+flex-player.flatpak
+
+# Scripts and logs
+*.py
+*.log
+*.backup.*

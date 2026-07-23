@@ -3,6 +3,7 @@
 #include <QUrlQuery>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QDebug>
 
 PlexAuth::PlexAuth(QObject *parent) : QObject(parent), m_isPolling(false) {
@@ -29,16 +30,16 @@ void PlexAuth::setIsPolling(bool polling) {
 
 void PlexAuth::requestPin() {
     QUrl url("https://plex.tv/api/v2/pins");
-    QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    request.setRawHeader("X-Plex-Product", "Flex Player");
-    request.setRawHeader("X-Plex-Client-Identifier", m_clientId.toUtf8());
-    request.setRawHeader("Accept", "application/json");
-
     QUrlQuery query;
     query.addQueryItem("strong", "true");
+    query.addQueryItem("X-Plex-Product", "Flex Player");
+    query.addQueryItem("X-Plex-Client-Identifier", m_clientId);
+    url.setQuery(query);
 
-    QNetworkReply *reply = m_manager.post(request, query.toString(QUrl::FullyEncoded).toUtf8());
+    QNetworkRequest request(url);
+    request.setRawHeader("Accept", "application/json");
+
+    QNetworkReply *reply = m_manager.post(request, QByteArray());
     connect(reply, &QNetworkReply::finished, this, &PlexAuth::onPinRequested);
 }
 
@@ -54,25 +55,22 @@ void PlexAuth::onPinRequested() {
 
     QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
     QJsonObject obj = doc.object();
+    m_pinId = QString::number(obj["id"].toInt());
+    setPinCode(obj["code"].toString());
     
-    if (obj.contains("id") && obj.contains("code")) {
-        m_pinId = QString::number(obj["id"].toInt());
-        setPinCode(obj["code"].toString());
-        
-        setIsPolling(true);
-        m_pollTimer.start(3000); // Poll every 3 seconds
-    } else {
-        emit authError("Invalid response from Plex API");
-    }
+    setIsPolling(true);
+    m_pollTimer.start(3000);
 }
 
 void PlexAuth::pollPlex() {
     if (m_pinId.isEmpty()) return;
 
     QUrl url("https://plex.tv/api/v2/pins/" + m_pinId);
+    QUrlQuery query;
+    query.addQueryItem("X-Plex-Client-Identifier", m_clientId);
+    url.setQuery(query);
+
     QNetworkRequest request(url);
-    request.setRawHeader("X-Plex-Product", "Flex Player");
-    request.setRawHeader("X-Plex-Client-Identifier", m_clientId.toUtf8());
     request.setRawHeader("Accept", "application/json");
 
     QNetworkReply *reply = m_manager.get(request);
@@ -85,7 +83,7 @@ void PlexAuth::onPollFinished() {
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
-        return; // Ignore network errors during polling, could be transient
+        return;
     }
 
     QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
@@ -97,9 +95,69 @@ void PlexAuth::onPollFinished() {
     }
 }
 
+void PlexAuth::fetchServers(const QString &token) {
+    if (token.isEmpty()) return;
+
+    QUrl url("https://plex.tv/api/v2/resources");
+    QUrlQuery query;
+    query.addQueryItem("includeHttps", "1");
+    query.addQueryItem("X-Plex-Token", token);
+    url.setQuery(query);
+
+    QNetworkRequest request(url);
+    request.setRawHeader("X-Plex-Product", "Flex Player");
+    request.setRawHeader("X-Plex-Client-Identifier", m_clientId.toUtf8());
+    request.setRawHeader("Accept", "application/json");
+
+    QNetworkReply *reply = m_manager.get(request);
+    connect(reply, &QNetworkReply::finished, this, &PlexAuth::onServersFetched);
+}
+
+void PlexAuth::onServersFetched() {
+    QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
+    if (!reply) return;
+    reply->deleteLater();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        emit authError("Failed to fetch servers: " + reply->errorString());
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    QJsonArray array = doc.array();
+    QVariantList servers;
+
+    for (const QJsonValue &value : array) {
+        QJsonObject obj = value.toObject();
+        if (obj["provides"].toString().contains("server")) {
+            QVariantMap server;
+            server["name"] = obj["name"].toString();
+            server["product"] = obj["product"].toString();
+            
+            QVariantList connections;
+            QJsonArray connArray = obj["connections"].toArray();
+            for (const QJsonValue &connValue : connArray) {
+                QJsonObject connObj = connValue.toObject();
+                QVariantMap conn;
+                conn["address"] = connObj["address"].toString();
+                conn["port"] = connObj["port"].toInt();
+                conn["local"] = connObj["local"].toBool();
+                conn["protocol"] = connObj["protocol"].toString();
+                conn["uri"] = connObj["uri"].toString();
+                connections.append(conn);
+            }
+            server["connections"] = connections;
+            servers.append(server);
+        }
+    }
+
+    emit serversReceived(servers);
+}
+
 void PlexAuth::cancelLogin() {
     m_pollTimer.stop();
     setIsPolling(false);
     setPinCode("");
     m_pinId = "";
 }
+

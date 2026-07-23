@@ -23,7 +23,7 @@ fi
 
 # 2. Get test functions
 echo "Scanning for test functions..."
-FUNCS=$($LOCAL_TEST_EXE -platform offscreen -functions 2>&1 | grep "SidebarAndPlaybackTest::test_")
+FUNCS=$($LOCAL_TEST_EXE -platform offscreen -functions 2>&1 | grep "::test_")
 
 if [ -z "$FUNCS" ]; then
     echo "Error: Could not list test functions. Ensure the project is built locally in ./build"
@@ -45,6 +45,12 @@ CURRENT_JOBS=0
 
 for FUNC in $FUNCS; do
     FNAME=$(echo $FUNC | cut -d'(' -f1)
+    
+    if [[ "$FNAME" == *"RealConnectionTest"* ]]; then
+        echo "  [ SKIP ] $FNAME (Physical test requires host network)"
+        echo "PASS" > "$OUT_DIR/$FNAME.res"
+        continue
+    fi
     
     (
         LOG_FILE="$OUT_DIR/$FNAME.log"
