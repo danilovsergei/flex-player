@@ -157,12 +157,12 @@ Window {
         MoviePosterDelegate {
             onOpenCollection: function(ratingKey) {
                 console.log("Opening collection: " + ratingKey)
-                controller.collectionMoviesModel.fetchEndpoint(appSettings.serverUrl, appSettings.token, "/library/collections/" + ratingKey + "/children")
+                controller.collectionMoviesModel.fetchEndpoint(controller.connectionManager.activeUrl, appSettings.token, "/library/collections/" + ratingKey + "/children")
                 currentTab = 2
             }
             onOpenShow: function(ratingKey) {
                 console.log("Opening show/season: " + ratingKey)
-                controller.detailsModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                controller.detailsModel.fetchItemDetails(controller.connectionManager.activeUrl, appSettings.token, ratingKey);
             }
             onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
@@ -172,7 +172,7 @@ Window {
             }
             onOpenDetails: function(ratingKey) {
                 console.log("Opening details for: " + ratingKey);
-                controller.detailsModel.fetchItemDetails(appSettings.serverUrl, appSettings.token, ratingKey);
+                controller.detailsModel.fetchItemDetails(controller.connectionManager.activeUrl, appSettings.token, ratingKey);
             }
         }
     }

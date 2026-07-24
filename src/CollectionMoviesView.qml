@@ -16,6 +16,7 @@ Item {
     signal backToCollections()
 
     ColumnLayout {
+        anchors.fill: parent
         spacing: 0
 
         // Top Bar

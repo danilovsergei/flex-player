@@ -533,7 +533,50 @@ TestCase {
         if (view) view.destroy();
     }
 
-        function test_26_plex_login_flow() {
+        function test_25b_collection_click_flow() {
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        mainWindow.currentTab = 1;
+        wait(500);
+        var libraryView = findChild(mainWindow, "libraryView");
+        libraryView.libraryTab = 1; // Collections
+        wait(200);
+        var collGrid = findChild(libraryView, "collectionsGrid");
+        tryVerify(function() { return collGrid.count > 0; }, 5000, "Collections grid should have items");
+        
+        var colPoster = collGrid.itemAtIndex(0);
+        verify(colPoster !== null, "Collection poster should exist");
+        
+        console.log("Clicking collection poster...");
+        mouseClick(colPoster, colPoster.width / 2, colPoster.height / 2);
+        
+        tryVerify(function() { return mainWindow.currentTab === 2; }, 5000, "App should switch to Collection Movies view");
+        
+        var colView = findChild(mainWindow, "collectionMoviesView");
+        verify(colView !== null, "Collection Movies view should exist");
+        
+        var moviesGrid = findChild(colView, "collectionMoviesGrid");
+        verify(moviesGrid !== null, "Collection movies grid should exist");
+        
+        tryVerify(function() { return moviesGrid.count > 0; }, 5000, "Collection movies grid should fetch items");
+        
+        // VISUAL GEOMETRY VERIFICATION (The actual bug)
+        console.log("Verifying visual geometry of movies in collection...");
+        var visibleCount = 0;
+        if (moviesGrid.contentItem && moviesGrid.contentItem.children) {
+            for (var i = 0; i < moviesGrid.contentItem.children.length; i++) {
+                var child = moviesGrid.contentItem.children[i];
+                if (child.objectName === "movieItem" || (typeof child.width !== "undefined" && child.width === 200)) {
+                    if (child.width > 0 && child.y < moviesGrid.height) {
+                        visibleCount++;
+                        console.log("  Collection Movie Visible: y=" + child.y + " w=" + child.width);
+                    }
+                }
+            }
+        }
+        verify(visibleCount > 0, "Collection movies grid should visually display MORE THAN ZERO posters on screen");
+    }
+
+    function test_26_plex_login_flow() {
         var settingsWindow = findChild(mainWindow, "settingsWindow");
         settingsWindow.visible = true;
         wait(500);
