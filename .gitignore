@@ -15,6 +15,7 @@ repo/
 flex-player.flatpak
 
 # Scripts and logs
+tests/results/
 *.py
 *.log
 *.backup.*
