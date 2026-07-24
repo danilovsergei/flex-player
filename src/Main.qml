@@ -332,18 +332,5 @@ Window {
         allLibrariesModel: controller.allLibrariesModel
         collectionsModel: controller.collectionsModel
     }
-
-    Timer {
-        running: true
-        interval: 6000
-        onTriggered: {
-            var libs = controller.homeLibrariesList;
-            if (libs.length > 0) {
-                console.log("AUTO LOADING FIRST LIBRARY (Movies) TO SCREEN...");
-                controller.loadLibraryContent(libs[0].id, libs[0].title, libs[0].type);
-                currentTab = 1;
-            }
-        }
-    }
-
 }
+

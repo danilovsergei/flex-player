@@ -469,6 +469,10 @@ TestCase {
         
         tryVerify(function() { return raList.count > 0; }, 10000, "Recently Added list should fetch items");
         
+        // Wait for UI layout to settle (width > 0)
+        tryVerify(function() { return cwList.width > 0; }, 5000, "Continue Watching list should have width > 0");
+        tryVerify(function() { return raList.width > 0; }, 5000, "Recently Added list should have width > 0");
+        
         // --- VISUAL GEOMETRY VERIFICATION ---
         // CRITICAL: We do not just check if `count > 0` because of a known Qt Quick layout bug.
         // When a ListView is placed inside a StackLayout (which sets width to 0 initially) 
