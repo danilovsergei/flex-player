@@ -177,14 +177,21 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         
         m.viewOffset = obj["viewOffset"].toVariant().toLongLong();
         m.duration = obj["duration"].toVariant().toLongLong();
-        m.isWatched = obj.contains("viewCount") && obj["viewCount"].toInt() > 0;
+        
+        m.leafCount = obj["leafCount"].toInt();
+        m.viewedLeafCount = obj["viewedLeafCount"].toInt();
+        
+        if (m.type == "show" || m.type == "season") {
+            m.isWatched = (m.leafCount > 0 && m.viewedLeafCount == m.leafCount);
+        } else {
+            m.isWatched = obj.contains("viewCount") && obj["viewCount"].toInt() > 0;
+        }
+        
         m.parentTitle = obj["parentTitle"].toString();
         m.grandparentTitle = obj["grandparentTitle"].toString();
         m.parentIndex = obj["parentIndex"].toInt();
         m.index = obj["index"].toInt();
         m.childCount = obj["childCount"].toInt();
-        m.leafCount = obj["leafCount"].toInt();
-        m.viewedLeafCount = obj["viewedLeafCount"].toInt();
         
         // Build absolute thumb URL if needed
         QString thumb = obj["thumb"].toString();

@@ -303,7 +303,49 @@ TestCase {
     }
 
     function test_6_watched_checkmark() {
-        verify(true, "Watched checkmark verified manually")
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        mainWindow.currentTab = 1;
+        
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        var raList = findChild(libraryView, "recentlyAddedListLib");
+        verify(raList !== null, "Recently Added list should exist in Library View");
+        
+        tryVerify(function() { return raList.count >= 4; }, 10000, "Recently Added list should fetch items");
+        
+        // Wait for UI layout to settle (width > 0)
+        tryVerify(function() { return raList.width > 0; }, 5000, "Recently Added list should have width > 0");
+        
+        var children = raList.contentItem.children;
+        var posters = [];
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].objectName === "movieItem") {
+                posters.push(children[i]);
+            }
+        }
+        
+        verify(posters.length >= 4, "Should have 4 poster delegates rendered");
+        
+        // Mock Movie Unwatched
+        var checkmark0 = findChild(posters[0], "watchedCheckmark");
+        verify(checkmark0 !== null, "Checkmark 0 should exist");
+        verify(checkmark0.visible === false, "Unwatched movie checkmark should be hidden");
+        
+        // Mock Show Partially Watched
+        var checkmark1 = findChild(posters[1], "watchedCheckmark");
+        verify(checkmark1 !== null, "Checkmark 1 should exist");
+        verify(checkmark1.visible === false, "Partially watched show checkmark should be hidden");
+        
+        // Mock Show Watched
+        var checkmark2 = findChild(posters[2], "watchedCheckmark");
+        verify(checkmark2 !== null, "Checkmark 2 should exist");
+        verify(checkmark2.visible === true, "Fully watched show checkmark should be visible");
+        
+        // Mock Movie Watched
+        var checkmark3 = findChild(posters[3], "watchedCheckmark");
+        verify(checkmark3 !== null, "Checkmark 3 should exist");
+        verify(checkmark3.visible === true, "Watched movie checkmark should be visible");
     }
 
     function test_7_sidebar_collapse() {

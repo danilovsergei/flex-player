@@ -36,10 +36,12 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path:
             response_data = {
                 "MediaContainer": {
-                    "size": 2,
+                    "size": 4,
                     "Metadata": [
-                        {"type": "movie", "title": "Mock Movie 1", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]},
-                        {"type": "show", "title": "Mock Show 1", "ratingKey": "200", "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]}
+                        {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]},
+                        {"type": "show", "title": "Mock Show Partially Watched", "ratingKey": "200", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 3, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
+                        {"type": "show", "title": "Mock Show Watched", "ratingKey": "202", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 25, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
+                        {"type": "movie", "title": "Mock Movie Watched", "ratingKey": "103", "duration": 50000, "viewOffset": 0, "viewCount": 1, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]}
                     ]
                 }
             }
