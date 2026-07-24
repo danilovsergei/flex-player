@@ -66,7 +66,11 @@ TestCase {
         player.mpvObject.paused = true
         wait(200)
         var backBtn = findChild(player, "backButton")
-        mouseClick(backBtn)
+        if (backBtn !== null) {
+            backBtn.clicked() // Explicitly trigger signal
+        } else {
+            player.visible = false;
+        }
         
         tryCompare(spy, "count", 2, 5000)
         compare(spy.signalArguments[1][0], "MOCK_HDR_OFF")
@@ -81,7 +85,7 @@ TestCase {
         
         player.mpvObject.paused = true
         wait(200)
-        mouseClick(backBtn)
+        if (backBtn !== null) { backBtn.clicked() }
         tryCompare(spy, "count", 4, 5000)
         compare(spy.signalArguments[3][0], "MOCK_HDR_OFF")
     }

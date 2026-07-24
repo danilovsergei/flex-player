@@ -13,15 +13,18 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
             logf.write("GET " + self.path + "\n")
 
-        
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         
         if path.startswith("/library/parts/") or path.endswith(".mkv"):
             try:
+                import os
+                file_size = os.path.getsize('/app/tests/dummy1.mkv')
                 self.send_response(200)
                 self.send_header('Content-type', 'video/x-matroska')
                 self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Connection', 'close')
+                self.send_header('Content-Length', str(file_size))
                 self.end_headers()
                 with open('/app/tests/dummy1.mkv', 'rb') as f_media:
                     self.wfile.write(f_media.read())
@@ -29,13 +32,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 print("Error serving media:", e)
             return
 
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        
         query = parse_qs(parsed_path.query)
-        
         response_data = {}
         
         if path == "/library/sections":
@@ -48,12 +45,12 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     ]
                 }
             }
-        elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path:
+        elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path:
             response_data = {
                 "MediaContainer": {
                     "size": 4,
                     "Metadata": [
-                        {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]},
+                        {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/100/file.mkv"}]}]},
                         {"type": "show", "title": "Mock Show Partially Watched", "ratingKey": "200", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 3, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
                         {"type": "show", "title": "Mock Show Watched", "ratingKey": "202", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 25, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
                         {"type": "movie", "title": "Mock Movie Watched", "ratingKey": "103", "duration": 50000, "viewOffset": 0, "viewCount": 1, "Media": [{"Part": [{"key": "/library/parts/103/file.mkv"}]}]}
@@ -104,7 +101,10 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                                     "file": "/app/tests/dummy1.mkv",
                                     "Stream": [
                                         { "id": 10, "streamType": 1, "codec": "h264", "index": 0 },
-                                        { "id": 11, "streamType": 2, "language": "Русский", "displayTitle": "Русский (EAC3 5.1)", "extendedDisplayTitle": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly (Русский EAC3 5.1)", "title": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly", "index": 1 }
+                                        { "id": 11, "streamType": 2, "language": "English", "index": 1 },
+                                        { "id": 2, "streamType": 2, "language": "Русский", "displayTitle": "Русский (EAC3 5.1)", "extendedDisplayTitle": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly (Русский EAC3 5.1)", "title": "Super Long Track Name That Needs Dynamic Resizing To Fit Perfectly", "index": 2 },
+                                        { "id": 13, "streamType": 3, "language": "English", "index": 3 },
+                                        { "id": 2, "streamType": 3, "language": "Russian", "index": 4 }
                                     ]
                                 }]
                             }]
@@ -121,7 +121,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                             "viewOffset": 600000,
                             "Genre": [{"tag": "Action"}],
                             "Role": [{"tag": "Actor"}],
-                            "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
+                            "Media": [{"Part": [{"key": "/library/parts/103/file.mkv", "file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
                         }]
                     }
                 }
@@ -134,16 +134,29 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                             "duration": 3600000,
                             "viewOffset": 0,
                             "type": "movie",
-                            "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
+                            "Media": [{"Part": [{"key": "/library/parts/103/file.mkv", "file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
                         }]
                     }
                 }
+        elif path == "/" or path == "/identity":
+            response_data = {"MediaContainer": {"machineIdentifier": "mock_machine"}}
+        elif path == "/" or path == "/identity":
+            response_data = {"MediaContainer": {"machineIdentifier": "mock_machine"}}
         else:
             response_data = {"MediaContainer": {"size": 0, "Metadata": []}}
             
-        self.wfile.write(json.dumps(response_data).encode('utf-8'))
+        json_bytes = json.dumps(response_data).encode('utf-8')
+        
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Connection', 'close')
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self.end_headers()
+        
+        self.wfile.write(json_bytes)
 
-httpd = http.server.HTTPServer(('127.0.0.1', 32400), MockPlexHandler)
+httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 32400), MockPlexHandler)
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.load_cert_chain(certfile='/app/tests/mock_cert.pem', keyfile='/app/tests/mock_key.pem')

@@ -252,11 +252,7 @@ Item {
                 } else if (mType === "show" || mType === "season") {
                     root.openShow(mRatingKey)
                 } else {
-                    var urlToPlay = mMediaUrl ? mMediaUrl : ""
-                    var mDuration = 0
-                    if (typeof model !== "undefined" && (typeof model !== "undefined" && model.duration) !== undefined) mDuration = (typeof model !== "undefined" && model.duration)
-                    else if (typeof duration !== "undefined") mDuration = duration
-                    root.playMedia(mTitle, urlToPlay, mViewOffset, mRatingKey, mDuration)
+                    root.openDetails(mRatingKey)
                 }
             } catch(e) {
                 console.log("Error in poster click:", e)

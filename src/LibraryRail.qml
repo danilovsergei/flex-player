@@ -26,7 +26,9 @@ ColumnLayout {
     }
 
     function refresh() {
+        console.log("LibraryRail refresh() called for " + libraryTitle + " id " + libraryId);
         if (!rootApp || !libraryId || libraryId === "" || libraryId === "undefined") {
+            console.log("LibraryRail returning early because rootApp or libraryId is missing");
             return;
         }
         
@@ -39,15 +41,13 @@ ColumnLayout {
         
         lastFetchedEndpoint = endpoint;
         
-        if (rootApp.isTestMode) {
-            console.log("LibraryRail [" + libraryTitle + "]: Test mode, endpoint would be: " + endpoint);
-            return;
-        }
+
 
         if (rootApp.controller.connectionManager && rootApp.controller.connectionManager.activeUrl !== "") {
             console.log("LibraryRail [" + libraryTitle + "] (Type: " + libraryType + "): Fetching from " + endpoint);
             delegateRecentModel.fetchEndpoint(rootApp.controller.connectionManager.activeUrl, rootApp.appSettings.token, endpoint);
         } else {
+            console.log("LibraryRail retryTimer.restart() for " + libraryTitle);
             retryTimer.restart();
         }
     }
