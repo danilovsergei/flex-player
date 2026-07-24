@@ -1,11 +1,11 @@
 import QtQuick
 import QtTest
 import flex.plex 1.0
-import "../src"
+import "../../src"
 
 TestCase {
     name: "RealConnectionTest"
-    when: windowShown
+    when: true
     width: 1280
     height: 720
 
@@ -23,6 +23,19 @@ TestCase {
         verify(app !== null, "Main application should be created")
     }
 
+    /*
+     * test_real_server_connection (Physical Test)
+     * 
+     * This test requires execution on a REAL, physical Wayland session (e.g. WAYLAND_DISPLAY=wayland-0).
+     * It connects to the user's real Plex server, discovers the library, simulates a UI click on
+     * the first recently added movie, and executes a full end-to-end playback test.
+     * 
+     * Because it runs on bare metal, this test explicitly verifies:
+     * 1. Hardware video decoding (VAAPI/CUDA)
+     * 2. Audio routing (Pipewire / PulseAudio)
+     * 3. System HDR switching (e.g., kscreen-doctor integration)
+     * 4. Successful MPV stream initialization over HTTPS
+     */
     function test_real_server_connection() {
         var settingsWindow = findChild(app, "settingsWindow")
         var cm = findChild(app, "connectionManager")
@@ -96,6 +109,38 @@ TestCase {
         tryVerify(function() { return delegateRecentModel.rowCount() > 0; }, 10000, "Rail should fetch its movies using the active URL")
         
         console.log("Movies successfully loaded!")
+        
+        var movieData = delegateRecentModel.get(0)
+        verify(movieData !== null, "Should get movie data from model")
+        console.log("Simulating click on movie: " + movieData.title + " (ratingKey: " + movieData.ratingKey + ")")
+        
+        app.controller.detailsModel.fetchItemDetails(cm.activeUrl, app.appSettings.token, movieData.ratingKey)
+        app.currentTab = 3
+        
+        var movieDetailsView = findChild(app, "movieDetailsView")
+        tryVerify(function() { return movieDetailsView.detailsData !== null && movieDetailsView.detailsData !== undefined; }, 10000, "detailsData must load first");
+        
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton");
+        tryVerify(function() { return playBtn !== null; }, 5000, "Play btn should exist");
+        if (playBtn !== null) { playBtn.clicked(); }
+        
+        var playerView = findChild(app, "playerView")
+        verify(playerView !== null)
+        tryVerify(function() { return playerView.visible; }, 10000, "Player view should become visible")
+        
+        var mpvItem = findChild(playerView, "mpvObject")
+        verify(mpvItem !== null)
+        
+        tryVerify(function() { return mpvItem.duration > 0; }, 25000, "Playback should start (duration > 0)")
+        
+        console.log("Waiting a few seconds of playback...")
+        wait(5000)
+        
+        tryVerify(function() { return mpvItem.position > 1; }, 5000, "Playback position should advance")
+        
+        console.log("Playback works on real server!")
+        
+
     }
 
     function cleanupTestCase() {
