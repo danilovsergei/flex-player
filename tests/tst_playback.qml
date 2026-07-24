@@ -1811,4 +1811,45 @@ TestCase {
         
         settingsWin.visible = false;
     }
+
+    function test_22_end_to_end_playback() {
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        tryVerify(function() { return mainWindow.controller.libraryRecentModel && mainWindow.controller.libraryRecentModel.rowCount() >= 4; }, 10000, "Model should fetch items");
+        
+        mainWindow.currentTab = 1;
+        wait(1000);
+        
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        var list = findChild(libraryView, "recentlyAddedListLib");
+        verify(list !== null, "Recently Added list should exist in Library View");
+        tryVerify(function() { return list.count > 0; }, 10000, "Rail should fetch items");
+        
+        var poster = list.itemAtIndex(3);
+        verify(poster !== null, "Poster 3 should exist");
+        
+        // Hover to show play overlay
+        mouseMove(poster, poster.width / 2, poster.height / 2);
+        wait(200);
+        
+        console.log("Clicking the Play overlay directly on the poster...");
+        mouseClick(poster, poster.width / 2, poster.height / 2);
+        
+        var playerView = findChild(mainWindow, "playerView");
+        tryVerify(function() { return mainWindow.currentTab === 2; }, 5000, "App should switch to PlayerView tab directly");
+        tryVerify(function() { return playerView.visible === true; }, 5000, "Player view should become visible");
+        
+        var loadingSpinner = findChild(playerView, "loadingSpinner");
+        verify(loadingSpinner !== null, "Loading spinner should exist");
+        
+        var mpvObject = findChild(playerView, "mpvObject");
+        verify(mpvObject !== null, "MPV object should exist");
+        
+        console.log("Waiting for video to actually start streaming...");
+        tryVerify(function() { return loadingSpinner.visible === false && mpvObject.duration > 0; }, 15000, "Loading spinner must disappear and duration must be > 0 (Playback active)");
+        
+        mpvObject.command(["stop"]);
+    }
+
 }

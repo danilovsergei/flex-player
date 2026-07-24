@@ -73,6 +73,7 @@ public:
     Q_INVOKABLE void updateTimeline(const QString &serverUrl, const QString &token, const QString &ratingKey, const QString &state, qint64 timeMs, qint64 durationMs);
     Q_INVOKABLE void executeSystemCommand(const QString &command);
     Q_INVOKABLE void checkPermissions();
+    Q_INVOKABLE QVariantMap get(int index) const;
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);

@@ -12,13 +12,28 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
             logf.write("GET " + self.path + "\n")
+
+        
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        
+        if path.startswith("/library/parts/") or path.endswith(".mkv"):
+            try:
+                self.send_response(200)
+                self.send_header('Content-type', 'video/x-matroska')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                with open('/app/tests/dummy1.mkv', 'rb') as f_media:
+                    self.wfile.write(f_media.read())
+            except Exception as e:
+                print("Error serving media:", e)
+            return
+
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
         query = parse_qs(parsed_path.query)
         
         response_data = {}
@@ -41,7 +56,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]},
                         {"type": "show", "title": "Mock Show Partially Watched", "ratingKey": "200", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 3, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
                         {"type": "show", "title": "Mock Show Watched", "ratingKey": "202", "duration": 60000, "viewOffset": 0, "viewedLeafCount": 25, "leafCount": 25, "Media": [{"Part": [{"file": "/app/tests/dummy2.mkv"}]}]},
-                        {"type": "movie", "title": "Mock Movie Watched", "ratingKey": "103", "duration": 50000, "viewOffset": 0, "viewCount": 1, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]}
+                        {"type": "movie", "title": "Mock Movie Watched", "ratingKey": "103", "duration": 50000, "viewOffset": 0, "viewCount": 1, "Media": [{"Part": [{"key": "/library/parts/103/file.mkv"}]}]}
                     ]
                 }
             }

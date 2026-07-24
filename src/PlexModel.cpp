@@ -23,6 +23,29 @@ bool PlexModel::isFlatpak() const {
     return qEnvironmentVariableIsSet("FLATPAK_ID");
 }
 
+QVariantMap PlexModel::get(int index) const {
+    QVariantMap map;
+    if (index >= 0 && index < m_movies.size()) {
+        const Movie &m = m_movies[index];
+        map["title"] = m.title;
+        map["mediaUrl"] = m.mediaUrl;
+        map["thumbUrl"] = m.thumbUrl;
+        map["ratingKey"] = m.ratingKey;
+        map["type"] = m.type;
+        map["viewOffset"] = m.viewOffset;
+        map["duration"] = m.duration;
+        map["isWatched"] = m.isWatched;
+        map["parentTitle"] = m.parentTitle;
+        map["grandparentTitle"] = m.grandparentTitle;
+        map["parentIndex"] = m.parentIndex;
+        map["index"] = m.index;
+        map["childCount"] = m.childCount;
+        map["leafCount"] = m.leafCount;
+        map["viewedLeafCount"] = m.viewedLeafCount;
+    }
+    return map;
+}
+
 bool PlexModel::hasFlatpakSpawnPermission() const {
     if (!isFlatpak()) return true;
     QDBusInterface iface("org.freedesktop.Flatpak", "/org/freedesktop/Flatpak", "org.freedesktop.Flatpak", QDBusConnection::sessionBus());
@@ -216,7 +239,15 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
                     if (!parts.isEmpty()) {
                         QJsonObject partObj = parts.first().toObject();
                         if (partObj.contains("key")) {
-                            m.mediaUrl = resolveUrl(partObj["key"].toString());
+                            QString keyStr = partObj["key"].toString();
+                            if (!keyStr.isEmpty() && !keyStr.startsWith("http")) {
+                                m.mediaUrl = currentServerUrl() + keyStr;
+                            } else {
+                                m.mediaUrl = keyStr;
+                            }
+                            if (!m.mediaUrl.isEmpty() && !m.mediaUrl.contains("X-Plex-Token=")) {
+                                m.mediaUrl += (m.mediaUrl.contains("?") ? "&" : "?") + QString("X-Plex-Token=%1").arg(m_token);
+                            }
                         } else if (partObj.contains("file")) {
                             m.mediaUrl = partObj["file"].toString();
                         }
