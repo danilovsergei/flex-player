@@ -69,13 +69,19 @@ Item {
     }
 
 
+    property string currentMediaUrl: ""
+
     function playMedia(url, offset, ratingKey, duration, audioId, subId, streams) {
+        currentMediaUrl = url;
         currentRatingKey = ratingKey !== undefined ? ratingKey : ""
         currentDuration = duration !== undefined ? duration : 0
         playerView.mediaStreams = streams || []
         currentAudioId = audioId !== undefined ? audioId : "auto"
         currentSubId = subId !== undefined ? subId : "no"
 
+        console.log("==========================================");
+        console.log("PlayerView attempting to play video URL: " + url);
+        console.log("==========================================");
         console.log("PlayerView playMedia called with " + (playerView.mediaStreams ? playerView.mediaStreams.length : 0) + " streams");
 
         if (playerView.mediaStreams.length === 0 && currentRatingKey !== "") {

@@ -75,6 +75,9 @@ public:
                 updateBuffering();
             }
         });
+        
+        connect(mpvController(), &MpvController::fileLoaded, this, &MpvObject::fileLoaded);
+        connect(mpvController(), &MpvController::endFile, this, &MpvObject::endFile);
     }
 
     ~MpvObject() = default;
@@ -133,6 +136,8 @@ signals:
     void volumeChanged();
     void videoIsHdrChanged();
     void bufferingChanged();
+    void fileLoaded();
+    void endFile(const QString &reason);
 
 private:
     void updateBuffering() {
