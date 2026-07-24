@@ -77,6 +77,8 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 ### Settings and Customization
 - Configurable Plex libraries to display in UI (Movies and Series are supported now)
 - Plex SSO support to generate API token
+- Detects and switches between inside/outside of local network connection to a Plex server. The same way Plex client does not
+- Uses HTTPS for secure connection
 - Configurable hotkeys through Settings
 
 Application settings can be configured either through the in-app settings page or directly by editing `~/.config/flex-player/config.ini`.
