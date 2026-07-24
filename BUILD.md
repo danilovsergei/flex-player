@@ -78,7 +78,7 @@ To guarantee a perfectly reproducible build environment that matches the GitHub 
 3. **Run the Build:**
    Compile the Flatpak while bypassing the FUSE filesystem wrapper (which requires X11/Wayland context):
    ```bash
-   flatpak-builder build-dir io.github.danilovsergei.flex-player.json --force-clean --disable-rofiles-fuse
+   flatpak-builder build-dir io.github.danilovsergei.flex-player.json --force-clean --disable-rofiles-fuse --repo=repo
    ```
 
 4. **Export the Bundle (Inside Docker):**
