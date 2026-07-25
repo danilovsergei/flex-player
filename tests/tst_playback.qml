@@ -1800,6 +1800,11 @@ TestCase {
         
         var homeBtn = findChild(sidebar, "homeTabButton");
         var homeText = homeBtn.contentItem;
+        
+        mainWindow.sidebarCollapsed = false;
+        wait(200);
+        verify(homeBtn.text === "🏠 Home", "Home tab should explicitly include the house icon when expanded to match others");
+        
         verify(homeText.color.toString() === mainWindow.plexOrange.toString(), "Home tab should be orange when selected");
         
         var libBtn1 = findChild(sidebar, "libTabButton_1");

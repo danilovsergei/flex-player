@@ -41,7 +41,7 @@ Rectangle {
                     }
 
                     Button {
-                        text: mainWindow.sidebarCollapsed ? "🏠" : "Home"
+                        text: mainWindow.sidebarCollapsed ? "🏠" : "🏠 Home"
                         objectName: "homeTabButton"
                         Layout.fillWidth: true
                         contentItem: Text {
