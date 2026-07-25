@@ -1822,6 +1822,25 @@ TestCase {
         verify(homeText.color.toString() === "#ffffff", "Home tab should revert to white after switching away");
     }
 
+    function test_63_library_switch_clears_models() {
+        mainWindow.loadLibraryContent("4", "Series", "show");
+        mainWindow.currentTab = 1;
+        
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        var list = findChild(libraryView, "recentlyAddedListLib");
+        tryVerify(function() { return list.count > 0; }, 10000, "Series should fetch items");
+        verify(list.model.get(0).type === "show", "Model should contain series");
+        
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        
+        verify(list.count === 0, "Model should be cleared immediately upon switching libraries to avoid stale frames");
+        
+        tryVerify(function() { return list.count > 0; }, 10000, "Movies should eventually fetch items");
+        verify(list.model.get(0).type === "movie", "Model should eventually contain movies");
+    }
+
     function test_60_playback_hdr_settings() {
         var sidebarComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/SidebarView.qml");
         verify(sidebarComponent.status === Component.Ready, "SidebarView should exist");

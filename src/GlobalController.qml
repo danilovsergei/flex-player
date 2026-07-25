@@ -132,6 +132,10 @@ Item {
         currentLibraryTitle = title
         var url = connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl;
         
+        m_libraryRecentlyAddedModel.clear();
+        m_libraryContinueWatchingModel.clear();
+        m_libraryCollectionsModel.clear();
+        
         // Universally fetch ALL items sorted by addedAt descending to ensure we get the full list
         // instead of relying on the potentially broken or limited /recentlyAdded endpoint per library.
         if (type === "show") {

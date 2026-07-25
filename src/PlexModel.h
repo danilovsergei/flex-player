@@ -74,6 +74,7 @@ public:
     Q_INVOKABLE void executeSystemCommand(const QString &command);
     Q_INVOKABLE void checkPermissions();
     Q_INVOKABLE QVariantMap get(int index) const;
+    Q_INVOKABLE void clear();
 
 signals:
     void moviesLoaded(const QString &firstMediaUrl, const QString &firstTitle);

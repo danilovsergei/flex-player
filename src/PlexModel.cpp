@@ -150,6 +150,12 @@ QString PlexModel::resolveUrl(const QString &requestedUrl) const {
     return currentServerUrl();
 }
 
+void PlexModel::clear() {
+    beginResetModel();
+    m_movies.clear();
+    endResetModel();
+}
+
 void PlexModel::onReplyFinished(QNetworkReply *reply) {
     if (reply->error() != QNetworkReply::NoError) {
         QNetworkReply::NetworkError err = reply->error();
