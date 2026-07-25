@@ -84,7 +84,6 @@ To guarantee a perfectly reproducible build environment that matches the GitHub 
 4. **Export the Bundle (Inside Docker):**
    Once the build completes, export the application into a standalone `.flatpak` installer:
    ```bash
-   flatpak build-export repo build-dir
    flatpak build-bundle repo flex-player.flatpak io.github.danilovsergei.flex-player
    ```
    You can now type `exit` to leave the Docker container.
