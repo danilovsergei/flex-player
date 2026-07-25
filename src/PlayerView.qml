@@ -113,6 +113,9 @@ Item {
             req.send();
         }
 
+        videoBlackout.visible = true;
+        mpvObject.command(["stop"]);
+        
         mpvObject.setProperty("aid", currentAudioId)
         mpvObject.setProperty("sid", currentSubId)
 
@@ -172,10 +175,37 @@ Item {
         }
     }
 
+    Timer {
+        id: revealTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            console.log(">>> Lifting blackout shield.");
+            videoBlackout.visible = false;
+        }
+    }
+
     MpvObject {
         id: mpvObject
         objectName: "mpvObject"
         anchors.fill: parent
+        
+        onFileLoaded: {
+            console.log(">>> SUCCESS: MPV successfully started fetching and loaded URL: " + playerView.currentMediaUrl);
+        }
+        
+        onVideoReconfig: {
+            console.log(">>> MPV video configured. Starting reveal timer.");
+            revealTimer.start();
+        }
+        
+        onEndFile: function(reason) {
+            console.log(">>> MPV endFile triggered. Reason: " + reason);
+            if (reason === "error") {
+                console.log(">>> ERROR: MPV encountered an error fetching or playing URL: " + playerView.currentMediaUrl);
+            }
+        }
+
         onAidChanged: {
             if (mpvObject.aid !== "") {
                 playerView.currentAudioId = mpvObject.aid;
@@ -195,6 +225,14 @@ Item {
         }
     }
 
+
+    Rectangle {
+        id: videoBlackout
+        objectName: "videoBlackout"
+        anchors.fill: parent
+        color: "black"
+        visible: true
+    }
 
     BusyIndicator {
         id: loadingSpinner
@@ -318,6 +356,7 @@ Item {
                     playerView.hdrWasEnabledByApp = false
                 }
                 
+                videoBlackout.visible = true
                 mpvObject.command(["stop"])
                 playerView.visible = false
                 playbackStopped()

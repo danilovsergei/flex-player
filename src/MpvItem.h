@@ -78,6 +78,7 @@ public:
         
         connect(mpvController(), &MpvController::fileLoaded, this, &MpvObject::fileLoaded);
         connect(mpvController(), &MpvController::endFile, this, &MpvObject::endFile);
+        connect(mpvController(), &MpvController::videoReconfig, this, &MpvObject::videoReconfig);
     }
 
     ~MpvObject() = default;
@@ -138,6 +139,7 @@ signals:
     void bufferingChanged();
     void fileLoaded();
     void endFile(const QString &reason);
+    void videoReconfig();
 
 private:
     void updateBuffering() {

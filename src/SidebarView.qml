@@ -70,9 +70,9 @@ Rectangle {
                             Layout.fillWidth: true
                             contentItem: Text {
                                 text: parent.text
-                                color: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2) && mainWindow.currentLibraryId === model.ratingKey ? mainWindow.plexOrange : "white"
+                                color: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryId && mainWindow.controller.currentLibraryId.toString() === model.ratingKey.toString() ? mainWindow.plexOrange : "white"
                                 font.pixelSize: 18
-                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2) && mainWindow.currentLibraryId === model.ratingKey
+                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryId && mainWindow.controller.currentLibraryId.toString() === model.ratingKey.toString()
                                 horizontalAlignment: mainWindow.sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
                             }
                             background: Rectangle { color: "transparent" }

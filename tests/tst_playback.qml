@@ -543,8 +543,8 @@ TestCase {
         var collGrid = findChild(libraryView, "collectionsGrid");
         tryVerify(function() { return collGrid.count > 0; }, 5000, "Collections grid should have items");
         
-        var colPoster = collGrid.itemAtIndex(0);
-        verify(colPoster !== null, "Collection poster should exist");
+        var colPoster = null;
+        tryVerify(function() { colPoster = collGrid.itemAtIndex(0); return colPoster !== null; }, 5000, "Collection poster should exist");
         
         console.log("Clicking collection poster...");
         mouseClick(colPoster, colPoster.width / 2, colPoster.height / 2);
@@ -1788,6 +1788,33 @@ TestCase {
         // If it compiles and runs without QML errors, the asset is included in QRC correctly.
         verify(img !== null, "Image component should load");
         img.destroy();
+    }
+
+    function test_62_sidebar_active_color() {
+        var sidebar = findChild(mainWindow, "sidebar");
+        verify(sidebar !== null, "Sidebar should exist");
+        
+        // 1. Home is selected
+        mainWindow.currentTab = 0;
+        wait(200);
+        
+        var homeBtn = findChild(sidebar, "homeTabButton");
+        var homeText = homeBtn.contentItem;
+        verify(homeText.color.toString() === mainWindow.plexOrange.toString(), "Home tab should be orange when selected");
+        
+        var libBtn1 = findChild(sidebar, "libTabButton_1");
+        verify(libBtn1 !== null, "libTabButton_1 should exist");
+        var libText1 = libBtn1.contentItem;
+        verify(libText1.color.toString() === "#ffffff", "Library tab should be white when NOT selected");
+        
+        // 2. Click library
+        mouseClick(libBtn1, libBtn1.width/2, libBtn1.height/2);
+        wait(200);
+        
+        tryVerify(function() { return mainWindow.currentTab === 1; }, 5000, "Should switch to library");
+        
+        verify(libText1.color.toString() === mainWindow.plexOrange.toString(), "Library tab 1 should become orange after being clicked");
+        verify(homeText.color.toString() === "#ffffff", "Home tab should revert to white after switching away");
     }
 
     function test_60_playback_hdr_settings() {
