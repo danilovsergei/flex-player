@@ -16,6 +16,12 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Sync AppStream Version
+        run: |
+          git config --global --add safe.directory "*"
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          sed -i "s/<release version=\".*\" date=\".*\">/<release version=\"$LATEST_TAG\" date=\"$LATEST_TAG\">/" io.github.danilovsergei.flex-player.metainfo.xml
+
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
