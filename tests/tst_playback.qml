@@ -1354,6 +1354,39 @@ TestCase {
         verify(onDeckLabel.visible === true, "On Deck label should be visible");
     }
 
+    function test_49b_series_details_back_navigation() {
+        mainWindow.loadLibraryContent("4", "Series", "show");
+        mainWindow.currentTab = 1;
+        wait(500);
+        
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        var list = findChild(libraryView, "recentlyAddedListLib");
+        verify(list !== null, "ListView should exist in library rail");
+        
+        tryVerify(function() { return list.count > 0; }, 10000, "Rail should fetch items");
+        
+        var poster = list.itemAtIndex(1);
+        verify(poster !== null, "Poster should exist");
+        
+        console.log("Clicking series poster in library... mType: " + list.model.get(1).type);
+        mouseClick(poster, poster.width/2, poster.height/2);
+        
+        tryVerify(function() { return mainWindow.currentTab === 4; }, 5000, "App should switch to Series Details tab");
+        
+        var seriesDetailsView = findChild(mainWindow, "seriesDetailsView");
+        verify(seriesDetailsView !== null, "Series details view should exist");
+        
+        var backBtn = findChild(seriesDetailsView, "seriesDetailsBackButton");
+        verify(backBtn !== null, "Back button should exist");
+        
+        console.log("Clicking back button in Series Details...");
+        mouseClick(backBtn, backBtn.width/2, backBtn.height/2);
+        
+        tryVerify(function() { return mainWindow.currentTab === 1; }, 5000, "App should switch back to the PREVIOUS tab (Library = 1), not Home (0)");
+    }
+
     function test_50_season_details_view() {
         mainWindow.currentTab = 0;
         wait(200);

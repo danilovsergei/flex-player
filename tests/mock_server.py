@@ -126,6 +126,9 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     }
                 }
             else:
+                rtype = "movie"
+                if ratingKey in ["200", "201", "202"]:
+                    rtype = "show"
                 response_data = {
                     "MediaContainer": {
                         "Metadata": [{
@@ -133,7 +136,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                             "title": "Mock Title " + ratingKey,
                             "duration": 3600000,
                             "viewOffset": 0,
-                            "type": "movie",
+                            "type": rtype,
                             "Media": [{"Part": [{"key": "/library/parts/103/file.mkv", "file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
                         }]
                     }

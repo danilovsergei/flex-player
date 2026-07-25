@@ -16,6 +16,7 @@ Window {
     objectName: "mainWindow"
 
     property bool isTestMode: false
+    property int previousTab: 0
 
         PlexConnectionManager {
         id: connectionManager
@@ -157,6 +158,9 @@ Window {
         MoviePosterDelegate {
             onOpenCollection: function(ratingKey) {
                 console.log("Opening collection: " + ratingKey)
+                if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
+                    mainWindow.previousTab = mainWindow.currentTab;
+                }
                 controller.collectionMoviesModel.fetchEndpoint(controller.connectionManager.activeUrl, appSettings.token, "/library/collections/" + ratingKey + "/children")
                 currentTab = 2
             }
@@ -236,14 +240,14 @@ Window {
                     id: collectionMoviesView
                     collectionMoviesModel: controller.collectionMoviesModel
                     movieDelegate: movieDelegate
-                    onBackToCollections: currentTab = 1
+                    onBackToCollections: currentTab = mainWindow.previousTab
                 }
 
 
                 MovieDetailsView {
                     id: movieDetailsView
                     rootApp: mainWindow
-                    onBackRequested: currentTab = 0
+                    onBackRequested: currentTab = mainWindow.previousTab
                     onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
                         rootLayout.visible = false
                         playerView.visible = true
@@ -255,7 +259,7 @@ Window {
                 SeriesDetailsView {
                     id: seriesDetailsView
                     rootApp: mainWindow
-                    onBackRequested: currentTab = 0
+                    onBackRequested: currentTab = mainWindow.previousTab
                     onPlayMediaRequested: function(title, mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams) {
                         rootLayout.visible = false
                         playerView.visible = true
@@ -288,6 +292,11 @@ Window {
                     try {
                         var parsed = JSON.parse(jsonString);
                         var type = parsed.MediaContainer.Metadata[0].type;
+                        
+                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2) {
+                            mainWindow.previousTab = mainWindow.currentTab;
+                        }
+
                         if (type === "show") {
                             seriesDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 4;
@@ -299,6 +308,9 @@ Window {
                             mainWindow.currentTab = 3;
                         }
                     } catch(e) {
+                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2) {
+                            mainWindow.previousTab = mainWindow.currentTab;
+                        }
                         movieDetailsView.rawJson = jsonString;
                         mainWindow.currentTab = 3;
                     }
