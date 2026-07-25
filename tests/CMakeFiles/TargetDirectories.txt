@@ -1,2 +1,0 @@
-/home/geonix/Build/flex_player/tests/CMakeFiles/edit_cache.dir
-/home/geonix/Build/flex_player/tests/CMakeFiles/rebuild_cache.dir

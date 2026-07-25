@@ -19,3 +19,6 @@ tests/results/
 *.py
 *.log
 *.backup.*
+
+# Qt6 CMake auto-generated deploy directories
+.qt/
