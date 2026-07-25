@@ -1,0 +1,65 @@
+name: Generate Release Notes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-flatpak:
+    name: Build Flatpak Bundle
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.8
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: flex-player.flatpak
+          manifest-path: io.github.danilovsergei.flex-player.json
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flex-player-flatpak
+          path: flex-player.flatpak
+
+  release:
+    needs: build-flatpak
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Flatpak Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flex-player-flatpak
+          path: .
+
+      # 1. Generate Release Notes using git-cliff
+      - name: Generate Release Notes
+        id: git-cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/workflows/cliff.toml
+          args: --verbose --latest --strip header
+        env:
+          OUTPUT: release_notes.md
+
+      # 2. Create Release and attach Flatpak
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: flex-player.flatpak
