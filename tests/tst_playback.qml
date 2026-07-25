@@ -1883,6 +1883,46 @@ TestCase {
         settingsWin.visible = false;
     }
 
+    function test_65_collections_tab_visibility() {
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        var collectionsTab = findChild(libraryView, "collectionsTab");
+        verify(collectionsTab !== null, "collectionsTab should exist");
+        
+        // Load Series
+        mainWindow.loadLibraryContent("4", "Series", "show");
+        mainWindow.currentTab = 1;
+        wait(200);
+        
+        verify(collectionsTab.visible === false, "Collections tab should be hidden for Series");
+        
+        // Load Movies
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        wait(200);
+        
+        verify(collectionsTab.visible === true, "Collections tab should be visible for Movies");
+    }
+
+    function test_66_library_switch_resets_tab() {
+        var libraryView = findChild(mainWindow, "libraryView");
+        verify(libraryView !== null, "libraryView should exist");
+        
+        // Load Movies and switch to Collections tab
+        mainWindow.loadLibraryContent("1", "Movies", "movie");
+        mainWindow.currentTab = 1;
+        wait(200);
+        libraryView.libraryTab = 1; // Collections
+        wait(200);
+        verify(libraryView.libraryTab === 1, "Should be on Collections tab");
+        
+        // Switch to Series
+        mainWindow.loadLibraryContent("4", "Series", "show");
+        wait(200);
+        
+        verify(libraryView.libraryTab === 0, "Library view should automatically reset to Recommended (0) when switching to Series");
+    }
+
     function test_60_playback_hdr_settings() {
         var sidebarComponent = Qt.createComponent("qrc:/qt/qml/flex_player_test_module/src/SidebarView.qml");
         verify(sidebarComponent.status === Component.Ready, "SidebarView should exist");

@@ -228,7 +228,9 @@ Window {
 
                 LibraryRecommendView {
                     id: libraryView
+                    currentLibraryId: controller.currentLibraryId
                     currentLibraryTitle: controller.currentLibraryTitle
+                    currentLibraryType: controller.currentLibraryType
                     continueWatchingModel: controller.libraryDeckModel
                     recentlyAddedModel: controller.libraryRecentModel
                     collectionsModel: controller.libraryCollectionsModel

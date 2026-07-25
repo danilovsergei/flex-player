@@ -11,7 +11,13 @@ Item {
     
     property int libraryTab: 0 // 0: Recommend, 1: Collections
     
+    property string currentLibraryId: ""
     property string currentLibraryTitle: ""
+    property string currentLibraryType: "movie"
+    
+    onCurrentLibraryIdChanged: {
+        root.libraryTab = 0;
+    }
     property color plexOrange: "#E5A00D"
     property var continueWatchingModel
     property var recentlyAddedModel
@@ -64,6 +70,7 @@ Item {
                 Text {
                     id: collectionsTab
                     objectName: "collectionsTab"
+                    visible: root.currentLibraryType === "movie"
                     text: "Collections"
                     color: root.libraryTab === 1 ? root.plexOrange : "gray"
                     font.pixelSize: 18

@@ -20,6 +20,7 @@ Item {
     property var homeLibrariesList: []
     property string currentLibraryId: "1"
     property string currentLibraryTitle: "Movies"
+    property string currentLibraryType: "movie"
 
 
     signal hdrCommandExecuted(string command)
@@ -130,6 +131,7 @@ Item {
     function loadLibraryContent(id, title, type) {
         currentLibraryId = id
         currentLibraryTitle = title
+        currentLibraryType = type
         var url = connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl;
         
         m_libraryRecentlyAddedModel.clear();
