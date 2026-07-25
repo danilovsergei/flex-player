@@ -26,9 +26,10 @@
             ],
             "sources": [
                 {
-                    "type": "archive",
-                    "url": "https://github.com/LuaJIT/LuaJIT/archive/refs/tags/v2.1.0-beta3.tar.gz",
-                    "sha256": "409f7fe570d3c16558e594421c47bdd130238323c9d6fd6c83dedd2aaeb082a8"
+                    "type": "git",
+                    "url": "https://github.com/openresty/luajit2.git",
+                    "tag": "v2.1-20260620",
+                    "commit": "b411bec3ce550ef9968fc83bca094455cf812c1f"
                 }
             ]
         },
