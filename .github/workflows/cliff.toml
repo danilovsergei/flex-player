@@ -10,7 +10,7 @@ body = """
 
     **Install via Flatpak:**
     ```bash
-    flatpak install --user -y https://github.com/danilovsergei/flex-player/releases/download/{{ version }}/flex-player.flatpak
+    TMP_DIR=$(mktemp -d) && wget -O $TMP_DIR/flex-player.flatpak https://github.com/danilovsergei/flex-player/releases/download/{{ version }}/flex-player.flatpak && flatpak install --user -y $TMP_DIR/flex-player.flatpak && rm -rf $TMP_DIR
     ```
 {% else %}\
     ## [unreleased]
