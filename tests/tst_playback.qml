@@ -508,6 +508,7 @@ TestCase {
         var raList = findChild(libraryView, "recentlyAddedListLib");
         verify(raList !== null, "Recently Added list should exist in Library View");
         tryVerify(function() { return raList.count > 0; }, 10000, "Recently Added list should fetch items");
+        tryVerify(function() { return raList.itemAtIndex(0) !== null; }, 5000, "Wait for visual instantiation");
         var poster = raList.itemAtIndex(0);
         verify(poster !== null, "Poster should exist");
         mouseClick(poster);
@@ -1839,6 +1840,47 @@ TestCase {
         
         tryVerify(function() { return list.count > 0; }, 10000, "Movies should eventually fetch items");
         verify(list.model.get(0).type === "movie", "Model should eventually contain movies");
+    }
+
+    function test_64_unsupported_libraries_warning() {
+        var settingsWin = findChild(mainWindow, "settingsWindow");
+        verify(settingsWin !== null, "settingsWindow should exist");
+        settingsWin.visible = true;
+        settingsWin.openTab(1, "http://127.0.0.1:8080", "mock");
+        
+        // Wait for the async network fetch to populate the libraries
+        tryVerify(function() { return mainWindow.controller.allLibrariesModel.rowCount() >= 3; }, 5000, "Should fetch at least 3 libraries");
+        wait(500);
+        
+        var foundDisabled = false;
+        var foundWarning = false;
+        
+        function searchTree(item) {
+            if (!item) return;
+            if (item.objectName === "unsupportedWarning" && item.visible) {
+                foundWarning = true;
+            }
+            if (item.objectName === "libraryCheckbox" && !item.enabled) {
+                foundDisabled = true;
+            }
+            
+            var kids = item.children;
+            if (item.contentItem && item.contentItem.children) {
+                kids = item.contentItem.children;
+            }
+            if (kids) {
+                for (var i = 0; i < kids.length; i++) {
+                    searchTree(kids[i]);
+                }
+            }
+        }
+        
+        searchTree(settingsWin);
+        
+        verify(foundDisabled, "At least one checkbox should be disabled for unsupported library type");
+        verify(foundWarning, "Unsupported warning text should be visible");
+        
+        settingsWin.visible = false;
     }
 
     function test_60_playback_hdr_settings() {

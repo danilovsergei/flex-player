@@ -38,10 +38,11 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/library/sections":
             response_data = {
                 "MediaContainer": {
-                    "size": 2,
+                    "size": 3,
                     "Directory": [
                         {"type": "movie", "title": "Mock Movies", "key": "1", "uuid": "uuid-movies"},
-                        {"type": "show", "title": "Mock Shows", "key": "2", "uuid": "uuid-shows"}
+                        {"type": "show", "title": "Mock Shows", "key": "2", "uuid": "uuid-shows"},
+                        {"type": "artist", "title": "Mock Music", "key": "3", "uuid": "uuid-music"}
                     ]
                 }
             }

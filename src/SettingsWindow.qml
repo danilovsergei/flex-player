@@ -452,6 +452,8 @@ Rectangle {
                                     Layout.leftMargin: 30
                                     spacing: 15
                                     CheckBox {
+                                        objectName: "libraryCheckbox"
+                                        enabled: model.type === "movie" || model.type === "show" || model.type === "season"
                                         checked: !!librariesTabCol.localLibrariesMap[model.ratingKey]
                                         onToggled: {
                                             var map = Object.assign({}, librariesTabCol.localLibrariesMap)
@@ -461,6 +463,14 @@ Rectangle {
                                         }
                                     }
                                     Text { text: getLibraryIcon(model.type) + " " + model.title; color: "white"; font.pixelSize: 18 }
+                                    Text {
+                                        objectName: "unsupportedWarning"
+                                        text: " (Not supported yet)"
+                                        color: "#AA0000"
+                                        font.pixelSize: 14
+                                        font.italic: true
+                                        visible: model.type !== "movie" && model.type !== "show" && model.type !== "season"
+                                    }
                                 }
                             }
                             Rectangle { Layout.fillWidth: true; height: 1; color: "#333333"; Layout.topMargin: 10 }
