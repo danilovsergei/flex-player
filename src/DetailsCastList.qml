@@ -63,7 +63,7 @@ Item {
                                 source: {
                                     if (!modelData.thumb) return "";
                                     if (modelData.thumb.startsWith("http") || modelData.thumb.startsWith("data:")) return modelData.thumb;
-                                    return rootApp ? rootApp.serverUrl + modelData.thumb + "?X-Plex-Token=" + rootApp.token : "";
+                                    return rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + modelData.thumb + "?X-Plex-Token=" + rootApp.token : "";
                                 }
                                 fillMode: Image.PreserveAspectCrop
                                 layer.enabled: true

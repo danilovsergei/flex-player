@@ -83,6 +83,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == ChildCountRole) return QVariant::fromValue(movie.childCount);
     else if (role == LeafCountRole) return QVariant::fromValue(movie.leafCount);
     else if (role == ViewedLeafCountRole) return QVariant::fromValue(movie.viewedLeafCount);
+    else if (role == ServerUrlRole) return movie.serverUrl;
     return QVariant();
 }
 
@@ -103,6 +104,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[ChildCountRole] = "childCount";
     roles[LeafCountRole] = "leafCount";
     roles[ViewedLeafCountRole] = "viewedLeafCount";
+    roles[ServerUrlRole] = "serverUrl";
     return roles;
 }
 
@@ -139,10 +141,13 @@ void PlexModel::setConnectionManager(PlexConnectionManager *cm) {
 }
 
 QString PlexModel::currentServerUrl() const {
+    if (!m_serverUrl.isEmpty()) {
+        return m_serverUrl;
+    }
     if (m_connectionManager && !m_connectionManager->activeUrl().isEmpty()) {
         return m_connectionManager->activeUrl();
     }
-    return m_serverUrl;
+    return "";
 }
 
 QString PlexModel::resolveUrl(const QString &requestedUrl) const {
@@ -209,6 +214,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         
         m.leafCount = obj["leafCount"].toInt();
         m.viewedLeafCount = obj["viewedLeafCount"].toInt();
+        m.serverUrl = currentServerUrl();
         
         if (m.type == "show" || m.type == "season") {
             m.isWatched = (m.leafCount > 0 && m.viewedLeafCount == m.leafCount);
@@ -280,6 +286,7 @@ void PlexModel::loadMockData(const QStringList &mockPaths, const QString &type, 
         movie.thumbUrl = "";
         movie.mediaUrl = path;
         movie.ratingKey = QString::number(i);
+        movie.serverUrl = "http://127.0.0.1:32400";
         movie.type = type;
         movie.viewOffset = mockViewOffset;
         movie.duration = mockDuration;
@@ -348,6 +355,9 @@ void PlexModel::updateTimeline(const QString &serverUrl, const QString &token, c
 
 void PlexModel::fetchItemDetails(const QString &serverUrl, const QString &token, const QString &ratingKey) {
     if (serverUrl.isEmpty() || token.isEmpty() || ratingKey.isEmpty()) return;
+    m_serverUrl = serverUrl;
+    m_token = token;
+    emit currentServerUrlChanged();
     QString effectiveUrl = resolveUrl(serverUrl);
     QUrl url(effectiveUrl + "/library/metadata/" + ratingKey);
     QNetworkRequest request(url);

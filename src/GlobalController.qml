@@ -18,9 +18,12 @@ Item {
     property int consecutiveSeekCount: 0
     
     property var homeLibrariesList: []
+    property var activeServersList: []
     property string currentLibraryId: "1"
+    property string currentLibraryUniqueId: "1"
     property string currentLibraryTitle: "Movies"
     property string currentLibraryType: "movie"
+    property string currentServerUrl: ""
 
 
     signal hdrCommandExecuted(string command)
@@ -92,7 +95,15 @@ Item {
     
     function parseEnabledLibraries() {
         try {
-            return JSON.parse(appSettings.enabledLibraries)
+            var raw = JSON.parse(appSettings.enabledLibraries);
+            var filtered = {};
+            var keys = Object.keys(raw);
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i].indexOf("_") !== -1) {
+                    filtered[keys[i]] = raw[keys[i]];
+                }
+            }
+            return filtered;
         } catch (e) {
             return {}
         }
@@ -128,11 +139,13 @@ Item {
         }
     }
     
-    function loadLibraryContent(id, title, type) {
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId) {
         currentLibraryId = id
+        currentLibraryUniqueId = uniqueId || id
         currentLibraryTitle = title
         currentLibraryType = type
-        var url = connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl;
+        currentServerUrl = serverUrl || ""
+        var url = currentServerUrl !== "" ? currentServerUrl : (connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl);
         
         m_libraryRecentlyAddedModel.clear();
         m_libraryContinueWatchingModel.clear();
@@ -239,17 +252,38 @@ Item {
 
         var enabledLibs = parseEnabledLibraries();
         var libArray = [];
+        var enabledServerNames = [];
+        for (var k = 0; k < enabledServers.length; k++) { enabledServerNames.push(enabledServers[k].name); }
+
+        var activeServersMap = {};
         var keys = Object.keys(enabledLibs);
         for (var i = 0; i < keys.length; i++) {
             var lib = enabledLibs[keys[i]];
+            if (lib.type !== "movie" && lib.type !== "show" && lib.type !== "season") continue;
+            
+            var sName = lib.serverName || primary.name;
+            if (enabledServerNames.indexOf(sName) === -1) continue;
+            
+            var sUrl = lib.serverUrl || "";
+            if (!activeServersMap[sName]) activeServersMap[sName] = sUrl;
+            
             libArray.push({
-                id: keys[i],
+                uniqueId: keys[i],
+                id: lib.id || keys[i],
                 title: lib.title,
                 type: lib.type,
-                serverName: lib.serverName || primary.name
+                serverName: sName,
+                serverUrl: sUrl
             });
         }
         homeLibrariesList = libArray;
+        
+        var serverArray = [];
+        var sKeys = Object.keys(activeServersMap);
+        for (var j = 0; j < sKeys.length; j++) {
+            serverArray.push({ serverName: sKeys[j], serverUrl: activeServersMap[sKeys[j]] });
+        }
+        activeServersList = serverArray;
 
         // Fetching will happen in onResolutionFinished
         console.log("GlobalController: Waiting for connection resolution...");

@@ -43,7 +43,7 @@ Item {
     function fetchSeasons() {
         if (!detailsData || !rootApp) return;
         var req = new XMLHttpRequest();
-        var url = rootApp.serverUrl + "/library/metadata/" + detailsData.ratingKey + "/children?X-Plex-Token=" + rootApp.token;
+        var url = (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + "/library/metadata/" + detailsData.ratingKey + "/children?X-Plex-Token=" + rootApp.token;
         req.open("GET", url, true);
         req.setRequestHeader("Accept", "application/json");
         req.onreadystatechange = function() {
@@ -64,7 +64,7 @@ Item {
     function fetchEpisodes() {
         if (!detailsData || !rootApp) return;
         var req = new XMLHttpRequest();
-        var url = rootApp.serverUrl + "/library/metadata/" + detailsData.ratingKey + "/allLeaves?X-Plex-Token=" + rootApp.token;
+        var url = (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + "/library/metadata/" + detailsData.ratingKey + "/allLeaves?X-Plex-Token=" + rootApp.token;
         req.open("GET", url, true);
         req.setRequestHeader("Accept", "application/json");
         req.onreadystatechange = function() {
@@ -143,7 +143,7 @@ Item {
                     objectName: "seriesDetailsPoster"
                     Layout.preferredWidth: 300
                     Layout.preferredHeight: 450
-                    source: detailsData && detailsData.thumb ? (rootApp ? rootApp.serverUrl + detailsData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
+                    source: detailsData && detailsData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + detailsData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
                     fillMode: Image.PreserveAspectCrop
                 }
                 
@@ -207,7 +207,7 @@ Item {
                         onClicked: {
                             if (root.epToPlay && root.epToPlay.Media && root.epToPlay.Media.length > 0) {
                                 var part = root.epToPlay.Media[0].Part[0];
-                                var mediaUrl = rootApp ? rootApp.serverUrl + part.key + "?X-Plex-Token=" + rootApp.token : "";
+                                var mediaUrl = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + rootApp.token : "";
                                 var streams = part.Stream || [];
                                 root.playMediaRequested(root.epToPlay.title, mediaUrl, root.epToPlay.viewOffset || 0, root.epToPlay.ratingKey, root.epToPlay.duration || 0, "auto", "no", streams);
                             }
@@ -249,7 +249,7 @@ Item {
                         
                         Image {
                             anchors.fill: parent
-                            source: modelData && modelData.thumb ? (rootApp ? rootApp.serverUrl + modelData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
+                            source: modelData && modelData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + modelData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
                             fillMode: Image.PreserveAspectCrop
                             layer.enabled: true
                         }

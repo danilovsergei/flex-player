@@ -21,6 +21,12 @@ Rectangle {
     property var discoveredServers: []
     property var localServersList: []
 
+    Component.onCompleted: {
+        if (appSettings.token && appSettings.token !== "") {
+            plexAuth.fetchServers(appSettings.token);
+        }
+    }
+
     function openTab(tabIndex, serverUrl, token) {
         if (tabIndex !== undefined) {
             settingsSidebarColumn.settingsTab = tabIndex
@@ -39,6 +45,10 @@ Rectangle {
         connectionState = 0
         connectionError = ""
         visible = true
+        
+        if (appSettings.token && appSettings.token !== "") {
+            plexAuth.fetchServers(appSettings.token);
+        }
     }
 
     function closeSettings() {
@@ -106,10 +116,9 @@ Rectangle {
             localServersList = updatedList
             discoveredServers = servers
             
-            if (updatedList.length > 1) {
-                serverSelectionPopup.open()
-            } else if (updatedList.length === 1) {
-                testAndSetBestConnection(updatedList[0])
+            var enabledServers = updatedList.filter(function(s) { return s.enabled });
+            if (enabledServers.length > 0) {
+                testAndSetBestConnection(enabledServers[0])
             }
         }
     }
@@ -282,11 +291,15 @@ Rectangle {
                                 spacing: 15
                                 CheckBox {
                                     checked: modelData.enabled
-                                    onCheckedChanged: {
-                                        var list = localServersList
-                                        list[index].enabled = checked
-                                        localServersList = list
+                                    onClicked: {
+                                        var list = JSON.parse(appSettings.serverList || "[]")
+                                        for (var i = 0; i < list.length; i++) {
+                                            if (list[i].name === modelData.name) {
+                                                list[i].enabled = checked
+                                            }
+                                        }
                                         appSettings.serverList = JSON.stringify(list)
+                                        localServersList = list
                                     }
                                 }
                                 Text { text: "🖥️ " + modelData.name; color: "white"; font.pixelSize: 18; Layout.fillWidth: true }
@@ -311,25 +324,7 @@ Rectangle {
                             }
                         }
 
-                        Button {
-                            text: "+ Add Manual Server"
-                            onClicked: manualServerPopup.open()
-                            background: Rectangle { 
-                                implicitWidth: 200
-                                implicitHeight: 40
-                                color: "#252525"
-                                radius: 8
-                                border.color: "#333333" 
-                            }
-                            contentItem: Text { 
-                                text: parent.text
-                                color: "#E5A00D"
-                                font.pixelSize: 15
-                                font.bold: true
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter 
-                            }
-                        }
+
                     }
 
                     Text {
@@ -416,12 +411,28 @@ Rectangle {
                     property var localLibrariesMap: ({})
                     
                     Component.onCompleted: {
-                        try { localLibrariesMap = JSON.parse(appSettings.enabledLibraries || "{}") } catch(e) { localLibrariesMap = {} }
+                        try { 
+                            var raw = JSON.parse(appSettings.enabledLibraries || "{}");
+                            var filtered = {};
+                            var keys = Object.keys(raw);
+                            for (var i = 0; i < keys.length; i++) {
+                                if (keys[i].indexOf("_") !== -1) filtered[keys[i]] = raw[keys[i]];
+                            }
+                            localLibrariesMap = filtered;
+                        } catch(e) { localLibrariesMap = {} }
                     }
                     
                     onVisibleChanged: {
                         if (visible) {
-                            try { localLibrariesMap = JSON.parse(appSettings.enabledLibraries || "{}") } catch(e) { localLibrariesMap = {} }
+                            try { 
+                                var raw = JSON.parse(appSettings.enabledLibraries || "{}");
+                                var filtered = {};
+                                var keys = Object.keys(raw);
+                                for (var i = 0; i < keys.length; i++) {
+                                    if (keys[i].indexOf("_") !== -1) filtered[keys[i]] = raw[keys[i]];
+                                }
+                                localLibrariesMap = filtered;
+                            } catch(e) { localLibrariesMap = {} }
                             if (connectionManager.activeUrl !== "" && allLibrariesModel) {
                                 console.log("[Settings] Fetching libraries from active URL: " + connectionManager.activeUrl);
                                 allLibrariesModel.fetchEndpoint(connectionManager.activeUrl, appSettings.token, "/library/sections");
@@ -442,23 +453,71 @@ Rectangle {
                         clip: true
                         spacing: 30
                         delegate: ColumnLayout {
+                            id: serverDelegateRoot
                             width: serverLibrariesList.width
                             spacing: 12
-                            Text { text: "📁 Server: " + modelData.name; color: "#E5A00D"; font.pixelSize: 22; font.bold: true }
+                            
+                            property string serverUrl: {
+                                var knownUrl = "";
+                                if (mainWindow.controller && mainWindow.controller.activeServersList) {
+                                    for (var j = 0; j < mainWindow.controller.activeServersList.length; j++) {
+                                        if (mainWindow.controller.activeServersList[j].serverName === modelData.name) {
+                                            knownUrl = mainWindow.controller.activeServersList[j].serverUrl;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (knownUrl !== "") return knownUrl;
+
+                                if (modelData.connections && modelData.connections.length > 0) {
+                                    for (var i = 0; i < modelData.connections.length; i++) {
+                                        var c = modelData.connections[i];
+                                        if (c.local && c.address && (c.address.indexOf("192.168.") === 0 || c.address.indexOf("10.") === 0)) {
+                                            return c.uri;
+                                        }
+                                    }
+                                    return modelData.connections[0].uri;
+                                }
+                                return "";
+                            }
+                            property string serverName: modelData.name
+
+                            Text { text: "📁 Server: " + serverDelegateRoot.serverName; color: "#E5A00D"; font.pixelSize: 22; font.bold: true }
+                            
+                            PlexModel {
+                                id: serverLibrariesModel
+                                connectionManager: mainWindow.controller ? mainWindow.controller.connectionManager : null
+                                Component.onCompleted: {
+                                    if (serverDelegateRoot.serverUrl !== "") {
+                                        fetchEndpoint(serverDelegateRoot.serverUrl, appSettings.token, "/library/sections");
+                                    }
+                                }
+                            }
+                            
                             Repeater {
-                                model: { console.log("[Settings] Repeater binding to model, count=" + (allLibrariesModel ? allLibrariesModel.rowCount() : "null")); return allLibrariesModel }
+                                model: serverLibrariesModel
                                 delegate: RowLayout {
-                                    Component.onCompleted: console.log("[Settings] Created library delegate: " + model.title)
                                     Layout.leftMargin: 30
                                     spacing: 15
+                                    
+                                    property string uniqueKey: serverDelegateRoot.serverName + "_" + model.ratingKey
+                                    
                                     CheckBox {
                                         objectName: "libraryCheckbox"
                                         enabled: model.type === "movie" || model.type === "show" || model.type === "season"
-                                        checked: !!librariesTabCol.localLibrariesMap[model.ratingKey]
+                                        checked: !!librariesTabCol.localLibrariesMap[uniqueKey]
                                         onToggled: {
                                             var map = Object.assign({}, librariesTabCol.localLibrariesMap)
-                                            if (checked) { map[model.ratingKey] = { "type": model.type, "title": model.title, "serverName": modelData.name } }
-                                            else { delete map[model.ratingKey] }
+                                            if (checked) { 
+                                                map[uniqueKey] = { 
+                                                    "id": model.ratingKey,
+                                                    "type": model.type, 
+                                                    "title": model.title, 
+                                                    "serverName": serverDelegateRoot.serverName,
+                                                    "serverUrl": serverDelegateRoot.serverUrl
+                                                } 
+                                            }
+                                            else { delete map[uniqueKey] }
                                             librariesTabCol.localLibrariesMap = map
                                         }
                                     }
@@ -855,96 +914,7 @@ Rectangle {
         }
     }
 
-    Popup {
-        id: serverSelectionPopup
-        objectName: "serverSelectionPopup"
-        anchors.centerIn: parent
-        width: 450
-        height: 450
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        background: Rectangle { color: "#2e2e2e"; radius: 12; border.color: "#E5A00D"; border.width: 1 }
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 25
-            spacing: 20
-            Text { text: "Select Plex Server"; color: "white"; font.pixelSize: 26; font.bold: true; Layout.alignment: Qt.AlignHCenter }
-            ListView {
-                id: serverListView
-                objectName: "serverListView"
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                model: discoveredServers
-                clip: true
-                spacing: 10
-                delegate: ItemDelegate {
-                    width: serverListView.width
-                    height: 60
-                    background: Rectangle { 
-                        color: hovered ? "#444444" : "#333333"
-                        radius: 8 
-                    }
-                    contentItem: ColumnLayout {
-                        spacing: 2
-                        Text { text: modelData.name; color: "white"; font.pixelSize: 18; font.bold: true }
-                        Text { text: modelData.product; color: "gray"; font.pixelSize: 14 }
-                    }
-                    onClicked: { testAndSetBestConnection(modelData); serverSelectionPopup.close() }
-                }
-            }
-            Button { 
-                text: "Cancel"
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: serverSelectionPopup.close()
-                background: Rectangle { implicitWidth: 100; implicitHeight: 40; color: "#444444"; radius: 8 }
-                contentItem: Text { text: parent.text; color: "white"; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
-            }
-        }
-    }
 
-    Popup {
-        id: manualServerPopup
-        anchors.centerIn: parent
-        width: 400
-        height: 250
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        background: Rectangle { color: "#2e2e2e"; radius: 12; border.color: "#444444" }
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 25
-            spacing: 20
-            Text { text: "Add Manual Server"; color: "white"; font.pixelSize: 22; font.bold: true }
-            TextField { 
-                id: manualServerIp
-                Layout.fillWidth: true
-                placeholderText: "192.168.x.x:32400"
-                color: "white"
-                background: Rectangle { color: "#1e1e1e"; radius: 8; border.color: "#333333" }
-                leftPadding: 12; topPadding: 10; bottomPadding: 10 
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 12
-                Button { text: "Cancel"; onClicked: manualServerPopup.close() }
-                Button {
-                    text: "Add"
-                    onClicked: {
-                        var ip = manualServerIp.text.trim()
-                        if (ip !== "") {
-                            if (!ip.startsWith("http")) ip = "http://" + ip
-                            var list = localServersList
-                            list.push({ name: "Manual: " + manualServerIp.text, localUrl: ip, remoteUrl: "", enabled: true })
-                            localServersList = list
-                            appSettings.serverList = JSON.stringify(list)
-                            manualServerPopup.close()
-                            manualServerIp.text = ""
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+
 }

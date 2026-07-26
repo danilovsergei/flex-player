@@ -71,7 +71,7 @@ TestCase {
             var librariesTabCol = findChild(settingsWindow, "librariesTabCol")
             verify(librariesTabCol !== null)
             var map = Object.assign({}, librariesTabCol.localLibrariesMap)
-            map["1"] = { "type": "movie", "title": "Mock Movies", "serverName": "mockserver" }
+            map["mockserver_1"] = { "id": "1", "type": "movie", "title": "Mock Movies", "serverName": "mockserver", "serverUrl": "https://127.0.0.1:32400" }
             librariesTabCol.localLibrariesMap = map
         }
         

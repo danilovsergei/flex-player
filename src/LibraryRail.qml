@@ -11,9 +11,11 @@ ColumnLayout {
     property string libraryTitle: ""
     property string libraryId: ""
     property string libraryType: ""
+    property string serverUrl: ""
     
     property string lastFetchedEndpoint: ""
     property Component movieDelegate
+    property bool hasItems: delegateRecentList.count > 0
 
     spacing: 10
 
@@ -43,9 +45,10 @@ ColumnLayout {
         
 
 
-        if (rootApp.controller.connectionManager && rootApp.controller.connectionManager.activeUrl !== "") {
-            console.log("LibraryRail [" + libraryTitle + "] (Type: " + libraryType + "): Fetching from " + endpoint);
-            delegateRecentModel.fetchEndpoint(rootApp.controller.connectionManager.activeUrl, rootApp.appSettings.token, endpoint);
+        var activeUrl = serverUrl !== "" ? serverUrl : (rootApp.controller.connectionManager ? rootApp.controller.connectionManager.activeUrl : "");
+        if (activeUrl !== "") {
+            console.log("LibraryRail [" + libraryTitle + "] (Type: " + libraryType + "): Fetching from " + activeUrl + endpoint);
+            delegateRecentModel.fetchEndpoint(activeUrl, rootApp.appSettings.token, endpoint);
         } else {
             console.log("LibraryRail retryTimer.restart() for " + libraryTitle);
             retryTimer.restart();

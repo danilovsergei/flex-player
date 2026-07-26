@@ -64,70 +64,20 @@ ScrollView {
         }
 
         // Continue Watching Section
-        Text {
-            text: "Continue Watching"
-            color: "white"
-            font.pixelSize: 24
-            font.bold: true
-            Layout.topMargin: 20
-            Layout.leftMargin: 20
-            visible: continueWatchingList.count > 0 && !emptyStateView.visible
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 330
-            Layout.leftMargin: 20
-            visible: continueWatchingList.count > 0 && !emptyStateView.visible
-
-            ListView {
-                id: continueWatchingList
-                objectName: "continueWatchingList"
-                anchors.fill: parent
-                orientation: ListView.Horizontal
-                spacing: 20
-                model: root.continueWatchingModel
-                delegate: root.movieDelegate
-                clip: true
-                interactive: false
-                
-                Behavior on contentX {
-                    NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
-                }
-            }
-
-            HoverHandler { id: continueHover }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: 50
-                color: continueLeftHover.hovered ? "#CC000000" : "#80000000"
-                visible: continueWatchingList.contentX > 0
-                opacity: continueHover.hovered ? 1.0 : 0.0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
-                Text { anchors.centerIn: parent; text: "❮"; color: continueLeftHover.hovered ? root.plexOrange : "white"; font.pixelSize: 32; font.bold: true }
-                HoverHandler { id: continueLeftHover }
-                MouseArea { anchors.fill: parent; onClicked: continueWatchingList.contentX = Math.max(0, continueWatchingList.contentX - 880) }
-            }
-
-            Rectangle {
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: 50
-                color: continueRightHover.hovered ? "#CC000000" : "#80000000"
-                visible: continueWatchingList.contentWidth > continueWatchingList.width && continueWatchingList.contentX < (continueWatchingList.contentWidth - continueWatchingList.width)
-                opacity: continueHover.hovered ? 1.0 : 0.0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
-                Text { anchors.centerIn: parent; text: "❯"; color: continueRightHover.hovered ? root.plexOrange : "white"; font.pixelSize: 32; font.bold: true }
-                HoverHandler { id: continueRightHover }
-                MouseArea { anchors.fill: parent; onClicked: continueWatchingList.contentX = Math.min(continueWatchingList.contentWidth - continueWatchingList.width, continueWatchingList.contentX + 880) }
+        Repeater {
+            id: continueWatchingRepeater
+            objectName: "continueWatchingRepeater"
+            model: rootApp && rootApp.controller ? rootApp.controller.activeServersList : []
+            delegate: ContinueWatchingRail {
+                serverName: modelData.serverName
+                serverUrl: modelData.serverUrl
+                rootApp: root.rootApp
+                movieDelegate: root.movieDelegate
+                Layout.fillWidth: true
+                Layout.preferredHeight: hasItems ? 400 : 0
+                visible: !emptyStateView.visible && hasItems
             }
         }
-
-        
 
         // Individual Library Rails
         Repeater {
@@ -135,14 +85,15 @@ ScrollView {
             objectName: "libraryRepeater"
             model: root.homeLibrariesList
             delegate: LibraryRail {
-                libraryTitle: modelData.title
+                libraryTitle: modelData.title + (modelData.serverName ? " (" + modelData.serverName + ")" : "")
                 libraryId: modelData.id
                 libraryType: modelData.type
+                serverUrl: (typeof modelData.serverUrl !== 'undefined' && modelData.serverUrl !== null) ? modelData.serverUrl : ""
                 rootApp: root.rootApp
                 movieDelegate: root.movieDelegate
                 Layout.fillWidth: true
-                Layout.preferredHeight: 400
-                visible: !emptyStateView.visible
+                Layout.preferredHeight: hasItems ? 400 : 0
+                visible: !emptyStateView.visible && hasItems
             }
         }
         

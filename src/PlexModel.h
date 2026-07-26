@@ -24,6 +24,7 @@ struct Movie {
     int childCount = 0;
     int leafCount = 0;
     int viewedLeafCount = 0;
+    QString serverUrl;
 };
 
 class PlexModel : public QAbstractListModel {
@@ -48,7 +49,8 @@ public:
         IndexRole,
         ChildCountRole,
         LeafCountRole,
-        ViewedLeafCountRole
+        ViewedLeafCountRole,
+        ServerUrlRole
     };
 
     explicit PlexModel(QObject *parent = nullptr);

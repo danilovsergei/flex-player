@@ -86,7 +86,7 @@ Item {
 
         if (playerView.mediaStreams.length === 0 && currentRatingKey !== "") {
             var req = new XMLHttpRequest();
-            var sUrl = playerView.rootApp ? playerView.rootApp.serverUrl : "";
+            var sUrl = playerView.rootApp ? (playerView.rootApp && playerView.rootApp.controller && playerView.rootApp.controller.detailsModel && playerView.rootApp.controller.detailsModel.currentServerUrl !== "" ? playerView.rootApp.controller.detailsModel.currentServerUrl : (playerView.rootApp ? playerView.rootApp.serverUrl : "")) : "";
             var tok = playerView.rootApp ? playerView.rootApp.token : "";
             var metadataUrl = sUrl + "/library/metadata/" + currentRatingKey + "?X-Plex-Token=" + tok;
             console.log("PlayerView fetching dynamic streams from: " + metadataUrl);

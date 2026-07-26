@@ -133,7 +133,7 @@ Item {
                     objectName: "detailsPoster"
                     Layout.preferredWidth: 300
                     Layout.preferredHeight: 450
-                    source: detailsData && detailsData.thumb ? (rootApp ? rootApp.serverUrl + detailsData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
+                    source: detailsData && detailsData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + detailsData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
                     fillMode: Image.PreserveAspectCrop
                 }
 
@@ -524,7 +524,7 @@ Item {
                             try {
                                 if (detailsData && detailsData.Media && detailsData.Media.length > 0) {
                                     var part = detailsData.Media[0].Part[0];
-                                    var url = rootApp ? rootApp.serverUrl + part.key + "?X-Plex-Token=" + rootApp.token : "";
+                                    var url = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + rootApp.token : "";
                                     
                                     var audioId = "auto";
                                     if (audioComboControl.currentIndex >= 0) {

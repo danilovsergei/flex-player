@@ -64,7 +64,7 @@ Window {
     readonly property color plexOrange: "#E5A00D"
 
     function startupLogic() { controller.startupLogic() }
-    function loadLibraryContent(id, title, type) { controller.loadLibraryContent(id, title, type) }
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId) }
     function getLibraryIcon(type) { return controller.getLibraryIcon(type) }
     function formatTime(seconds) { return controller.formatTime(seconds) }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
@@ -156,27 +156,30 @@ Window {
     Component {
         id: movieDelegate
         MoviePosterDelegate {
-            onOpenCollection: function(ratingKey) {
+            onOpenCollection: function(ratingKey, itemServerUrl) {
                 console.log("Opening collection: " + ratingKey)
                 if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
                     mainWindow.previousTab = mainWindow.currentTab;
                 }
-                controller.collectionMoviesModel.fetchEndpoint(controller.connectionManager.activeUrl, appSettings.token, "/library/collections/" + ratingKey + "/children")
-                currentTab = 2
+                var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+                controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children")
+                mainWindow.currentTab = 2
             }
-            onOpenShow: function(ratingKey) {
+            onOpenShow: function(ratingKey, itemServerUrl) {
                 console.log("Opening show/season: " + ratingKey)
-                controller.detailsModel.fetchItemDetails(controller.connectionManager.activeUrl, appSettings.token, ratingKey);
+                var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+                controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
             }
             onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
                 rootLayout.visible = false
                 playerView.visible = true
-                playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration)
+                playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, "auto", "no", [])
             }
-            onOpenDetails: function(ratingKey) {
-                console.log("Opening details for: " + ratingKey);
-                controller.detailsModel.fetchItemDetails(controller.connectionManager.activeUrl, appSettings.token, ratingKey);
+            onOpenDetails: function(ratingKey, itemServerUrl) {
+                console.log("Opening details for: " + ratingKey + " itemServerUrl: " + itemServerUrl);
+                var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+                controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
             }
         }
     }

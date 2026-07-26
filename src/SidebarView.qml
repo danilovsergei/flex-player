@@ -56,28 +56,36 @@ Rectangle {
                     }
 
                     Repeater {
-                        model: mainWindow.testAllLibrariesModel ? mainWindow.testAllLibrariesModel : mainWindow.allLibrariesModel
+                        model: mainWindow.controller ? mainWindow.controller.homeLibrariesList : []
                         delegate: Button {
-                            // Only show if enabled in settings
-                            visible: {
-                                var enabledMap = JSON.parse(appSettings.enabledLibraries || "{}");
-                                return enabledMap[model.ratingKey] !== undefined && enabledMap[model.ratingKey] !== null && enabledMap[model.ratingKey] !== false;
-                            }
-                            Layout.preferredHeight: visible ? 40 : 0
+                            visible: true
+                            Layout.preferredHeight: 40
                             
-                            text: mainWindow.sidebarCollapsed ? mainWindow.getLibraryIcon(model.type) : mainWindow.getLibraryIcon(model.type) + " " + model.title
-                            objectName: "libTabButton_" + model.ratingKey
+                            text: {
+                                var sName = (typeof modelData !== 'undefined' && modelData.serverName) ? " (" + modelData.serverName + ")" : ((typeof model !== 'undefined' && model.serverName) ? " (" + model.serverName + ")" : "");
+                                var mType = (typeof modelData !== 'undefined' && modelData.type) ? modelData.type : model.type;
+                                var mTitle = (typeof modelData !== 'undefined' && modelData.title) ? modelData.title : model.title;
+                                return mainWindow.sidebarCollapsed ? mainWindow.getLibraryIcon(mType) : mainWindow.getLibraryIcon(mType) + " " + mTitle + sName;
+                            }
+                            
+                            property string mUniqueId: (typeof modelData !== 'undefined' && modelData.uniqueId) ? modelData.uniqueId : ((typeof modelData !== 'undefined' && modelData.id) ? modelData.id : model.ratingKey)
+                            property string mId: (typeof modelData !== 'undefined' && modelData.id) ? modelData.id : model.ratingKey
+                            property string mType: (typeof modelData !== 'undefined' && modelData.type) ? modelData.type : model.type
+                            property string mTitle: (typeof modelData !== 'undefined' && modelData.title) ? modelData.title : model.title
+                            property string mServerUrl: (typeof modelData !== 'undefined' && modelData.serverUrl) ? modelData.serverUrl : ((typeof model !== 'undefined' && model.serverUrl) ? model.serverUrl : "")
+                            
+                            objectName: "libTabButton_" + mUniqueId
                             Layout.fillWidth: true
                             contentItem: Text {
                                 text: parent.text
-                                color: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryId && mainWindow.controller.currentLibraryId.toString() === model.ratingKey.toString() ? mainWindow.plexOrange : "white"
+                                color: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString() ? mainWindow.plexOrange : "white"
                                 font.pixelSize: 18
-                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryId && mainWindow.controller.currentLibraryId.toString() === model.ratingKey.toString()
+                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString()
                                 horizontalAlignment: mainWindow.sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
                             }
                             background: Rectangle { color: "transparent" }
                             onClicked: {
-                                mainWindow.loadLibraryContent(model.ratingKey, model.title, model.type)
+                                mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId)
                                 mainWindow.currentTab = 1 // Switch to library Recommend view
                             }
                         }

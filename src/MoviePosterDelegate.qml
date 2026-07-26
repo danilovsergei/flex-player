@@ -15,10 +15,10 @@ Item {
     property color plexOrange: "#E5A00D"
 
     signal posterClicked()
-    signal openCollection(string ratingKey)
-    signal openShow(string ratingKey)
+    signal openCollection(string ratingKey, string serverUrl)
+    signal openShow(string ratingKey, string serverUrl)
     signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
-    signal openDetails(string ratingKey)
+    signal openDetails(string ratingKey, string serverUrl)
 
     Rectangle {
         anchors.fill: parent
@@ -247,12 +247,18 @@ Item {
                 if (typeof model !== "undefined" && (typeof model !== "undefined" && model.viewOffset) !== undefined) mViewOffset = (typeof model !== "undefined" && model.viewOffset)
                 else if (typeof viewOffset !== "undefined") mViewOffset = viewOffset
                 
+                var mServerUrl = ""
+                if (typeof model !== "undefined" && model.serverUrl !== undefined) mServerUrl = model.serverUrl
+                else if (typeof serverUrl !== "undefined") mServerUrl = serverUrl
+                
+                console.log("MoviePoster clicked! mType=" + mType + " mRatingKey=" + mRatingKey + " mServerUrl=" + mServerUrl)
+                
                 if (mType === "collection") {
-                    root.openCollection(mRatingKey)
+                    root.openCollection(mRatingKey, mServerUrl)
                 } else if (mType === "show" || mType === "season") {
-                    root.openShow(mRatingKey)
+                    root.openShow(mRatingKey, mServerUrl)
                 } else {
-                    root.openDetails(mRatingKey)
+                    root.openDetails(mRatingKey, mServerUrl)
                 }
             } catch(e) {
                 console.log("Error in poster click:", e)
