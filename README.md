@@ -10,6 +10,18 @@ Flex Player is a custom Qt6/QML client for the Plex media server. It uses `libmp
 
 https://github.com/user-attachments/assets/44b2f970-d76e-418d-af6c-999912f4ebb6
 
+## Installation
+
+Flex Player is fully containerized and easily installable via Flatpak. 
+
+You can download and install the latest Linux flatpak release directly from this repository using the command below.
+
+```bash
+TMP_DIR=$(mktemp -d) && wget -O $TMP_DIR/flex-player.flatpak https://github.com/danilovsergei/flex-player/releases/latest/download/flex-player.flatpak && flatpak install --user -y $TMP_DIR/flex-player.flatpak && rm -rf $TMP_DIR
+```
+
+*(Note: Once the application is accepted into Flathub, it will be directly available via standard `flatpak install flathub` commands.)*
+
 ## Screenshots
 
 <p align="center">
@@ -90,6 +102,10 @@ Flex Player fully supports `mpv` customization via:
 
 ---
 
-*For detailed instructions on how to build and install Flex Player, see [BUILD.md](BUILD.md).*  
-*For detailed information on the E2E UI testing architecture, see [tests/README.md](tests/README.md).*
+## Contributing
+
+We welcome community contributions! The project is fully backed by a rigorously maintained headless Wayland UI test suite to prevent regressions.
+
+*For detailed instructions on how to compile the source code, run the CI test suite, and build the Flatpak locally, see **[BUILD.md](BUILD.md)**.*  
+*For detailed information on the E2E UI testing architecture, see **[tests/README.md](tests/README.md)**.*
 
