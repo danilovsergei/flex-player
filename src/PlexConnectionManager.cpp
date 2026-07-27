@@ -31,6 +31,7 @@ void PlexConnectionManager::setActiveUrl(const QString &url) {
 }
 
 void PlexConnectionManager::startExhaustiveProbe(const QVariantList &connections) {
+    qDebug() << "[ConnManager] startExhaustiveProbe called. m_isResolving:" << m_isResolving;
     if (m_isResolving) return;
     
     m_lastConnections = connections;
@@ -96,14 +97,14 @@ void PlexConnectionManager::startExhaustiveProbe(const QVariantList &connections
 }
 
 void PlexConnectionManager::finalizeResolution(const QString &winner) {
-    if (!m_isResolving && !m_activeUrl.isEmpty()) return; 
-
+    qDebug() << "[ConnManager] finalizeResolution called with winner:" << winner;
     setActiveUrl(winner);
     m_isResolving = false;
     m_pendingRemoteWinner = "";
     m_remoteGraceTimer.stop();
     emit isResolvingChanged();
     emit resolutionFinished(true);
+    qDebug() << "[ConnManager] finalizeResolution emitted resolutionFinished(true)";
 }
 
 void PlexConnectionManager::reportFailure(const QString &url) {
@@ -147,7 +148,7 @@ void PlexConnectionManager::onReplyFinished() {
         if (isLocal) {
             finalizeResolution(url);
         } else {
-            if (m_activeUrl.isEmpty() && m_pendingRemoteWinner.isEmpty()) {
+            if (m_pendingRemoteWinner.isEmpty()) {
                 m_pendingRemoteWinner = url;
                 m_remoteGraceTimer.start();
             }
@@ -165,18 +166,29 @@ void PlexConnectionManager::onReplyFinished() {
                 emit isResolvingChanged();
                 emit resolutionFinished(false);
             }
+        } else {
+            // Active URL is already set!
+            if (!m_pendingRemoteWinner.isEmpty()) {
+                finalizeResolution(m_pendingRemoteWinner);
+            } else {
+                qDebug() << "[ConnManager] m_pendingReplies <= 0, activeUrl is already set, emitting resolutionFinished(true) anyway to unfreeze UI.";
+                m_isResolving = false;
+                emit isResolvingChanged();
+                emit resolutionFinished(true);
+            }
         }
     }
 }
 
 void PlexConnectionManager::onRemoteGraceTimeout() {
-    if (m_activeUrl.isEmpty() && !m_pendingRemoteWinner.isEmpty()) {
+    qDebug() << "[ConnManager] onRemoteGraceTimeout fired! m_pendingRemoteWinner:" << m_pendingRemoteWinner;
+    if (!m_pendingRemoteWinner.isEmpty()) {
         finalizeResolution(m_pendingRemoteWinner);
     }
 }
 
 void PlexConnectionManager::onHeartbeat() {
-    if (m_activeUrl.isEmpty() || !m_activeUrl.contains("192.168.")) {
+    if (m_activeUrl.isEmpty()) {
         startExhaustiveProbe(m_lastConnections);
     }
 }

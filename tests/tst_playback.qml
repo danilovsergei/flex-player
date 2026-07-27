@@ -140,7 +140,7 @@ TestCase {
         var movieRail = findChild(homeView, "libraryRail_1"); 
         verify(movieRail !== null, "Movie LibraryRail should be found");
         compare(movieRail.lastFetchedEndpoint, "/library/sections/1/all?type=1&sort=addedAt:desc", "Movie rail endpoint should be correct");
-        verify(movieRail.serverUrl === "https://127.0.0.1:32400", "Movie rail should have inherited serverUrl from GlobalController");
+        verify(movieRail.serverUrl === "", "Movie rail primary server should dynamically fallback to connectionManager by having empty serverUrl");
 
         var movieModel = findChild(movieRail, "delegateRecentModel");
         verify(movieModel !== null, "Movie rail model should be found");
@@ -154,7 +154,7 @@ TestCase {
         var seriesRail = findChild(homeView, "libraryRail_2"); 
         verify(seriesRail !== null, "Series LibraryRail should be found");
         compare(seriesRail.lastFetchedEndpoint, "/library/sections/2/all?type=2&sort=addedAt:desc", "Series rail endpoint should be correct");
-        verify(seriesRail.serverUrl === "https://127.0.0.1:32400", "Series rail should have inherited serverUrl from GlobalController");
+        verify(seriesRail.serverUrl === "", "Series rail should have inherited serverUrl from GlobalController");
 
         var seriesModel = findChild(seriesRail, "delegateRecentModel");
         verify(seriesModel !== null, "Series rail model should be found");
@@ -1951,7 +1951,7 @@ TestCase {
         mouseClick(btnS1, btnS1.width / 2, btnS1.height / 2);
         wait(200);
 
-        verify(mainWindow.controller.currentServerUrl === "http://10.0.0.1:32400", "Global Controller should have routed to Server 1 IP");
+        verify(mainWindow.controller.currentServerUrl === "", "Global Controller primary server should dynamically fallback to connectionManager by having empty currentServerUrl");
         verify(mainWindow.controller.currentLibraryUniqueId === "server1_100", "Global Controller should track unique ID for Server 1");
         
         // Wait for fetch
@@ -2335,5 +2335,54 @@ TestCase {
         // Cleanup
         mainWindow.appSettings.enabledLibraries = "{}";
         mainWindow.appSettings.serverList = "[]";
+    }
+
+    function test_76_external_ip_fallback() {
+        var fakeServers = [{
+            "name": "Remote Server",
+            "enabled": true,
+            "connections": [
+                { "local": true, "uri": "https://127.0.0.1:9999", "address": "127.0.0.1", "port": 9999 },
+                { "local": false, "uri": "https://mock-remote.plex.tv:32400", "address": "mock-remote.plex.tv", "port": 32400 }
+            ]
+        }];
+        var fakeEnabled = {
+            "remote1_100": { "id": "1", "type": "movie", "title": "Remote Movies", "serverName": "Remote Server", "serverUrl": "" }
+        };
+        
+        mainWindow.isTestMode = false; // Force REAL network requests
+        mainWindow.controller.connectionManager.setIsTestMode(false);
+        
+        mainWindow.appSettings.token = "mocktoken";
+        mainWindow.appSettings.serverList = JSON.stringify(fakeServers);
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        
+        mainWindow.startupLogic();
+        
+        // Wait for connection manager to ping 127.0.0.1:9999 (fail) and mock-remote.plex.tv:32400 (succeed)
+        tryVerify(function() { 
+            return mainWindow.controller.connectionManager.activeUrl === "https://mock-remote.plex.tv:32400";
+        }, 5000, "Wait for connectionManager to resolve activeUrl to mock-remote.plex.tv");
+        
+        verify(mainWindow.controller.connectionManager.activeUrl === "https://mock-remote.plex.tv:32400", "Resolved URL was actually: " + mainWindow.controller.connectionManager.activeUrl);
+        
+        var settingsWindow = findChild(mainWindow, "settingsWindow");
+        verify(settingsWindow !== null, "SettingsWindow should exist");
+        
+        // Manually push the fake servers into SettingsWindow's state because it usually only reads this on app boot
+        settingsWindow.localServersList = fakeServers;
+        
+        tryVerify(function() { return settingsWindow.connectionState === 2; }, 5000, "SettingsWindow should hit state 2 (Connected)");
+        
+        // Check if the property binding trickled down to the library checkbox model
+        var foundCheckboxes = false;
+        tryVerify(function() {
+            var movieCheckbox = findChild(settingsWindow, "libraryCheckbox");
+            return movieCheckbox !== null;
+        }, 3000, "Settings checkboxes should dynamically populate from the external remote IP");
+        
+        // Restore test mode
+        mainWindow.isTestMode = true;
+        mainWindow.controller.connectionManager.setIsTestMode(true);
     }
 }

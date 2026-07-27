@@ -457,40 +457,110 @@ Rectangle {
                             width: serverLibrariesList.width
                             spacing: 12
                             
-                            property string serverUrl: {
+                            property string serverUrl: ""
+                            property string serverName: modelData.name
+
+                            Connections {
+                                target: typeof connectionManager !== "undefined" ? connectionManager : null
+                                function onActiveUrlChanged() {
+                                    serverDelegateRoot.updateServerUrl();
+                                }
+                            }
+                            
+                            function updateServerUrl() {
+                                var hasController = (typeof rootApp !== "undefined" && rootApp.controller);
+                                var hasConnManager = (typeof connectionManager !== "undefined");
+                                console.log("[Settings] updateServerUrl called for " + serverDelegateRoot.serverName + " activeServersList: " + (hasController && rootApp.controller.activeServersList ? rootApp.controller.activeServersList.length : "null") + " activeUrl: " + (hasConnManager ? connectionManager.activeUrl : "null"));
                                 var knownUrl = "";
-                                if (mainWindow.controller && mainWindow.controller.activeServersList) {
-                                    for (var j = 0; j < mainWindow.controller.activeServersList.length; j++) {
-                                        if (mainWindow.controller.activeServersList[j].serverName === modelData.name) {
-                                            knownUrl = mainWindow.controller.activeServersList[j].serverUrl;
+                                if (hasController && rootApp.controller.activeServersList) {
+                                    for (var j = 0; j < rootApp.controller.activeServersList.length; j++) {
+                                        if (rootApp.controller.activeServersList[j].serverName === serverDelegateRoot.serverName) {
+                                            knownUrl = rootApp.controller.activeServersList[j].serverUrl;
                                             break;
                                         }
                                     }
                                 }
-                                if (knownUrl !== "") return knownUrl;
+                                if (knownUrl === "" && hasConnManager && connectionManager.activeUrl !== "") {
+                                    // If activeUrl matches any connection block for this server, use it.
+                                    var activeU = connectionManager.activeUrl;
+                                    var isThisServer = false;
+                                    if (modelData.connections) {
+                                        for (var k = 0; k < modelData.connections.length; k++) {
+                                            if (activeU.indexOf(modelData.connections[k].address) !== -1) {
+                                                isThisServer = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (isThisServer) {
+                                        knownUrl = activeU;
+                                    }
+                                }
+                                if (knownUrl !== "") {
+                                    console.log("[Settings] updateServerUrl found knownUrl: " + knownUrl + " for " + serverDelegateRoot.serverName);
+                                    serverUrl = knownUrl;
+                                    return;
+                                }
 
                                 if (modelData.connections && modelData.connections.length > 0) {
                                     for (var i = 0; i < modelData.connections.length; i++) {
                                         var c = modelData.connections[i];
-                                        if (c.local && c.address && (c.address.indexOf("192.168.") === 0 || c.address.indexOf("10.") === 0)) {
-                                            return c.uri;
+                                        var uri = c.uri;
+                                        if (uri && uri.indexOf("plex.direct") !== -1) {
+                                            var match = uri.match(/(\d+-\d+-\d+-\d+)/);
+                                            if (match) {
+                                                var ip = match[1].replace(/-/g, ".");
+                                                uri = "http://" + ip + ":" + c.port;
+                                            } else {
+                                                uri = "http://" + c.address + ":" + c.port;
+                                            }
+                                        }
+                                        if (c.local && c.address && (c.address.indexOf("192.168.") === 0 || c.address.indexOf("10.") === 0 || c.address.indexOf("172.") === 0)) {
+                                            serverUrl = uri;
+                                            return;
                                         }
                                     }
-                                    return modelData.connections[0].uri;
+                                    var fbUri = modelData.connections[0].uri;
+                                    if (fbUri && fbUri.indexOf("plex.direct") !== -1) {
+                                        var fbMatch = fbUri.match(/(\d+-\d+-\d+-\d+)/);
+                                        if (fbMatch) {
+                                            fbUri = "http://" + fbMatch[1].replace(/-/g, ".") + ":" + modelData.connections[0].port;
+                                        } else {
+                                            fbUri = "http://" + modelData.connections[0].address + ":" + modelData.connections[0].port;
+                                        }
+                                    }
+                                    serverUrl = fbUri;
+                                    return;
                                 }
-                                return "";
+                                serverUrl = "";
                             }
-                            property string serverName: modelData.name
+                            
+                            Component.onCompleted: updateServerUrl()
 
                             Text { text: "📁 Server: " + serverDelegateRoot.serverName; color: "#E5A00D"; font.pixelSize: 22; font.bold: true }
                             
                             PlexModel {
                                 id: serverLibrariesModel
-                                connectionManager: mainWindow.controller ? mainWindow.controller.connectionManager : null
-                                Component.onCompleted: {
+                                // DO NOT assign connectionManager here, otherwise speculative local fetches will poison the global ConnectionManager state
+                                
+                                function tryFetch() {
                                     if (serverDelegateRoot.serverUrl !== "") {
+                                        console.log("[Settings] serverLibrariesModel fetching for " + serverDelegateRoot.serverName + " with URL: " + serverDelegateRoot.serverUrl);
                                         fetchEndpoint(serverDelegateRoot.serverUrl, appSettings.token, "/library/sections");
                                     }
+                                }
+                                
+                                Component.onCompleted: tryFetch()
+                                
+                                onModelReset: {
+                                    console.log("[Settings] serverLibrariesModel reset for " + serverDelegateRoot.serverName + ". Count: " + rowCount());
+                                }
+                            }
+                            
+                            Connections {
+                                target: serverDelegateRoot
+                                function onServerUrlChanged() {
+                                    serverLibrariesModel.tryFetch();
                                 }
                             }
                             

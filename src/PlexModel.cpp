@@ -170,7 +170,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
                                    err == QNetworkReply::RemoteHostClosedError);
                                    
         if (isConnectivityError && m_connectionManager) {
-            qDebug() << "[PlexModel] Connectivity error detected:" << err;
+            qDebug() << "[PlexModel] Connectivity error detected:" << err << "for URL:" << reply->request().url().toString() << "Current Server URL:" << currentServerUrl();
             m_connectionManager->reportFailure(currentServerUrl());
         } else {
             qDebug() << "[PlexModel] Request failed (likely 404/401/SSL):" << err << "String:" << reply->errorString();

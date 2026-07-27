@@ -82,8 +82,10 @@ Item {
         }
         
         for (var i = 0; i < servers.length; i++) {
-            var serverUrl = servers[i].serverUrl;
+            var rawServerUrl = servers[i].serverUrl;
             var serverName = servers[i].serverName;
+            var serverUrl = rawServerUrl !== "" ? rawServerUrl : connectionManager.activeUrl;
+            if (serverUrl === "") continue; // Still unresolved, skip
             
             var targetUrl = serverUrl + "/hubs/search?query=" + encodeURIComponent(query);
             (function(url, name) {
@@ -359,6 +361,9 @@ Item {
             if (enabledServerNames.indexOf(sName) === -1) continue;
             
             var sUrl = lib.serverUrl || "";
+            if (sName === primary.name) {
+                sUrl = ""; // FORCE dynamic resolution for the primary server
+            }
             if (!activeServersMap[sName]) activeServersMap[sName] = sUrl;
             
             libArray.push({
