@@ -6,6 +6,9 @@ Item {
     // are forced to be visible. This is essential for headless testing where
     // mouse movements are not always reliably processed by the compositor.
     property bool isTestMode: false
+    property bool mIsWatched: (typeof model !== "undefined" && model.isWatched !== undefined) ? model.isWatched : ((typeof isWatched !== "undefined") ? isWatched : false)
+    property int mLeafCount: (typeof model !== "undefined" && model.leafCount !== undefined) ? model.leafCount : ((typeof leafCount !== "undefined") ? leafCount : 0)
+    property int mViewedLeafCount: (typeof model !== "undefined" && model.viewedLeafCount !== undefined) ? model.viewedLeafCount : ((typeof viewedLeafCount !== "undefined") ? viewedLeafCount : 0)
 
     id: root
     width: 200
@@ -107,14 +110,15 @@ Item {
             radius: 4
             color: "#b3000000"
             visible: {
-                var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
-                return (mType === "show" || mType === "season") && model.leafCount > 0
+                var mType = ""
+                try { if (model && model.type !== undefined) mType = model.type; else mType = type; } catch(e) { mType = type; }
+                return (mType === "show" || mType === "season") && root.mLeafCount > 0
             }
 
             Text {
                 id: episodeCountText
                 anchors.centerIn: parent
-                text: model.viewedLeafCount + "/" + model.leafCount
+                text: root.mViewedLeafCount + "/" + root.mLeafCount
                 color: "white"
                 font.pixelSize: 14
                 font.bold: true
@@ -130,7 +134,7 @@ Item {
             height: 24
             radius: 12
             color: plexOrange
-            visible: model.isWatched !== undefined ? model.isWatched : false
+            visible: root.mIsWatched
 
             Text {
                 anchors.centerIn: parent

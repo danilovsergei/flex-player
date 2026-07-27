@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 Rectangle {
     id: root
+    objectName: "topToolbar"
     Layout.fillWidth: true
     Layout.preferredHeight: 60
     color: "#1e1e1e"
@@ -49,6 +50,46 @@ Rectangle {
                 radius: 15
             }
             leftPadding: 15
+            
+            Timer {
+                id: searchDebounce
+                objectName: "searchDebounce"
+                interval: 300
+                repeat: false
+                onTriggered: {
+                    if (rootApp && rootApp.controller) {
+                        rootApp.controller.performSearch(searchField.text);
+                        if (searchField.text.trim() !== "") {
+                            searchPopup.open();
+                        } else {
+                            searchPopup.close();
+                        }
+                    }
+                }
+            }
+            
+            onTextEdited: {
+                searchDebounce.restart();
+            }
+            
+            SearchPopup {
+                id: searchPopup
+                objectName: "searchPopup"
+                y: searchField.height + 5
+                rootApp: root.rootApp
+                onResultClicked: function(ratingKey, serverUrl, type, title) {
+                    if (type === "collection") {
+                        rootApp.openCollection(ratingKey, serverUrl);
+                    } else if (type === "show" || type === "season") {
+                        rootApp.openShow(ratingKey, serverUrl);
+                    } else {
+                        rootApp.openDetails(ratingKey, serverUrl);
+                    }
+                }
+                onMoreResultsClicked: function(query) {
+                    rootApp.openSearchResults();
+                }
+            }
         }
 
         Item { Layout.fillWidth: true }

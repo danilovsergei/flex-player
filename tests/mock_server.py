@@ -1,6 +1,7 @@
 import http.server
 import ssl
 import json
+import sys
 import threading
 from urllib.parse import urlparse, parse_qs
 
@@ -155,8 +156,57 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         }]
                     }
                 }
-        elif path == "/" or path == "/identity":
-            response_data = {"MediaContainer": {"machineIdentifier": "mock_machine"}}
+        elif "/hubs/search" in path:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(path)
+            query = urllib.parse.parse_qs(parsed.query).get('query', [''])[0]
+            
+            response_data = {
+                "MediaContainer": {
+                    "Hub": [
+                        {
+                            "type": "movie",
+                            "title": "Movies",
+                            "Metadata": [{"ratingKey": "m1", "type": "movie", "title": "Movie: " + query, "thumb": "/thumb/m1", "librarySectionID": 1, "viewCount": 1}]
+                        },
+                        {
+                            "type": "show",
+                            "title": "Shows",
+                            "Metadata": [{"ratingKey": "s1", "type": "show", "title": "Show: " + query, "thumb": "/thumb/s1", "librarySectionID": 1, "leafCount": 10, "viewedLeafCount": 5}]
+                        },
+                        {
+                            "type": "episode",
+                            "title": "Episodes",
+                            "Metadata": [{"ratingKey": "e1", "type": "episode", "title": "Episode: " + query, "thumb": "/thumb/e1", "librarySectionID": 1}]
+                        },
+                        {
+                            "type": "artist",
+                            "title": "Artists",
+                            "Metadata": [{"ratingKey": "ar1", "type": "artist", "title": "Artist: " + query, "thumb": "/thumb/ar1", "librarySectionID": 1}]
+                        },
+                        {
+                            "type": "album",
+                            "title": "Albums",
+                            "Metadata": [{"ratingKey": "al1", "type": "album", "title": "Album: " + query, "thumb": "/thumb/al1", "librarySectionID": 1}]
+                        },
+                        {
+                            "type": "track",
+                            "title": "Tracks",
+                            "Metadata": [{"ratingKey": "t1", "type": "track", "title": "Track: " + query, "thumb": "/thumb/t1", "librarySectionID": 1}]
+                        },
+                        {
+                            "type": "person",
+                            "title": "People",
+                            "Metadata": [{"ratingKey": "pe1", "type": "person", "title": "Person: " + query, "thumb": "/thumb/pe1", "librarySectionID": 999}]
+                        },
+                        {
+                            "type": "photo",
+                            "title": "Photos",
+                            "Metadata": [{"ratingKey": "ph1", "type": "photo", "title": "Photo: " + query, "thumb": "/thumb/ph1", "librarySectionID": 999}]
+                        }
+                    ]
+                }
+            }
         elif path == "/" or path == "/identity":
             response_data = {"MediaContainer": {"machineIdentifier": "mock_machine"}}
         else:
@@ -173,11 +223,15 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         
         self.wfile.write(json_bytes)
 
-httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 32400), MockPlexHandler)
+port = 32400
+if len(sys.argv) > 1:
+    port = int(sys.argv[1])
+
+httpd = http.server.ThreadingHTTPServer(('127.0.0.1', port), MockPlexHandler)
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.load_cert_chain(certfile='/app/tests/mock_cert.pem', keyfile='/app/tests/mock_key.pem')
 httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
 
-print("Starting Mock HTTPS Server on 127.0.0.1:32400")
+print(f"Starting Mock HTTPS Server on 127.0.0.1:{port}")
 httpd.serve_forever()

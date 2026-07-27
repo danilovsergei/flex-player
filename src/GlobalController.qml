@@ -50,6 +50,100 @@ Item {
     property alias libraryDeckModel: m_libraryContinueWatchingModel
     property alias libraryCollectionsModel: m_libraryCollectionsModel
 
+    property var searchResultsModel: ListModel {}
+    property int currentSearchId: 0
+    property bool isSearching: false
+
+    function performSearch(query) {
+        currentSearchId++;
+        var reqId = currentSearchId;
+        
+        searchResultsModel.clear();
+        if (!query || query.trim() === "") {
+            isSearching = false;
+            return;
+        }
+        
+        isSearching = true;
+        var servers = activeServersList;
+        console.log("performSearch called! servers length: " + servers.length);
+        var completedRequests = 0;
+        
+        var enabledLibs = parseEnabledLibraries();
+        var validLibraryIds = {};
+        var eKeys = Object.keys(enabledLibs);
+        for (var e = 0; e < eKeys.length; e++) {
+            var lib = enabledLibs[eKeys[e]];
+            var sName = lib.serverName;
+            if (!sName) continue;
+            var libId = lib.id || eKeys[e].split("_")[1] || eKeys[e];
+            if (!validLibraryIds[sName]) validLibraryIds[sName] = [];
+            validLibraryIds[sName].push(libId.toString());
+        }
+        
+        for (var i = 0; i < servers.length; i++) {
+            var serverUrl = servers[i].serverUrl;
+            var serverName = servers[i].serverName;
+            
+            var targetUrl = serverUrl + "/hubs/search?query=" + encodeURIComponent(query);
+            (function(url, name) {
+                connectionManager.fetchJson(targetUrl, appSettings.token, function(responseText) {
+                    completedRequests++;
+                    if (reqId === currentSearchId && responseText !== "") {
+                        try {
+                            var json = JSON.parse(responseText);
+                            var hubs = json.MediaContainer.Hub;
+                            if (hubs) {
+                                for (var j = 0; j < hubs.length; j++) {
+                                    var hub = hubs[j];
+                                    var items = hub.Metadata;
+                                    if (items) {
+                                        for (var k = 0; k < items.length; k++) {
+                                            var item = items[k];
+                                            var itemLibId = item.librarySectionID ? item.librarySectionID.toString() : "";
+                                            if (itemLibId !== "" && validLibraryIds[name] && validLibraryIds[name].indexOf(itemLibId) === -1) {
+                                                continue;
+                                            }
+                                            var thumb = item.thumb || "";
+                                            if (thumb !== "" && thumb.indexOf("http") !== 0) {
+                                                thumb = url + thumb + (thumb.indexOf("?") !== -1 ? "&" : "?") + "X-Plex-Token=" + appSettings.token;
+                                            }
+                                            var iType = item.type || hub.type;
+                                            var leafCount = item.leafCount || 0;
+                                            var viewedLeafCount = item.viewedLeafCount || 0;
+                                            var isWatched = false;
+                                            if (iType === "show" || iType === "season") {
+                                                isWatched = (leafCount > 0 && viewedLeafCount === leafCount);
+                                            } else {
+                                                isWatched = (item.viewCount !== undefined && item.viewCount > 0);
+                                            }
+                                            
+                                            searchResultsModel.append({
+                                                title: item.title,
+                                                type: iType,
+                                                year: item.year || 0,
+                                                ratingKey: item.ratingKey || item.key,
+                                                thumbUrl: thumb,
+                                                serverName: name,
+                                                serverUrl: url,
+                                                leafCount: leafCount,
+                                                viewedLeafCount: viewedLeafCount,
+                                                isWatched: isWatched
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        } catch(e) { console.log("Search parse error: " + e); }
+                    }
+                    if (reqId === currentSearchId && completedRequests === servers.length) {
+                        isSearching = false;
+                    }
+                });
+            })(serverUrl, serverName);
+        }
+    }
+
     function throttleSeek(direction) {
         var now = Date.now()
         if (now - lastSeekTime < 50) return 

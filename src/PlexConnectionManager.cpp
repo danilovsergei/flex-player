@@ -189,3 +189,34 @@ void PlexConnectionManager::updateHeartbeatTimer() {
     }
 }
 
+
+void PlexConnectionManager::fetchJson(const QString &url, const QString &token, QJSValue callback) {
+    QUrl qurl(url);
+    QNetworkRequest request(qurl);
+    request.setRawHeader("X-Plex-Token", token.toUtf8());
+    request.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *reply = m_manager.get(request);
+    connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) { reply->ignoreSslErrors(); });
+    
+    // Create a copy of the callback to use inside the lambda
+    QJSValue cb = callback;
+    connect(reply, &QNetworkReply::finished, this, [reply, cb]() mutable {
+        if (reply->error() == QNetworkReply::NoError) {
+            QString responseText = QString::fromUtf8(reply->readAll());
+            if (cb.isCallable()) {
+                QJSValueList args;
+                args << responseText;
+                cb.call(args);
+            }
+        } else {
+            qDebug() << "[PlexConnectionManager] fetchJson error:" << reply->errorString();
+            if (cb.isCallable()) {
+                QJSValueList args;
+                args << "";
+                cb.call(args);
+            }
+        }
+        reply->deleteLater();
+    });
+}

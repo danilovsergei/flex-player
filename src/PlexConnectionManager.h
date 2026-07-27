@@ -33,6 +33,8 @@ public:
     
     Q_INVOKABLE void setIsTestMode(bool test) { m_isTestMode = test; }
     Q_INVOKABLE void setMockResponse(const QString &url, bool success) { m_mockResponses[url] = success; }
+    
+    Q_INVOKABLE void fetchJson(const QString &url, const QString &token, QJSValue callback);
 
 signals:
     void activeUrlChanged();

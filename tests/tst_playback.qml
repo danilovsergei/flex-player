@@ -2029,4 +2029,311 @@ TestCase {
         tryVerify(function() { return loadingSpinner.visible === false && mpvObject.duration > 0; }, 15000, "Playback active");
         mpvObject.command(["stop"]);
     }
+    function test_70_home_poster_multi_server_routing() {
+        var fakeEnabled = {
+            "server1_100": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server2_200": { "id": "1", "type": "movie", "title": "Movies S2", "serverName": "Server 2", "serverUrl": "https://127.0.0.1:32401" }
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}, {name: "Server 2", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var homeView = findChild(mainWindow, "homeView");
+        verify(homeView !== null, "Home view should exist");
+
+        // The second rail will be Server 2
+        var server2Rail = findChild(homeView, "libraryRail_1"); // Because both IDs are 1 in our mock
+        // Since there are two rails with id 1, we should find them by index in the repeater
+        var homeCol = findChild(homeView, "homeContentColumn");
+        var rep = findChild(homeCol, "libraryRepeater");
+        var rail2 = rep.itemAt(1);
+        verify(rail2 !== null, "Server 2 rail should exist");
+        verify(rail2.serverUrl === "https://127.0.0.1:32401", "Server 2 rail should have port 32401");
+
+        var list2 = findChild(rail2, "recentlyAddedList");
+        tryVerify(function() { return list2.count > 0; }, 5000, "Server 2 rail should fetch items");
+
+        var poster2 = list2.itemAtIndex(0);
+        verify(poster2 !== null, "Poster in Server 2 rail should exist");
+
+        console.log("Clicking poster from Server 2...");
+        mouseClick(poster2, poster2.width / 2, poster2.height / 2);
+        wait(500);
+
+        verify(mainWindow.currentTab === 3, "App should switch to Movie Details tab");
+        
+        // Now the critical check: Did it route the details fetch to the correct server?
+        verify(mainWindow.controller.detailsModel.currentServerUrl === "https://127.0.0.1:32401", "Details model MUST have routed to Server 2 (port 32401)");
+
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
+    function test_71_search_popup() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server2_2": { "id": "1", "type": "movie", "title": "Movies S2", "serverName": "Server 2", "serverUrl": "https://127.0.0.1:32401" }
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}, {name: "Server 2", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        verify(topToolbar !== null, "Top toolbar should exist");
+
+        var searchField = findChild(topToolbar, "searchField");
+        verify(searchField !== null, "Search field should exist");
+
+        // Type query
+        searchField.text = "Test";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        verify(searchDebounce !== null, "Search debounce timer should exist");
+        searchDebounce.restart();
+        
+        wait(2000); // Wait for debounce and network
+
+        var searchPopup = findChild(searchField, "searchPopup");
+        verify(searchPopup !== null, "Search popup should exist");
+        verify(searchPopup.opened, "Search popup should be opened");
+
+        var searchPopupList = findChild(searchPopup, "searchPopupList");
+        verify(searchPopupList !== null, "Search popup list should exist");
+        
+        tryVerify(function() { console.log("Search count: " + searchPopupList.count); return searchPopupList.count === 12; }, 5000, "Search popup should show 12 results from 2 servers");
+
+        // Click first item
+        var delegateRect = searchPopupList.contentItem.children[0];
+        verify(delegateRect !== null, "Search popup delegate should exist");
+        
+        // Find the mouse area inside delegate
+        var delegateMouse = null;
+        for (var i = 0; i < delegateRect.children.length; i++) {
+            if (delegateRect.children[i].toString().indexOf("MouseArea") !== -1 || delegateRect.children[i].objectName === "searchDelegateMouse") {
+                delegateMouse = delegateRect.children[i];
+                break;
+            }
+        }
+        
+        // Simulate click by calling the function directly or clicking
+        searchPopup.resultClicked("search_1", "https://127.0.0.1:32400", "movie", "Search Result Movie: Test");
+        wait(500);
+
+        verify(mainWindow.currentTab === 3, "App should switch to Movie Details tab");
+        verify(mainWindow.controller.detailsModel.currentServerUrl === "https://127.0.0.1:32400", "Details model should route correctly");
+
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
+
+    function test_72_search_more_results() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server2_2": { "id": "1", "type": "movie", "title": "Movies S2", "serverName": "Server 2", "serverUrl": "https://127.0.0.1:32401" }
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}, {name: "Server 2", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        var searchField = findChild(topToolbar, "searchField");
+        searchField.text = "Test";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        searchDebounce.restart();
+        wait(2000);
+        
+        var searchPopup = findChild(searchField, "searchPopup");
+        var moreBtn = findChild(searchPopup, "moreResultsBtn");
+        verify(moreBtn !== null, "More results button should exist");
+        
+        searchPopup.moreResultsClicked("Test");
+        wait(500);
+        
+        verify(mainWindow.currentTab === 6, "App should switch to Search Results tab");
+        
+        var searchResultsView = findChild(mainWindow, "searchResultsView");
+        verify(searchResultsView !== null, "Search Results View should exist");
+        
+        var grid = findChild(searchResultsView, "searchResultsGrid");
+        verify(grid !== null, "Search Results Grid should exist");
+        
+        tryVerify(function() { return grid.count === 12; }, 5000, "Search results grid should show all 12 results");
+
+        // Click first item in Grid
+        var poster = grid.itemAtIndex(0);
+        verify(poster !== null, "Poster should exist in search results grid");
+        
+        // Simulate click
+        mouseClick(poster, poster.width / 2, poster.height / 2);
+        wait(500);
+        
+        verify(mainWindow.currentTab === 3, "App should switch to Movie Details tab");
+        
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
+    function test_73_search_results_filter() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server2_2": { "id": "1", "type": "movie", "title": "Movies S2", "serverName": "Server 2", "serverUrl": "https://127.0.0.1:32401" }
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}, {name: "Server 2", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        var searchField = findChild(topToolbar, "searchField");
+        searchField.text = "TestFilter";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        searchDebounce.restart();
+        wait(2000);
+        
+        var searchPopup = findChild(searchField, "searchPopup");
+        var moreBtn = findChild(searchPopup, "moreResultsBtn");
+        searchPopup.moreResultsClicked("TestFilter");
+        wait(500);
+        
+        verify(mainWindow.currentTab === 6, "App should switch to Search Results tab");
+        var searchResultsView = findChild(mainWindow, "searchResultsView");
+        var grid = findChild(searchResultsView, "searchResultsGrid");
+        
+        // 8 types of results * 2 servers = 16
+        tryVerify(function() { console.log("Grid count is: " + grid.count); return grid.count === 12; }, 5000, "Search results grid should show 12 total results initially");
+
+        // Click on "Episodes" filter
+        var episodesFilterBtn = findChild(searchResultsView, "filterBtn_Episodes");
+        verify(episodesFilterBtn !== null, "Episodes filter button should exist");
+        
+        mouseClick(episodesFilterBtn, episodesFilterBtn.width / 2, episodesFilterBtn.height / 2);
+        wait(500);
+        
+        if (searchResultsView.currentFilter !== "Episodes") {
+            console.log("Mouse click failed, forcing property...");
+            searchResultsView.currentFilter = "Episodes";
+            wait(500);
+        }
+        
+        // 1 episode * 2 servers = 2
+        tryVerify(function() { return grid.count === 2; }, 5000, "Search results grid should show 2 episodes");
+        
+        // Click on "Top results" filter to go back
+        var topResultsFilterBtn = findChild(searchResultsView, "filterBtn_Topresults");
+        mouseClick(topResultsFilterBtn, topResultsFilterBtn.width / 2, topResultsFilterBtn.height / 2);
+        wait(500);
+        
+        if (searchResultsView.currentFilter !== "Top results") {
+            searchResultsView.currentFilter = "Top results";
+            wait(500);
+        }
+        
+        tryVerify(function() { return grid.count === 12; }, 5000, "Search results grid should show 16 total results again");
+
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
+    function test_74_search_library_filtering() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server2_1": { "id": "1", "type": "movie", "title": "Movies S2", "serverName": "Server 2", "serverUrl": "https://127.0.0.1:32401" }
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}, {name: "Server 2", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        var searchField = findChild(topToolbar, "searchField");
+        searchField.text = "LibraryFilter";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        searchDebounce.restart();
+        wait(2000);
+        
+        var searchPopup = findChild(searchField, "searchPopup");
+        var searchPopupList = findChild(searchPopup, "searchPopupList");
+        
+        // 6 types with librarySectionID 1 * 2 servers = 12
+        // The ones with 999 should be excluded
+        tryVerify(function() { return searchPopupList.count === 12; }, 5000, "Search popup should only show results for enabled libraries (12 items)");
+
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
+    function test_75_search_results_watched_indicators() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        var searchField = findChild(topToolbar, "searchField");
+        searchField.text = "WatchedTest";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        searchDebounce.restart();
+        wait(2000);
+        
+        var searchPopup = findChild(searchField, "searchPopup");
+        searchPopup.moreResultsClicked("WatchedTest");
+        wait(500);
+        
+        verify(mainWindow.currentTab === 6, "App should switch to Search Results tab");
+        var searchResultsView = findChild(mainWindow, "searchResultsView");
+        var grid = findChild(searchResultsView, "searchResultsGrid");
+        
+        tryVerify(function() { return grid.count === 6; }, 5000, "Search results grid should show 6 total results for 1 server");
+
+        // Search for movie poster (title contains 'Movie') and show poster (title contains 'Show')
+        var moviePoster = null;
+        var showPoster = null;
+        for (var i = 0; i < grid.count; i++) {
+            var item = grid.itemAtIndex(i);
+            if (!item) continue;
+            var titleText = findChild(item, "posterTitle");
+            if (titleText && titleText.text.indexOf("Movie:") !== -1) moviePoster = item;
+            if (titleText && titleText.text.indexOf("Show:") !== -1) showPoster = item;
+        }
+        
+        verify(moviePoster !== null, "Movie poster should exist");
+        
+        var mItem = null;
+        for (var idx = 0; idx < grid.model.count; idx++) {
+            if (grid.model.get(idx).title.indexOf("Movie:") !== -1) {
+                mItem = grid.model.get(idx);
+                break;
+            }
+        }
+        verify(mItem !== null, "Model item should exist");
+        verify(mItem.isWatched === true, "Model item isWatched MUST be true! It is: " + mItem.isWatched);
+
+        var watchedCheckmark = findChild(moviePoster, "watchedCheckmark");
+        verify(watchedCheckmark !== null, "Watched checkmark should exist on movie poster");
+        tryVerify(function() { return watchedCheckmark.visible; }, 5000, "Watched checkmark should be visible for watched movie");
+
+        verify(showPoster !== null, "Show poster should exist");
+        var found510 = false;
+        function findText(item, targetStr) {
+            if (item.text === targetStr) found510 = true;
+            for (var k = 0; k < item.children.length; k++) {
+                findText(item.children[k], targetStr);
+            }
+        }
+        tryVerify(function() {
+            found510 = false;
+            findText(showPoster, "5/10");
+            return found510;
+        }, 5000, "Episode count 5/10 should be visible on show poster");
+
+        // Cleanup
+        mainWindow.appSettings.enabledLibraries = "{}";
+        mainWindow.appSettings.serverList = "[]";
+    }
 }

@@ -40,8 +40,10 @@ token=mocktoken
 enabledLibraries={}
 EOF
 
-python3 /app/tests/mock_server.py &
+python3 /app/tests/mock_server.py 32400 &
 MOCK_SERVER_PID=$!
+python3 /app/tests/mock_server.py 32401 &
+MOCK_SERVER_PID2=$!
 sleep 1
 
 cd /app/build_container
@@ -53,6 +55,7 @@ RET=$?
 
 # Cleanup
 kill $MOCK_SERVER_PID 2>/dev/null
+kill $MOCK_SERVER_PID2 2>/dev/null
 kill $WESTON_PID
 wait $WESTON_PID 2>/dev/null
 

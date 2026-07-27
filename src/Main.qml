@@ -67,6 +67,32 @@ Window {
     function loadLibraryContent(id, title, type, serverUrl, uniqueId) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId) }
     function getLibraryIcon(type) { return controller.getLibraryIcon(type) }
     function formatTime(seconds) { return controller.formatTime(seconds) }
+    
+    function openSearchResults() {
+        if (mainWindow.currentTab !== 6) {
+            mainWindow.previousTab = mainWindow.currentTab;
+            mainWindow.currentTab = 6;
+        }
+    }
+
+    function openCollection(ratingKey, itemServerUrl) {
+        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
+            mainWindow.previousTab = mainWindow.currentTab;
+        }
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children");
+        mainWindow.currentTab = 2;
+    }
+
+    function openShow(ratingKey, itemServerUrl) {
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+    }
+
+    function openDetails(ratingKey, itemServerUrl) {
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+    }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
     function runHdrCommand(cmd) { controller.runHdrCommand(cmd) }
     function closeSettings() { controller.closeSettings() }
@@ -192,6 +218,7 @@ Window {
 
         TopToolbar {
             id: topToolbar
+            objectName: "topToolbar"
             rootApp: mainWindow
             onSettingsRequested: controller.openSettings()
             onSidebarToggleRequested: mainWindow.sidebarCollapsed = !mainWindow.sidebarCollapsed
@@ -287,6 +314,12 @@ Window {
                         playerView.visible = true
                         playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, audioId, subId, streams)
                     }
+                }
+                
+                SearchResultsView {
+                    id: searchResultsView
+                    rootApp: mainWindow
+                    movieDelegate: globalMovieDelegate
                 }
             }
             
