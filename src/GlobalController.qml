@@ -38,6 +38,7 @@ Item {
     PlexModel { connectionManager: root.connectionManager; id: m_libraryRecentlyAddedModel }
     PlexModel { connectionManager: root.connectionManager; id: m_libraryContinueWatchingModel }
     PlexModel { connectionManager: root.connectionManager; id: m_libraryCollectionsModel }
+    PlexModel { connectionManager: root.connectionManager; id: m_libraryAllModel; objectName: "libraryAllModel" }
 
 
     property alias globalRecentModel: m_recentlyAddedModel
@@ -49,6 +50,7 @@ Item {
     property alias libraryRecentModel: m_libraryRecentlyAddedModel
     property alias libraryDeckModel: m_libraryContinueWatchingModel
     property alias libraryCollectionsModel: m_libraryCollectionsModel
+    property alias libraryAllModel: m_libraryAllModel
 
     property var searchResultsModel: ListModel {}
     property int currentSearchId: 0
@@ -246,6 +248,7 @@ Item {
         m_libraryRecentlyAddedModel.clear();
         m_libraryContinueWatchingModel.clear();
         m_libraryCollectionsModel.clear();
+        m_libraryAllModel.clear();
         
         // Universally fetch ALL items sorted by addedAt descending to ensure we get the full list
         // instead of relying on the potentially broken or limited /recentlyAdded endpoint per library.

@@ -205,8 +205,12 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         QJsonObject obj = value.toObject();
         Movie m;
         m.title = obj["title"].toString();
+        if (m.title.isEmpty()) m.title = obj["tag"].toString(); // Fallback for filters
+        
         m.ratingKey = obj["ratingKey"].toString();
         if (m.ratingKey.isEmpty()) m.ratingKey = obj["key"].toString();
+        if (m.ratingKey.isEmpty()) m.ratingKey = obj["fastKey"].toString(); // Fallback for filters
+        
         m.type = obj["type"].toString();
         
         m.viewOffset = obj["viewOffset"].toVariant().toLongLong();

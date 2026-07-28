@@ -34,9 +34,21 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         query = parse_qs(parsed_path.query)
+        filter_types = ["/genre", "/year", "/decade", "/contentRating", "/collection", "/director", "/actor", "/writer", "/producer", "/country", "/studio", "/resolution", "/videoCodec", "/audioCodec", "/subtitleCodec", "/audioLayout", "/audioLanguage", "/subtitleLanguage", "/editionTitle", "/label"]
         response_data = {}
         
-        if path == "/library/sections":
+        filter_types = ["/genre", "/year", "/decade", "/contentRating", "/collection", "/director", "/actor", "/writer", "/producer", "/country", "/studio", "/resolution", "/videoCodec", "/audioCodec", "/subtitleCodec", "/audioLayout", "/audioLanguage", "/subtitleLanguage", "/editionTitle", "/label"]
+        matched_filter = next((f for f in filter_types if f in path), None)
+        
+        if matched_filter:
+            ftype = matched_filter.strip('/')
+            if ftype == "genre":
+                response_data = {"MediaContainer": {"size": 2, "Directory": [{"fastKey": "action", "title": "Action"}, {"fastKey": "comedy", "title": "Comedy"}]}}
+            elif ftype == "year":
+                response_data = {"MediaContainer": {"size": 1, "Directory": [{"fastKey": "2024", "title": "2024"}]}}
+            else:
+                response_data = {"MediaContainer": {"size": 2, "Directory": [{"fastKey": "val1", "title": ftype.capitalize() + " 1"}, {"fastKey": "val2", "title": ftype.capitalize() + " 2"}]}}
+        elif path == "/library/sections":
             response_data = {
                 "MediaContainer": {
                     "size": 3,
@@ -48,7 +60,43 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 }
             }
         elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path:
-            if "/sections/4/" in self.path:
+            if query.get('unwatched', [''])[0] == '1':
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/100/file.mkv"}]}]}
+                        ]
+                    }
+                }
+            elif query.get('genre', [''])[0] == 'action':
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "movie", "title": "Mock Movie Action", "ratingKey": "901", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/901/file.mkv"}]}]}
+                        ]
+                    }
+                }
+            elif query.get('dovi', [''])[0] == '1':
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "movie", "title": "Mock Movie DOVI", "ratingKey": "900", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/900/file.mkv"}]}]}
+                        ]
+                    }
+                }
+            elif any(query.get(f.strip('/'), [''])[0] in ['val1', 'val2', '2024', 'action'] for f in filter_types):
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "movie", "title": "Mock Movie Dynamic Filtered", "ratingKey": "902", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/902/file.mkv"}]}]}
+                        ]
+                    }
+                }
+            elif "/sections/4/" in self.path:
                 response_data = {
                     "MediaContainer": {
                         "size": 4,
@@ -212,6 +260,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         else:
             response_data = {"MediaContainer": {"size": 0, "Metadata": []}}
             
+        print(f"Mock server returning {response_data.get('MediaContainer', {}).get('size', 0)} items for path {path}")
         json_bytes = json.dumps(response_data).encode('utf-8')
         
         self.send_response(200)

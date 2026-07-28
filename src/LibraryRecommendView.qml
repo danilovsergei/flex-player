@@ -25,6 +25,7 @@ Item {
     property Component movieDelegate
 
     ColumnLayout {
+        anchors.fill: parent
         spacing: 0
 
         // Top Bar
@@ -76,10 +77,28 @@ Item {
                     font.pixelSize: 18
                     font.bold: root.libraryTab === 1
                     renderType: Text.NativeRendering
+                    anchors.baseline: recommendedTab.baseline
                     
                     MouseArea {
                         anchors.fill: parent
                         onClicked: root.libraryTab = 1
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                }
+
+                Text {
+                    id: libraryTab
+                    objectName: "libraryTab"
+                    text: "Library"
+                    color: root.libraryTab === 2 ? root.plexOrange : "gray"
+                    font.pixelSize: 18
+                    font.bold: root.libraryTab === 2
+                    renderType: Text.NativeRendering
+                    anchors.baseline: recommendedTab.baseline
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: root.libraryTab = 2
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
@@ -93,6 +112,8 @@ Item {
 
             // 0: Recommended
             ScrollView {
+                id: recommendScrollView
+                objectName: "recommendScrollView"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 contentWidth: root.width
@@ -249,6 +270,12 @@ Item {
                         color: parent.active ? "#80ffffff" : "#40ffffff"
                     }
                 }
+            }
+            
+            // 2: Library
+            LibraryBrowserView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
             }
         }
     }
