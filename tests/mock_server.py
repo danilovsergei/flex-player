@@ -60,12 +60,12 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 }
             }
         elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path:
-            if query.get('unwatched', [''])[0] == '1':
+            if any(query.get(f, [''])[0] == '1' for f in ['unwatched', 'inProgress', 'hdr', 'dovi', 'atmos', 'unmatched', 'duplicate']):
                 response_data = {
                     "MediaContainer": {
                         "size": 1,
                         "Metadata": [
-                            {"type": "movie", "title": "Mock Movie Unwatched", "ratingKey": "100", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/100/file.mkv"}]}]}
+                            {"type": "movie", "title": "Mock Boolean Filtered", "ratingKey": "910", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/910/file.mkv"}]}]}
                         ]
                     }
                 }
@@ -78,12 +78,12 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         ]
                     }
                 }
-            elif query.get('dovi', [''])[0] == '1':
+            elif query.get('title', [''])[0] == 'Matrix' or query.get('year>>', [''])[0] == '2000':
                 response_data = {
                     "MediaContainer": {
                         "size": 1,
                         "Metadata": [
-                            {"type": "movie", "title": "Mock Movie DOVI", "ratingKey": "900", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/900/file.mkv"}]}]}
+                            {"type": "movie", "title": "Advanced Mock Result", "ratingKey": "905", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/905/file.mkv"}]}]}
                         ]
                     }
                 }

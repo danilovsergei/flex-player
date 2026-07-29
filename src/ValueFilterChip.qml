@@ -18,6 +18,7 @@ Rectangle {
     
     property bool active: selectedValue !== ""
     property color activeColor: "#E5A00D"
+    property int maxPopupWidth: 250
     
     signal valueSelected(string value)
     signal removeClicked()
@@ -101,7 +102,7 @@ Rectangle {
     Popup {
         id: filterPopup
         y: root.height + 5
-        width: 250
+        width: root.maxPopupWidth
         height: Math.min(420, contentLayout.implicitHeight + 20)
         padding: 0
         background: Rectangle {
@@ -117,12 +118,14 @@ Rectangle {
             spacing: 0
             
             ListView {
+                id: filterListView
                 objectName: "filterListView"
                 Layout.fillWidth: true
                 Layout.preferredHeight: contentHeight > 0 ? Math.min(contentHeight, 400) : 0
                 clip: true
                 model: filterOptionsModel
                 boundsBehavior: Flickable.StopAtBounds
+                cacheBuffer: 100000
                 ScrollBar.vertical: ScrollBar {
                     active: parent.hovered || parent.moving
                     policy: ScrollBar.AsNeeded
@@ -130,16 +133,28 @@ Rectangle {
                 
                 delegate: ItemDelegate {
                     objectName: "filterOption_" + index
-                    width: ListView.view.width
+                    width: implicitWidth
                     height: 40
+                    Component.onCompleted: {
+                        if (implicitWidth + 20 > root.maxPopupWidth) {
+                            root.maxPopupWidth = implicitWidth + 20
+                        }
+                    }
+                    onImplicitWidthChanged: {
+                        if (implicitWidth + 20 > root.maxPopupWidth) {
+                            root.maxPopupWidth = implicitWidth + 20
+                        }
+                    }
                     text: model.title !== undefined ? model.title : "" 
                     contentItem: Text {
                         text: parent.text
                         color: "white"
-                        elide: Text.ElideRight
                         verticalAlignment: Text.AlignVCenter
+                        rightPadding: 10
                     }
                     background: Rectangle {
+                        width: ListView.view ? ListView.view.width : 0
+                        height: 40
                         color: parent.hovered ? "#444" : "transparent"
                     }
                     onClicked: {

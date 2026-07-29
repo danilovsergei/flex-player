@@ -6,6 +6,8 @@ import flex.plex 1.0
 ColumnLayout {
     id: root
     objectName: "libraryBrowserView"
+
+
     
     property var appCtrl: typeof mainWindow !== "undefined" ? mainWindow.controller : (typeof rootApp !== "undefined" ? appCtrl : null)
     property var appSet: typeof mainWindow !== "undefined" ? mainWindow.appSettings : (typeof rootApp !== "undefined" ? appSet : null)
@@ -59,6 +61,15 @@ ColumnLayout {
     property bool subtitleLanguageFilterAdded: false
     property bool editionTitleFilterAdded: false
     property bool labelFilterAdded: false
+
+    ListModel {
+        id: advancedFiltersModel
+    }
+    
+    Item {
+        id: internalState
+        function doApply() { applyFilters() }
+    }
 
     Connections {
         target: appCtrl
@@ -174,7 +185,7 @@ ColumnLayout {
                     Popup {
                         id: addFilterPopup
                         y: addFilterBtn.height + 5
-                        width: 200
+                        width: Math.max(200, availableFiltersList.contentItem.childrenRect.width + 20)
                         height: Math.min(420, addFilterContentLayout.implicitHeight + 20)
                         padding: 0
                         background: Rectangle {
@@ -224,7 +235,7 @@ ColumnLayout {
                                     }
                                     
                                     delegate: ItemDelegate {
-                                        width: ListView.view.width
+                                        width: implicitWidth
                                         height: visible ? 40 : 0
                                         visible: !root[model.propKey + "FilterAdded"]
                                         text: model.name
@@ -232,10 +243,12 @@ ColumnLayout {
                                         contentItem: Text {
                                             text: parent.text
                                             color: "white"
-                                            elide: Text.ElideRight
                                             verticalAlignment: Text.AlignVCenter
+                                            rightPadding: 10
                                         }
                                         background: Rectangle {
+                                            width: ListView.view ? ListView.view.width : 0
+                                            height: visible ? 40 : 0
                                             color: parent.hovered ? "#444" : "transparent"
                                         }
                                         onClicked: {
@@ -247,6 +260,40 @@ ColumnLayout {
                         }
                     }
                 }
+                Rectangle {
+                    id: addAdvancedFilterBtn
+                    objectName: "addAdvancedFilterBtn"
+                    height: 32
+                    width: addAdvancedFilterRow.implicitWidth + 30
+                    radius: 16
+                    color: "transparent"
+                    border.color: "#555"
+                    border.width: 1
+                    
+                    RowLayout {
+                        id: addAdvancedFilterRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Text {
+                            text: "Advanced"
+                            color: "white"
+                            font.pixelSize: 14
+                            font.bold: true
+                        }
+                        Text {
+                            text: "➕"
+                            color: "white"
+                            font.pixelSize: 14
+                        }
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: advancedFiltersModel.append({fieldKey: "title", operatorModifier: "=", filterValue: ""})
+                    }
+                }
+                
             } // End fixedFilterRow
 
             Flow {
@@ -277,6 +324,36 @@ ColumnLayout {
                 ValueFilterChip { objectName: "labelFilterChip"; text: "Labels"; filterType: "label"; appCtrl: root.appCtrl; appSet: root.appSet; isAdded: root.labelFilterAdded; selectedValue: root.labelFilterValue; onValueSelected: function(val) { root.labelFilterValue = val; applyFilters() }; onRemoveClicked: { root.labelFilterAdded = false; root.labelFilterValue = ""; applyFilters() } }
 
             } // End valueFilterRow
+
+
+
+            Flow {
+                id: advancedFilterRow
+                width: parent.width
+                function requestApply() { root.applyFilters() }
+                spacing: 10
+                visible: advancedFiltersModel.count > 0
+
+                Repeater {
+                    id: advancedFilterRepeater
+                    model: advancedFiltersModel
+                    delegate: AdvancedFilterChip {
+                        appCtrl: root.appCtrl
+                        appSet: root.appSet
+                        initialField: model.fieldKey !== undefined ? model.fieldKey : "title"
+                        initialOp: model.operatorModifier !== undefined ? model.operatorModifier : "="
+                        initialVal: model.filterValue !== undefined ? model.filterValue : ""
+                        onFilterChanged: function(fField, fOp, fVal, fLabel) {
+                            parent.requestApply()
+                        }
+                        onRemoveClicked: {
+                            var p = parent
+                            advancedFiltersModel.remove(index)
+                            p.requestApply()
+                        }
+                    }
+                }
+            } // End advancedFilterRow
         } // End filterColumn
     }
 
@@ -359,6 +436,17 @@ ColumnLayout {
         if (root.subtitleLanguageFilterValue !== "") params.push("subtitleLanguage=" + encodeURIComponent(root.subtitleLanguageFilterValue))
         if (root.editionTitleFilterValue !== "") params.push("editionTitle=" + encodeURIComponent(root.editionTitleFilterValue))
         if (root.labelFilterValue !== "") params.push("label=" + encodeURIComponent(root.labelFilterValue))
+
+        for (var i = 0; i < advancedFilterRepeater.count; i++) {
+            var chip = advancedFilterRepeater.itemAt(i)
+            if (chip && (chip.currentVal !== "" || chip.isBoolean)) {
+                var valPart = chip.isBoolean ? "" : encodeURIComponent(chip.currentVal)
+                var p = encodeURIComponent(chip.currentField) + chip.currentOp + valPart
+                console.log("ADVANCED FILTER PUSHING: " + p)
+                params.push(p)
+            }
+        }
+        console.log("FULL PARAMS: " + params.join("&"))
 
         if (params.length > 0) {
             fullEndpoint += "?" + params.join("&")

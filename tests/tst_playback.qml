@@ -426,6 +426,7 @@ TestCase {
         
         tryVerify(function() { return list.count > 0; }, 10000, "Rail should fetch items");
         
+        tryVerify(function() { return list.itemAtIndex(0) !== null; }, 5000, "Delegate should instantiate");
         var poster = list.itemAtIndex(0);
         verify(poster !== null, "Poster should exist");
         
@@ -1311,6 +1312,7 @@ TestCase {
         
         tryVerify(function() { return list.count > 0; }, 10000, "Rail should fetch items");
         
+        tryVerify(function() { return list.itemAtIndex(0) !== null; }, 5000, "Delegate should instantiate");
         var poster = list.itemAtIndex(0);
         verify(poster !== null, "Poster should exist");
         
@@ -2589,5 +2591,192 @@ TestCase {
         }
         
         tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Grid should restore to all movies after all filters removed")
+    }
+
+    function test_81_advanced_filters() {
+        console.log("Setting app settings for advanced filters test...")
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1 // Library Recommend View
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libraryTabBtn = findChild(recommendView, "libraryTab")
+        mouseClick(libraryTabBtn, libraryTabBtn.width/2, libraryTabBtn.height/2)
+        wait(500)
+        
+        var browserView = findChild(recommendView, "libraryBrowserView")
+        var libraryBrowserModel = mainWindow.controller.libraryAllModel
+        
+        // Wait for grid to reset
+        tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Should load all movies initially")
+        
+        // Click Add Advanced Filter
+        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
+        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        wait(500)
+        
+        // Verify chip was added
+        var valInput = findChild(recommendView, "advValueInput")
+        verify(valInput !== null, "advValueInput should exist")
+        
+        var fieldSelector = findChild(recommendView, "advFieldSelector")
+        var opSelector = findChild(recommendView, "advOpSelector")
+        
+        // Test String Filter: Title contains Matrix
+        valInput.text = "Matrix"
+        wait(500)
+        tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down to exactly 1 movie for advanced Title filter")
+        
+        // Test Number Filter: Year is greater than 2000
+        valInput.text = ""
+        wait(500)
+        
+        // Click to open field selector
+        mouseClick(fieldSelector, fieldSelector.width/2, fieldSelector.height/2)
+        tryVerify(function() { return findChild(fieldSelector, "advFieldListView") !== null; }, 5000, "Wait for advFieldListView")
+        var fieldListView = findChild(fieldSelector, "advFieldListView")
+        fieldListView.positionViewAtEnd()
+        tryVerify(function() { return findChild(fieldListView, "advOption_year") !== null; }, 5000, "Wait for advOption_year")
+        var optYear = findChild(fieldListView, "advOption_year")
+        optYear.clicked()
+        wait(500)
+        
+        // Click to open value selector
+        var valSelector = findChild(recommendView, "advValueSelector")
+        verify(valSelector !== null, "advValueSelector should exist")
+        mouseClick(valSelector, valSelector.width/2, valSelector.height/2)
+        
+        tryVerify(function() { return findChild(valSelector, "advValueListView") !== null; }, 5000, "Wait for advValueListView")
+        var valListView = findChild(valSelector, "advValueListView")
+        
+        tryVerify(function() { return findChild(valListView, "advValueOption_0") !== null; }, 5000, "Wait for advValueOption_0 to load from mock API")
+        var valOption = findChild(valListView, "advValueOption_0")
+        valOption.clicked()
+        wait(500)
+        
+        tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down to exactly 1 movie for advanced Year filter")
+        
+        // Test Boolean Filter: Unwatched is true
+        // Click to open field selector
+        mouseClick(fieldSelector, fieldSelector.width/2, fieldSelector.height/2)
+        tryVerify(function() { return findChild(fieldSelector, "advFieldListView") !== null; }, 5000, "Wait for advFieldListView")
+        var fieldListView2 = findChild(fieldSelector, "advFieldListView")
+        fieldListView2.positionViewAtEnd()
+        tryVerify(function() { return findChild(fieldListView2, "advOption_unwatched") !== null; }, 5000, "Wait for advOption_unwatched")
+        var optUnwatched = findChild(fieldListView2, "advOption_unwatched")
+        optUnwatched.clicked()
+        wait(500)
+        
+        // Default operator is "is true" (=1), value field is hidden. Just verify the model changes.
+        // Wait, unwatched=1 in mock server usually returns size: 1 with "Mock Unwatched". Let's verify row count.
+        tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down for advanced boolean Unwatched filter")
+
+        // Remove filter
+        var removeBtn = findChild(recommendView, "advRemoveArea")
+        mouseClick(removeBtn, removeBtn.width/2, removeBtn.height/2)
+        wait(500)
+        
+        tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Grid should restore to all movies after advanced filter removed")
+    }
+
+    function test_82_advanced_filters_all_permutations() {
+        console.log("Setting app settings for advanced filters exhaustive test...")
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1 // Library Recommend View
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libraryTabBtn = findChild(recommendView, "libraryTab")
+        mouseClick(libraryTabBtn, libraryTabBtn.width/2, libraryTabBtn.height/2)
+        wait(500)
+        
+        var browserView = findChild(recommendView, "libraryBrowserView")
+        var libraryBrowserModel = mainWindow.controller.libraryAllModel
+        
+        // Wait for grid to reset
+        tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Should load all movies initially")
+        
+        var fields = [
+            "title", "genre", "contentRating", "collection", "director", "actor", "writer", 
+            "producer", "country", "studio", "resolution", "videoCodec", "audioCodec", 
+            "subtitleCodec", "audioLayout", "audioLanguage", "subtitleLanguage", 
+            "editionTitle", "label", "year", "decade", 
+            "unwatched", "inProgress", "hdr", "dovi", "atmos", "unmatched", "duplicate"
+        ];
+        
+        for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            console.log("Testing Advanced Filter Permutation: " + f);
+            
+            // Add chip
+            var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+            verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
+            mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+            wait(500)
+            
+            // Open field selector
+            var fieldSelector = findChild(recommendView, "advFieldSelector")
+            verify(fieldSelector !== null, "advFieldSelector should exist")
+            mouseClick(fieldSelector, fieldSelector.width/2, fieldSelector.height/2)
+            
+            tryVerify(function() { return findChild(fieldSelector, "advFieldListView") !== null; }, 5000, "Wait for advFieldListView")
+            var fieldListView = findChild(fieldSelector, "advFieldListView")
+            
+            var optName = "advOption_" + f;
+            tryVerify(function() { return findChild(fieldListView, optName) !== null; }, 5000, "Wait for " + optName)
+            var opt = findChild(fieldListView, optName)
+            opt.clicked()
+            wait(500)
+            
+            if (f === "title") {
+                var valInput = findChild(recommendView, "advValueInput")
+                verify(valInput !== null, "advValueInput should exist")
+                valInput.text = "Matrix"
+                wait(500)
+            } else if (f === "unwatched" || f === "inProgress" || f === "hdr" || f === "dovi" || f === "atmos" || f === "unmatched" || f === "duplicate") {
+                // boolean, no value needed. By default it is "=1" (is true).
+            } else {
+                // Dropdown field
+                var valSelector = findChild(recommendView, "advValueSelector")
+                verify(valSelector !== null, "advValueSelector should exist")
+                mouseClick(valSelector, valSelector.width/2, valSelector.height/2)
+                
+                tryVerify(function() { return findChild(valSelector, "advValueListView") !== null; }, 5000, "Wait for advValueListView")
+                var valListView = findChild(valSelector, "advValueListView")
+                
+                tryVerify(function() { return findChild(valListView, "advValueOption_0") !== null; }, 5000, "Wait for mock API dropdown items")
+                var valOption = findChild(valListView, "advValueOption_0")
+                valOption.clicked()
+                wait(500)
+            }
+            
+            tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down to exactly 1 movie for advanced filter: " + f)
+            
+            var removeBtn = findChild(recommendView, "advRemoveArea")
+            verify(removeBtn !== null, "advRemoveArea should exist")
+            mouseClick(removeBtn, removeBtn.width/2, removeBtn.height/2)
+            wait(500)
+            
+            tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Grid should restore to all movies after filter removed")
+        }
     }
 }
