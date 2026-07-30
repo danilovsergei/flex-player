@@ -122,6 +122,22 @@ Rectangle {
     PlexModel {
         id: filterOptionsModel
         connectionManager: appCtrl ? appCtrl.connectionManager : null
+        onModelReset: {
+            var maxVW = 60;
+            for (var i = 0; i < filterOptionsModel.rowCount(); i++) {
+                var item = filterOptionsModel.get(i);
+                if (item) {
+                    if (chipRoot.currentLabel === "" && chipRoot.currentVal !== "" && item.ratingKey === chipRoot.currentVal) {
+                        chipRoot.currentLabel = item.title;
+                    }
+                    calcMetrics.text = item.title + " ▾";
+                    if (calcMetrics.width > maxVW) {
+                        maxVW = calcMetrics.width;
+                    }
+                }
+            }
+            chipRoot.maxValueFieldWidth = maxVW + 20;
+        }
     }
 
     function isNumberField(f) {
@@ -154,6 +170,7 @@ Rectangle {
     property int maxFieldWidth: 100
     property int maxOpWidth: 130
     property int maxValuePopupWidth: 250
+    property int maxValueFieldWidth: 100
 
     TextMetrics {
         id: calcMetrics
@@ -177,9 +194,28 @@ Rectangle {
             if (calcMetrics.width > maxOW) maxOW = calcMetrics.width
         }
         maxOpWidth = maxOW + 20
+        
+        if (isDropdownField(chipRoot.currentField) && chipRoot.currentLabel === "" && chipRoot.currentVal !== "") {
+            if (appCtrl && appCtrl.currentLibraryId !== "") {
+                var endpoint = "/library/sections/" + appCtrl.currentLibraryId + "/" + chipRoot.currentField
+                var params = []
+                if (appCtrl.currentLibraryType === "show") {
+                    params.push("type=2")
+                } else {
+                    params.push("type=1")
+                }
+                if (params.length > 0) {
+                    endpoint += "?" + params.join("&")
+                }
+                var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : (appCtrl.connectionManager && appCtrl.connectionManager.activeUrl !== "" ? appCtrl.connectionManager.activeUrl : (appSet ? appSet.serverUrl : ""));
+                if (url !== "") {
+                    filterOptionsModel.fetchEndpoint(url, appSet.token, endpoint)
+                }
+            }
+        }
     }
 
-    RowLayout {
+    Row {
         id: rowLayout
         anchors.centerIn: parent
         spacing: 2
@@ -404,7 +440,7 @@ Rectangle {
             id: valueSelector
             objectName: "advValueSelector"
             visible: isDropdownField(chipRoot.currentField)
-            width: valTextRow.implicitWidth + 10
+            width: Math.max(valTextRow.implicitWidth + 10, chipRoot.maxValueFieldWidth)
             height: 30
 
             Row {

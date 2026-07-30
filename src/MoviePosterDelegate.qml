@@ -23,6 +23,7 @@ Item {
     signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
     signal openDetails(string ratingKey, string serverUrl)
     signal deleteCollectionRequested(string ratingKey, string serverUrl)
+    signal editSmartCollectionRequested(string ratingKey, string title, string content, string serverUrl)
 
     Rectangle {
         anchors.fill: parent
@@ -184,6 +185,35 @@ Item {
                 var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
                 var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
                 root.openDetails(mRatingKey, mServerUrl)
+            }
+        }
+        
+        MenuItem {
+            id: editFilterMenuItem
+            text: "Edit Filter"
+            objectName: "editFilterMenuItem"
+            visible: {
+                var mType = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.type) !== 'undefined' ? (typeof model !== "undefined" && model.type) : type
+                var mSmart = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.smart) !== 'undefined' ? (typeof model !== "undefined" && model.smart) : smart
+                return mType === "collection" && mSmart
+            }
+            contentItem: Text {
+                text: editFilterMenuItem.text
+                color: "#E5A00D"
+                font.pixelSize: 16
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: editFilterMenuItem.highlighted ? "#444444" : "transparent"
+                radius: 4
+            }
+            onTriggered: {
+                var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
+                var mTitle = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.title) !== 'undefined' ? (typeof model !== "undefined" && model.title) : title
+                var mContent = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.content) !== 'undefined' ? (typeof model !== "undefined" && model.content) : content
+                var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
+                console.warn('Firing editSmartCollectionRequested for ' + mRatingKey + ' with content ' + mContent);
+                root.editSmartCollectionRequested(mRatingKey, mTitle, mContent, mServerUrl)
             }
         }
         

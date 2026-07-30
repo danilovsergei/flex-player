@@ -7,7 +7,8 @@ from urllib.parse import urlparse, parse_qs
 
 
 COLLECTIONS = {
-    "300": {"title": "Mock Collection", "items": ["102"]}
+    "300": {"title": "Mock Collection", "items": ["102"], "smart": False, "content": ""},
+    "301": {"title": "Smart Mock Collection", "items": [], "smart": True, "content": "server://1234/com.plexapp.plugins.library/library/sections/1/all?genre=action&year=2024&or=1"}
 }
 NEXT_COLLECTION_ID = 301
 
@@ -25,6 +26,22 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed_path.path
         query = parse_qs(parsed_path.query)
 
+        if "/library/collections/" in path and not path.endswith("/children"):
+            cid = path.split("/")[-1]
+            uri = query.get('uri', [''])[0]
+            if cid in COLLECTIONS and uri:
+                COLLECTIONS[cid]["content"] = uri
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Connection', 'close')
+            json_bytes = b"{}"
+            self.send_header('Content-Length', str(len(json_bytes)))
+            self.end_headers()
+            self.wfile.write(json_bytes)
+            return
+            
         if path.startswith("/library/sections/") and path.endswith("/all"):
             col_add = query.get('collection', [''])[0]
             col_tag = query.get('collection[0].tag.tag', [''])[0]
@@ -238,7 +255,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
             response_data = {
                 "MediaContainer": {
                     "size": len(COLLECTIONS),
-                    "Metadata": [{"ratingKey": k, "title": v["title"], "type": "collection"} for k, v in COLLECTIONS.items()]
+                    "Metadata": [{"ratingKey": k, "title": v["title"], "type": "collection", "smart": v.get("smart", False), "content": v.get("content", "")} for k, v in COLLECTIONS.items()]
                 }
             }
         elif "/library/collections/" in path and path.endswith("/children"):

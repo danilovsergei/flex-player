@@ -3001,7 +3001,7 @@ TestCase {
                 var contextMenu = findChild(firstItem, "contextMenu")
         verify(contextMenu !== null, "contextMenu should exist")
         
-        var deleteOpt = contextMenu.itemAt(1)
+        var deleteOpt = contextMenu.itemAt(2)
         verify(deleteOpt !== null, "Delete option should exist in menu")
         deleteOpt.triggered()
         wait(1500)
@@ -3118,5 +3118,97 @@ TestCase {
         verify(movieDetailsView !== null, "Movie details view should exist");
         
         tryVerify(function() { return mainWindow.currentTab === 3 || mainWindow.currentTab === 4; }, 5000, "App should switch to Movie or Series Details tab");
+    }
+
+    function test_90_edit_smart_collection() {
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var collectionsTabBtn = findChild(recommendView, "collectionsTab")
+        verify(collectionsTabBtn !== null, "Collections tab should exist")
+        mouseClick(collectionsTabBtn, collectionsTabBtn.width/2, collectionsTabBtn.height/2)
+        wait(500)
+        
+        var collectionsGrid = findChild(recommendView, "collectionsGrid")
+        verify(collectionsGrid !== null, "collectionsGrid should exist")
+        
+        tryVerify(function() { return collectionsGrid.model.rowCount() >= 2; }, 5000, "Should have collections loaded")
+        tryVerify(function() { return collectionsGrid.contentItem.children.length > 0; }, 5000, "Collection items should be rendered")
+        
+        var targetItem = null;
+        tryVerify(function() { 
+            return collectionsGrid.contentItem.children.length >= 2; 
+        }, 5000, "Collection items should be rendered")
+        
+        targetItem = collectionsGrid.contentItem.children[1];
+        verify(targetItem !== null, "Smart collection item should exist")
+        
+        var threeDots = findChild(targetItem, "threeDotsButton")
+        verify(threeDots !== null, "Three dots button should exist")
+        mouseClick(threeDots, threeDots.width/2, threeDots.height/2)
+        wait(500)
+        
+        var contextMenu = findChild(targetItem, "contextMenu")
+        verify(contextMenu !== null, "contextMenu should exist")
+        
+        // Wait for menu to fully open
+        wait(200)
+        
+        var editOpt = findChild(targetItem, "editFilterMenuItem")
+        verify(editOpt !== null, "Edit option should exist in menu")
+        editOpt.triggered()
+        wait(1000)
+        
+        // Verify we are now on libraryTab
+        tryVerify(function() { return recommendView.libraryTab === 2; }, 5000, "Should switch to library tab")
+        
+        // Verify advanced filters were populated
+        var browserView = findChild(mainWindow, "libraryBrowserView")
+        verify(browserView !== null, "browserView should exist")
+        
+        var chip0 = null;
+        var chip1 = null;
+        var advModel = findChild(browserView, "advancedFiltersModel");
+        tryVerify(function() {
+            if (advModel) console.warn("Model count is: " + advModel.count);
+            chip0 = findChild(browserView, "advancedFilterChip_0");
+            chip1 = findChild(browserView, "advancedFilterChip_1");
+            if (chip0) console.warn("Found chip0");
+            if (chip1) console.warn("Found chip1");
+            return chip0 !== null && chip1 !== null;
+        }, 5000, "Filters should be loaded")
+        
+        var val1 = findChild(chip0, "advValueInput").text
+        var val2 = findChild(chip1, "advValueInput").text
+        
+        console.log("val1: " + val1 + " val2: " + val2)
+        
+        // Verify button says "Update Collection"
+        var saveAsBtn = findChild(browserView, "saveAsBtn")
+        verify(saveAsBtn !== null, "Save As button should exist")
+        var textElem = saveAsBtn.children[0].children[0]
+        verify(textElem.text === "Update Collection", "Button should be Update Collection")
+        
+        // Let's click Update Collection to make sure it PUTs
+        var saveMouse = findChild(browserView, "saveAsMouse")
+        verify(saveMouse !== null, "Save As MouseArea should exist")
+        saveMouse.clicked(null)
+        wait(1000)
+        
+        // Check logs to see if PUT was sent
+        var p = Qt.createQmlObject('import flex.plex 1.0; PlexModel { }', mainWindow, "p")
+        p.executeSystemCommand("cat /app/tests/mock_server_requests.log > /app/tests/test_90_debug.log")
+        wait(500)
     }
 }

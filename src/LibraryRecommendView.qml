@@ -9,7 +9,8 @@ Item {
     id: root
     objectName: "libraryView"
     
-    property int libraryTab: 0 // 0: Recommend, 1: Collections
+    property int libraryTab: 0
+    property alias browserView: libraryBrowserView // 0: Recommend, 1: Collections
     
     property string currentLibraryId: ""
     property string currentLibraryTitle: ""
@@ -274,6 +275,8 @@ Item {
             
             // 2: Library
             LibraryBrowserView {
+                id: libraryBrowserView
+                objectName: "libraryBrowserView"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }

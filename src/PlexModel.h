@@ -26,6 +26,7 @@ struct Movie {
     int leafCount = 0;
     int viewedLeafCount = 0;
     QString serverUrl;
+    QString content;
 };
 
 class PlexModel : public QAbstractListModel {
@@ -52,7 +53,8 @@ public:
         IsSmartRole,
         LeafCountRole,
         ViewedLeafCountRole,
-        ServerUrlRole
+        ServerUrlRole,
+        ContentRole
     };
 
     explicit PlexModel(QObject *parent = nullptr);
@@ -75,6 +77,7 @@ public:
     Q_INVOKABLE void deleteEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint);
     Q_INVOKABLE void addToCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &ids);
     Q_INVOKABLE void createSmartCollection(const QString &serverUrl, const QString &token, const QString &title, const QString &typeStr, const QString &sectionId, const QString &queryString);
+    Q_INVOKABLE void updateSmartCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &sectionId, const QString &queryString);
     Q_INVOKABLE void checkConnection(const QString &serverUrl, const QString &token, bool isTestMode = false);
     Q_INVOKABLE void loadMockData(const QStringList &mockPaths, const QString &type = "movie", qint64 mockViewOffset = 0, qint64 mockDuration = 0, bool mockIsWatched = false);
     Q_INVOKABLE void playVideo(const QString &mediaUrl);

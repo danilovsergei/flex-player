@@ -41,6 +41,10 @@ ColumnLayout {
     property string editionTitleFilterValue: ""
     property string labelFilterValue: ""
 
+    property string editingCollectionId: ""
+    property string editingCollectionTitle: ""
+
+
     property bool genreFilterAdded: false
     property bool yearFilterAdded: false
     property bool decadeFilterAdded: false
@@ -83,6 +87,8 @@ ColumnLayout {
     onVisibleChanged: {
         if (visible) {
             applyFilters()
+        } else {
+            cancelEditState();
         }
     }
 
@@ -460,11 +466,18 @@ ColumnLayout {
                         anchors.centerIn: parent
                         spacing: 8
                         Text {
-                            text: "Save As"
+                            text: root.editingCollectionId !== "" ? "Update Collection" : "Save As"
                             color: "white"
                             font.pixelSize: 16
                             font.bold: true
                             verticalAlignment: Text.AlignVCenter
+                        }
+                        Text {
+                            text: "▾"
+                            color: "white"
+                            font.pixelSize: 16
+                            verticalAlignment: Text.AlignVCenter
+                            visible: root.editingCollectionId === ""
                         }
                         Text {
                             text: "▾"
@@ -476,10 +489,23 @@ ColumnLayout {
                     
                     MouseArea {
                         id: saveAsMouse
+                        objectName: "saveAsMouse"
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: saveAsPopup.open()
+                        onClicked: {
+                            if (root.editingCollectionId !== "") {
+                                // Update collection directly
+                                var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : root.appCtrl.connectionManager.activeUrl;
+                                var q = buildQueryString();
+                                root.appCtrl.libraryAllModel.updateSmartCollection(url, appSet.token, root.editingCollectionId, root.appCtrl.currentLibraryId, q);
+                                // Exit editing mode
+                                root.editingCollectionId = "";
+                                root.editingCollectionTitle = "";
+                            } else {
+                                saveAsPopup.open()
+                            }
+                        }
                     }
                     
                     Popup {
@@ -541,6 +567,38 @@ ColumnLayout {
                         }
                     }
                 }
+                Rectangle {
+                    id: cancelEditBtn
+                    objectName: "cancelEditBtn"
+                    visible: root.editingCollectionId !== ""
+                    height: 40
+                    width: cancelEditRow.implicitWidth + 40
+                    radius: 8
+                    color: cancelEditMouse.containsMouse ? "#555" : "#444"
+                    
+                    RowLayout {
+                        id: cancelEditRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Text {
+                            text: "Cancel"
+                            color: "white"
+                            font.pixelSize: 16
+                            font.bold: true
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    
+                    MouseArea {
+                        id: cancelEditMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.cancelEditState();
+                        }
+                    }
+                }
             } // End advancedFilterRow
         } // End filterColumn
     }
@@ -583,6 +641,136 @@ ColumnLayout {
     }
 
     
+    function cancelEditState() {
+        if (editingCollectionId === "") return;
+        editingCollectionId = "";
+        editingCollectionTitle = "";
+        
+        advancedFiltersModel.clear();
+        unwatchedFilterActive = false;
+        hdrFilterActive = false;
+        doviFilterActive = false;
+        atmosFilterActive = false;
+        inProgressFilterActive = false;
+        unmatchedFilterActive = false;
+        duplicatesFilterActive = false;
+        
+        genreFilterValue = ""; genreFilterAdded = false;
+        yearFilterValue = ""; yearFilterAdded = false;
+        decadeFilterValue = ""; decadeFilterAdded = false;
+        contentRatingFilterValue = ""; contentRatingFilterAdded = false;
+        collectionFilterValue = ""; collectionFilterAdded = false;
+        directorFilterValue = ""; directorFilterAdded = false;
+        actorFilterValue = ""; actorFilterAdded = false;
+        writerFilterValue = ""; writerFilterAdded = false;
+        producerFilterValue = ""; producerFilterAdded = false;
+        countryFilterValue = ""; countryFilterAdded = false;
+        studioFilterValue = ""; studioFilterAdded = false;
+        resolutionFilterValue = ""; resolutionFilterAdded = false;
+        videoCodecFilterValue = ""; videoCodecFilterAdded = false;
+        audioCodecFilterValue = ""; audioCodecFilterAdded = false;
+        subtitleCodecFilterValue = ""; subtitleCodecFilterAdded = false;
+        audioLayoutFilterValue = ""; audioLayoutFilterAdded = false;
+        audioLanguageFilterValue = ""; audioLanguageFilterAdded = false;
+        subtitleLanguageFilterValue = ""; subtitleLanguageFilterAdded = false;
+        editionTitleFilterValue = ""; editionTitleFilterAdded = false;
+        labelFilterValue = ""; labelFilterAdded = false;
+        
+        advancedMatchAny = false;
+        applyFilters();
+    }
+
+    function loadSmartCollection(ratingKey, title, contentUri) {
+        editingCollectionId = ratingKey;
+        editingCollectionTitle = title;
+        
+        // Reset existing
+        advancedFiltersModel.clear();
+        unwatchedFilterActive = false;
+        hdrFilterActive = false;
+        doviFilterActive = false;
+        atmosFilterActive = false;
+        inProgressFilterActive = false;
+        unmatchedFilterActive = false;
+        duplicatesFilterActive = false;
+        
+        genreFilterValue = ""; genreFilterAdded = false;
+        yearFilterValue = ""; yearFilterAdded = false;
+        decadeFilterValue = ""; decadeFilterAdded = false;
+        contentRatingFilterValue = ""; contentRatingFilterAdded = false;
+        collectionFilterValue = ""; collectionFilterAdded = false;
+        directorFilterValue = ""; directorFilterAdded = false;
+        actorFilterValue = ""; actorFilterAdded = false;
+        writerFilterValue = ""; writerFilterAdded = false;
+        producerFilterValue = ""; producerFilterAdded = false;
+        countryFilterValue = ""; countryFilterAdded = false;
+        studioFilterValue = ""; studioFilterAdded = false;
+        resolutionFilterValue = ""; resolutionFilterAdded = false;
+        videoCodecFilterValue = ""; videoCodecFilterAdded = false;
+        audioCodecFilterValue = ""; audioCodecFilterAdded = false;
+        subtitleCodecFilterValue = ""; subtitleCodecFilterAdded = false;
+        audioLayoutFilterValue = ""; audioLayoutFilterAdded = false;
+        audioLanguageFilterValue = ""; audioLanguageFilterAdded = false;
+        subtitleLanguageFilterValue = ""; subtitleLanguageFilterAdded = false;
+        editionTitleFilterValue = ""; editionTitleFilterAdded = false;
+        labelFilterValue = ""; labelFilterAdded = false;
+        
+        advancedMatchAny = false;
+        
+        var queryStr = "";
+        var qMark = contentUri.indexOf("?");
+        if (qMark !== -1) {
+            queryStr = contentUri.substring(qMark + 1);
+        }
+        
+        if (queryStr !== "") {
+            var params = queryStr.split("&");
+            for (var i = 0; i < params.length; i++) {
+                var param = params[i];
+                var match = param.match(/^([^=!<>&]+)([=!<>&]+)(.*)$/);
+                if (match) {
+                    var k = decodeURIComponent(match[1]);
+                    var op = match[2];
+                    var v = decodeURIComponent(match[3]);
+                    console.warn("Parsed key: " + k + " op: " + op + " val: " + v);
+                    
+                    if (k === "or" && v === "1") advancedMatchAny = true;
+                    else if (k === "unwatched") advancedFiltersModel.append({"fieldKey": "unwatched", "operatorModifier": op + v, "label": "Unwatched", "filterValue": ""});
+                    else if (k === "hdr") advancedFiltersModel.append({"fieldKey": "hdr", "operatorModifier": op + v, "label": "HDR", "filterValue": ""});
+                    else if (k === "dovi") advancedFiltersModel.append({"fieldKey": "dovi", "operatorModifier": op + v, "label": "DOVI", "filterValue": ""});
+                    else if (k === "atmos") advancedFiltersModel.append({"fieldKey": "atmos", "operatorModifier": op + v, "label": "Atmos", "filterValue": ""});
+                    else if (k === "inProgress") advancedFiltersModel.append({"fieldKey": "inProgress", "operatorModifier": op + v, "label": "In Progress", "filterValue": ""});
+                    else if (k === "unmatched") advancedFiltersModel.append({"fieldKey": "unmatched", "operatorModifier": op + v, "label": "Unmatched", "filterValue": ""});
+                    else if (k === "duplicate") advancedFiltersModel.append({"fieldKey": "duplicate", "operatorModifier": op + v, "label": "Duplicates", "filterValue": ""});
+                    else if (k === "genre") advancedFiltersModel.append({"fieldKey": "genre", "operatorModifier": op, "label": "Genre", "filterValue": v}); 
+                    else if (k === "year") advancedFiltersModel.append({"fieldKey": "year", "operatorModifier": op, "label": "Year", "filterValue": v}); 
+                    else if (k === "decade") advancedFiltersModel.append({"fieldKey": "decade", "operatorModifier": op, "label": "Decade", "filterValue": v}); 
+                    else if (k === "contentRating") advancedFiltersModel.append({"fieldKey": "contentRating", "operatorModifier": op, "label": "Content Rating", "filterValue": v}); 
+                    else if (k === "collection") advancedFiltersModel.append({"fieldKey": "collection", "operatorModifier": op, "label": "Collection", "filterValue": v}); 
+                    else if (k === "director") advancedFiltersModel.append({"fieldKey": "director", "operatorModifier": op, "label": "Director", "filterValue": v}); 
+                    else if (k === "actor") advancedFiltersModel.append({"fieldKey": "actor", "operatorModifier": op, "label": "Actor", "filterValue": v}); 
+                    else if (k === "writer") advancedFiltersModel.append({"fieldKey": "writer", "operatorModifier": op, "label": "Writer", "filterValue": v}); 
+                    else if (k === "producer") advancedFiltersModel.append({"fieldKey": "producer", "operatorModifier": op, "label": "Producer", "filterValue": v}); 
+                    else if (k === "country") advancedFiltersModel.append({"fieldKey": "country", "operatorModifier": op, "label": "Country", "filterValue": v}); 
+                    else if (k === "studio") advancedFiltersModel.append({"fieldKey": "studio", "operatorModifier": op, "label": "Studio", "filterValue": v}); 
+                    else if (k === "resolution") advancedFiltersModel.append({"fieldKey": "resolution", "operatorModifier": op, "label": "Resolution", "filterValue": v}); 
+                    else if (k === "videoCodec") advancedFiltersModel.append({"fieldKey": "videoCodec", "operatorModifier": op, "label": "Video Codec", "filterValue": v}); 
+                    else if (k === "audioCodec") advancedFiltersModel.append({"fieldKey": "audioCodec", "operatorModifier": op, "label": "Audio Codec", "filterValue": v}); 
+                    else if (k === "subtitleCodec") advancedFiltersModel.append({"fieldKey": "subtitleCodec", "operatorModifier": op, "label": "Subtitle Codec", "filterValue": v}); 
+                    else if (k === "audioLayout") advancedFiltersModel.append({"fieldKey": "audioLayout", "operatorModifier": op, "label": "Audio Layout", "filterValue": v}); 
+                    else if (k === "audioLanguage") advancedFiltersModel.append({"fieldKey": "audioLanguage", "operatorModifier": op, "label": "Audio Language", "filterValue": v}); 
+                    else if (k === "subtitleLanguage") advancedFiltersModel.append({"fieldKey": "subtitleLanguage", "operatorModifier": op, "label": "Subtitle Language", "filterValue": v}); 
+                    else if (k === "editionTitle") advancedFiltersModel.append({"fieldKey": "editionTitle", "operatorModifier": op, "label": "Edition Title", "filterValue": v}); 
+                    else if (k === "label") advancedFiltersModel.append({"fieldKey": "label", "operatorModifier": op, "label": "Label", "filterValue": v}); 
+                }
+            }
+        }
+        
+        console.warn("advancedFiltersModel count is now: " + advancedFiltersModel.count);
+
+        applyFilters();
+    }
+
     function buildFilterParams() {
         var params = []
         if (root.advancedMatchAny) {

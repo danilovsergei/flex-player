@@ -85,6 +85,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == LeafCountRole) return QVariant::fromValue(movie.leafCount);
     else if (role == ViewedLeafCountRole) return QVariant::fromValue(movie.viewedLeafCount);
     else if (role == ServerUrlRole) return movie.serverUrl;
+    else if (role == ContentRole) return movie.content;
     return QVariant();
 }
 
@@ -107,6 +108,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[LeafCountRole] = "leafCount";
     roles[ViewedLeafCountRole] = "viewedLeafCount";
     roles[ServerUrlRole] = "serverUrl";
+    roles[ContentRole] = "content";
     return roles;
 }
 
@@ -398,6 +400,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         m.index = obj["index"].toInt();
         m.childCount = obj["childCount"].toInt();
         m.isSmart = obj["smart"].toString() == "1" || obj["smart"].toBool() == true;
+        m.content = obj["content"].toString();
         
         // Build absolute thumb URL if needed
         QString thumb = obj["thumb"].toString();
@@ -469,6 +472,56 @@ void PlexModel::loadMockData(const QStringList &mockPaths, const QString &type, 
     if (!m_movies.isEmpty()) emit moviesLoaded(m_movies.first().mediaUrl, m_movies.first().title);
 }
 
+
+void PlexModel::updateSmartCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &sectionId, const QString &queryString) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    
+    // Step 1: Need machineIdentifier from root
+    QUrl rootUrl(effectiveUrl + "/");
+    QNetworkRequest rootReq(rootUrl);
+    rootReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    rootReq.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *rootReply = m_networkManager->get(rootReq);
+    connect(rootReply, &QNetworkReply::sslErrors, rootReply, [rootReply](const QList<QSslError>&) { rootReply->ignoreSslErrors(); });
+    connect(rootReply, &QNetworkReply::finished, this, [this, rootReply, effectiveUrl, collectionId, sectionId, queryString]() {
+        if (rootReply->error() == QNetworkReply::NoError) {
+            QByteArray data = rootReply->readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            QJsonObject mc = doc.object()["MediaContainer"].toObject();
+            QString machineId = mc["machineIdentifier"].toString();
+            
+            if (!machineId.isEmpty()) {
+                // Step 2: PUT to update smart collection
+                QString contentUri = "server://" + machineId + "/com.plexapp.plugins.library/library/sections/" + sectionId + "/all?" + queryString;
+                QString encodedUri = QUrl::toPercentEncoding(contentUri, "");
+                
+                QUrl putUrl(effectiveUrl + "/library/collections/" + collectionId + "?uri=" + encodedUri);
+                QNetworkRequest putReq(putUrl);
+                putReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+                putReq.setRawHeader("Accept", "application/json");
+                
+                QNetworkReply *putReply = m_networkManager->put(putReq, QByteArray());
+                connect(putReply, &QNetworkReply::sslErrors, putReply, [putReply](const QList<QSslError>&) { putReply->ignoreSslErrors(); });
+                connect(putReply, &QNetworkReply::finished, this, [putReply]() {
+                    if (putReply->error() != QNetworkReply::NoError) {
+                        qDebug() << "[PlexModel] updateSmartCollection PUT failed:" << putReply->errorString();
+                    } else {
+                        qDebug() << "[PlexModel] updateSmartCollection PUT succeeded.";
+                    }
+                    putReply->deleteLater();
+                });
+            } else {
+                qDebug() << "[PlexModel] updateSmartCollection: Could not find machineIdentifier";
+            }
+        } else {
+            qDebug() << "[PlexModel] updateSmartCollection Root GET failed:" << rootReply->errorString();
+        }
+        rootReply->deleteLater();
+    });
+}
 void PlexModel::checkConnection(const QString &serverUrl, const QString &token, bool isTestMode) {
     if (isTestMode) {
         if (serverUrl == "http://test.url:32400" && token == "test_token") emit connectionChecked(true, "");

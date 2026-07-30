@@ -215,6 +215,25 @@ Window {
                 // Refresh the current view
                 refreshCollectionsTimer.start();
             }
+            onEditSmartCollectionRequested: function(ratingKey, title, contentUri, itemServerUrl) {
+                console.warn("Editing smart collection (caught): " + ratingKey);
+                mainWindow.currentTab = 1; // Switch to LibraryRecommendView/LibraryBrowserView
+                
+                // Using QML object tree navigation instead of findChild since findChild is not natively available in QML JS
+                var recommendView = rootLayout.children[1].children[1].children[1]; // libraryView (LibraryRecommendView)
+                
+                if (recommendView) {
+                    recommendView.libraryTab = 2; // 2 is LibraryBrowserView
+                    var browserView = recommendView.browserView;
+                    if (browserView && browserView.loadSmartCollection) {
+                        browserView.loadSmartCollection(ratingKey, title, contentUri);
+                    } else {
+                        console.error("Could not find loadSmartCollection on browserView property");
+                    }
+                } else {
+                    console.error("Could not find recommendView");
+                }
+            }
         }
 
     }
