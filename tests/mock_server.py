@@ -5,10 +5,86 @@ import sys
 import threading
 from urllib.parse import urlparse, parse_qs
 
+
+COLLECTIONS = {
+    "300": {"title": "Mock Collection", "items": ["102"]}
+}
+NEXT_COLLECTION_ID = 301
+
 class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
             logf.write(format % args + "\n")
+
+    def do_PUT(self):
+        global NEXT_COLLECTION_ID
+        with open("/app/tests/mock_server_requests.log", "a") as logf:
+            logf.write("PUT " + self.path + "\n")
+            
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        query = parse_qs(parsed_path.query)
+
+        if path.startswith("/library/sections/") and path.endswith("/all"):
+            col_add = query.get('collection', [''])[0]
+            col_tag = query.get('collection[0].tag.tag', [''])[0]
+            ids_str = query.get('id', [''])[0]
+            ids = ids_str.split(',') if ids_str else []
+
+            if col_tag:
+                found_id = None
+                for cid, c in COLLECTIONS.items():
+                    if c["title"] == col_tag:
+                        found_id = cid
+                        break
+                if not found_id:
+                    found_id = str(NEXT_COLLECTION_ID)
+                    COLLECTIONS[found_id] = {"title": col_tag, "items": []}
+                    NEXT_COLLECTION_ID += 1
+                
+                for item in ids:
+                    if item not in COLLECTIONS[found_id]["items"]:
+                        COLLECTIONS[found_id]["items"].append(item)
+            elif col_add:
+                found_id = col_add
+                if found_id in COLLECTIONS:
+                    for item in ids:
+                        if item not in COLLECTIONS[found_id]["items"]:
+                            COLLECTIONS[found_id]["items"].append(item)
+
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Connection', 'close')
+        json_bytes = b"{}"
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self.end_headers()
+        self.wfile.write(json_bytes)
+
+    def do_POST(self):
+        global NEXT_COLLECTION_ID
+        with open("/app/tests/mock_server_requests.log", "a") as logf:
+            logf.write("POST " + self.path + "\n")
+            
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        query = parse_qs(parsed_path.query)
+
+        if path.startswith("/library/collections"):
+            col_title = query.get('title', [''])[0]
+            if col_title:
+                found_id = str(NEXT_COLLECTION_ID)
+                COLLECTIONS[found_id] = {"title": col_title, "items": []}
+                NEXT_COLLECTION_ID += 1
+
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Connection', 'close')
+        json_bytes = b"{}"
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self.end_headers()
+        self.wfile.write(json_bytes)
 
     def do_GET(self):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
@@ -133,21 +209,25 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         elif path.endswith("/collections"):
             response_data = {
                 "MediaContainer": {
-                    "size": 1,
-                    "Metadata": [
-                        {"type": "collection", "title": "Mock Collection", "ratingKey": "300"}
-                    ]
+                    "size": len(COLLECTIONS),
+                    "Metadata": [{"ratingKey": k, "title": v["title"], "type": "collection"} for k, v in COLLECTIONS.items()]
                 }
             }
         elif "/library/collections/" in path and path.endswith("/children"):
-            response_data = {
-                "MediaContainer": {
-                    "size": 1,
-                    "Metadata": [
-                        {"type": "movie", "title": "Collection Movie", "ratingKey": "102", "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]}
-                    ]
+            cid = path.split("/")[3]
+            if cid in COLLECTIONS:
+                items = []
+                for item_id in COLLECTIONS[cid]["items"]:
+                    items.append({"type": "movie", "title": "Collection Movie " + item_id, "ratingKey": item_id, "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]})
+                response_data = {
+                    "MediaContainer": {
+                        "size": len(items),
+                        "Metadata": items
+                    }
                 }
-            }
+            else:
+                response_data = {"MediaContainer": {"size": 0, "Metadata": []}}
+
         elif "/library/metadata/" in path:
             ratingKey = path.split("/")[-1]
             if ratingKey == "999": # test_38_dropdown_dynamic_width

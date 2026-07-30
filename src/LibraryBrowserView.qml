@@ -293,7 +293,6 @@ ColumnLayout {
                         onClicked: advancedFiltersModel.append({fieldKey: "title", operatorModifier: "=", filterValue: ""})
                     }
                 }
-                
             } // End fixedFilterRow
 
             Flow {
@@ -330,7 +329,19 @@ ColumnLayout {
             Flow {
                 id: advancedFilterRow
                 width: parent.width
-                function requestApply() { root.applyFilters() }
+                property bool hasValidAdvancedFilter: false
+                function requestApply() { 
+                    var valid = false;
+                    for (var i = 0; i < advancedFilterRepeater.count; i++) {
+                        var chip = advancedFilterRepeater.itemAt(i)
+                        if (chip && (chip.currentVal !== "" || chip.isBoolean)) {
+                            valid = true;
+                            break;
+                        }
+                    }
+                    hasValidAdvancedFilter = valid;
+                    root.applyFilters() 
+                }
                 spacing: 10
                 visible: advancedFiltersModel.count > 0
 
@@ -350,6 +361,99 @@ ColumnLayout {
                             var p = parent
                             advancedFiltersModel.remove(index)
                             p.requestApply()
+                        }
+                    }
+                }
+                Rectangle {
+                    id: saveAsBtn
+                    objectName: "saveAsBtn"
+                    visible: advancedFilterRow.hasValidAdvancedFilter
+                    height: 32
+                    width: saveAsRow.implicitWidth + 30
+                    radius: 16
+                    color: "transparent"
+                    border.color: "#555"
+                    border.width: 1
+                    
+                    RowLayout {
+                        id: saveAsRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Text {
+                            text: "Save As"
+                            color: "white"
+                            font.pixelSize: 14
+                            font.bold: true
+                        }
+                        Text {
+                            text: "▾"
+                            color: "white"
+                            font.pixelSize: 14
+                        }
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: saveAsPopup.open()
+                    }
+                    
+                    Popup {
+                        id: saveAsPopup
+                        y: saveAsBtn.height + 5
+                        width: 200
+                        height: 80
+                        padding: 0
+                        background: Rectangle {
+                            color: "#222"
+                            border.color: "#555"
+                            radius: 8
+                        }
+                        
+                        Column {
+                            anchors.fill: parent
+                            
+                        ItemDelegate {
+                            objectName: "saveAsOpt_addToCollection"
+                            width: parent.width
+                            height: 40
+                            text: "Add to Collection"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "white"
+                                verticalAlignment: Text.AlignVCenter
+                                leftPadding: 10
+                            }
+                            background: Rectangle {
+                                color: parent.hovered ? "#444" : "transparent"
+                                radius: 8
+                            }
+                            onClicked: {
+                                saveAsPopup.close()
+                                addToCollectionDialog.open()
+                            }
+                        }
+                        
+                        ItemDelegate {
+                            objectName: "saveAsOpt_saveSmartCollection"
+                            width: parent.width
+                            height: 40
+                            text: "Save as Smart Collection"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "white"
+                                verticalAlignment: Text.AlignVCenter
+                                leftPadding: 10
+                            }
+                            background: Rectangle {
+                                color: parent.hovered ? "#444" : "transparent"
+                                radius: 8
+                            }
+                            onClicked: {
+                                saveAsPopup.close()
+                                saveSmartCollectionDialog.open()
+                            }
+                        }
                         }
                     }
                 }
@@ -394,19 +498,12 @@ ColumnLayout {
         }
     }
 
-    function applyFilters() {
-        if (!appCtrl || !appCtrl.libraryAllModel) return;
-
-        var fullEndpoint = "/library/sections/" + appCtrl.currentLibraryId + "/all"
+    
+    function buildFilterParams() {
         var params = []
         
-        if (appCtrl.currentLibraryType === "show") {
-            params.push("type=2")
-        } else {
-            params.push("type=1")
-        }
-        
-        params.push("sort=addedAt:desc")
+        var typeStr = root.appCtrl.currentLibraryType === "show" ? "2" : "1"
+        params.push("type=" + typeStr)
         
         if (root.unwatchedFilterActive) params.push("unwatched=1")
         if (root.hdrFilterActive) params.push("hdr=1")
@@ -442,10 +539,267 @@ ColumnLayout {
             if (chip && (chip.currentVal !== "" || chip.isBoolean)) {
                 var valPart = chip.isBoolean ? "" : encodeURIComponent(chip.currentVal)
                 var p = encodeURIComponent(chip.currentField) + chip.currentOp + valPart
-                console.log("ADVANCED FILTER PUSHING: " + p)
                 params.push(p)
             }
         }
+        return params;
+    }
+
+    function getFilteredIds() {
+        var ids = [];
+        for (var i = 0; i < root.appCtrl.libraryAllModel.rowCount(); i++) {
+            ids.push(root.appCtrl.libraryAllModel.get(i).ratingKey);
+        }
+        return ids.join(",");
+    }
+
+    PlexModel {
+        id: collectionsBaseModel
+        connectionManager: root.appCtrl ? root.appCtrl.connectionManager : null
+    }
+
+    Popup {
+        id: addToCollectionDialog
+        anchors.centerIn: parent
+        width: 400
+        height: 500
+        modal: true
+        focus: true
+        padding: 0
+        background: Rectangle {
+            color: "#111"
+            border.color: "#444"
+            radius: 8
+        }
+        
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 15
+            
+            Text {
+                text: "Add to Collection"
+                color: "white"
+                font.pixelSize: 18
+                font.bold: true
+            }
+            
+            Rectangle {
+                Layout.fillWidth: true
+                height: 40
+                color: "#222"
+                radius: 4
+                border.color: "#444"
+                
+                TextInput {
+                    id: collectionSearchInput
+                    objectName: "collectionSearchInput"
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    color: "white"
+                    verticalAlignment: TextInput.AlignVCenter
+                    font.pixelSize: 14
+                    clip: true
+                    
+                    Text {
+                        text: "Search or create new..."
+                        color: "#888"
+                        font.pixelSize: 14
+                        visible: parent.text === ""
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+            
+            ListView {
+                id: addToCollectionListView
+                objectName: "addToCollectionListView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: collectionsBaseModel
+                
+                delegate: ItemDelegate {
+                    objectName: "colOption_" + model.ratingKey
+                    property bool match: !model.smart && (collectionSearchInput.text === "" || (model.title !== undefined && model.title.toLowerCase().indexOf(collectionSearchInput.text.toLowerCase()) !== -1))
+                    width: ListView.view.width
+                    height: match ? 50 : 0
+                    visible: match
+                    text: model.title !== undefined ? model.title : ""
+                    
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        font.pixelSize: 14
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: 10
+                    }
+                    background: Rectangle {
+                        color: parent.hovered ? "#333" : "transparent"
+                        radius: 4
+                    }
+                    onClicked: {
+                        var ids = getFilteredIds();
+                        var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                        root.appCtrl.libraryAllModel.addToCollection(url, root.appSet.token, model.ratingKey, ids)
+                        addToCollectionDialog.close()
+                        reloadTimer.start()
+                    }
+                }
+            }
+            
+            Rectangle {
+                id: createCollectionBtn
+                objectName: "createCollectionBtn"
+                Layout.fillWidth: true
+                height: 40
+                radius: 4
+                color: createColMouse.containsMouse ? "#E5A00D" : "#444"
+                visible: collectionSearchInput.text !== ""
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "Create Collection: " + collectionSearchInput.text
+                    color: "white"
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+                
+                MouseArea {
+                    id: createColMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        var ids = getFilteredIds();
+                        var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                        root.appCtrl.libraryAllModel.putEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/all?type=" + (root.appCtrl.currentLibraryType === "show" ? "2" : "1") + "&id=" + ids + "&collection[0].tag.tag=" + encodeURIComponent(collectionSearchInput.text))
+                        addToCollectionDialog.close()
+                        reloadTimer.start()
+                    }
+                }
+            }
+        }
+        
+        Timer {
+            id: reloadTimer
+            interval: 1500
+            onTriggered: {
+                var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                root.appCtrl.libraryCollectionsModel.fetchEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+            }
+        }
+        
+        onOpened: {
+            collectionSearchInput.text = "";
+            var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+            collectionsBaseModel.fetchEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+        }
+    }
+
+    Popup {
+        id: saveSmartCollectionDialog
+        anchors.centerIn: parent
+        width: 400
+        height: 200
+        modal: true
+        focus: true
+        padding: 0
+        background: Rectangle {
+            color: "#111"
+            border.color: "#444"
+            radius: 8
+        }
+        
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 15
+            
+            Text {
+                text: "Save as Smart Collection"
+                color: "white"
+                font.pixelSize: 18
+                font.bold: true
+            }
+            
+            Rectangle {
+                Layout.fillWidth: true
+                height: 40
+                color: "#222"
+                radius: 4
+                border.color: "#444"
+                
+                TextInput {
+                    id: smartCollectionNameInput
+                    objectName: "smartCollectionNameInput"
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    color: "white"
+                    verticalAlignment: TextInput.AlignVCenter
+                    font.pixelSize: 14
+                    clip: true
+                    
+                    Text {
+                        text: "Smart Collection Name..."
+                        color: "#888"
+                        font.pixelSize: 14
+                        visible: parent.text === ""
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+            
+            Rectangle {
+                id: saveSmartBtn
+                objectName: "saveSmartBtn"
+                Layout.fillWidth: true
+                height: 40
+                radius: 4
+                color: saveSmartMouse.containsMouse ? "#E5A00D" : "#444"
+                visible: smartCollectionNameInput.text !== ""
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "Save"
+                    color: "white"
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+                
+                MouseArea {
+                    id: saveSmartMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                        
+                        var params = root.buildFilterParams();
+                        params.push("sort=addedAt:desc"); // Match standard smart collection sorting
+                        var typeStr = root.appCtrl.currentLibraryType === "show" ? "2" : "1";
+                        var queryString = params.join("&");
+                        
+                        root.appCtrl.libraryAllModel.createSmartCollection(url, root.appSet.token, smartCollectionNameInput.text, typeStr, root.appCtrl.currentLibraryId, queryString)
+                        saveSmartCollectionDialog.close()
+                        reloadTimer.start()
+                    }
+                }
+            }
+        }
+        
+        onOpened: {
+            smartCollectionNameInput.text = "";
+        }
+    }
+
+    function applyFilters() {
+        if (!appCtrl || !appCtrl.libraryAllModel) return;
+
+        var fullEndpoint = "/library/sections/" + appCtrl.currentLibraryId + "/all"
+        var params = root.buildFilterParams()
+        params.push("sort=addedAt:desc")
+        
         console.log("FULL PARAMS: " + params.join("&"))
 
         if (params.length > 0) {

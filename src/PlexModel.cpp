@@ -81,6 +81,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == ParentIndexRole) return QVariant::fromValue(movie.parentIndex);
     else if (role == IndexRole) return QVariant::fromValue(movie.index);
     else if (role == ChildCountRole) return QVariant::fromValue(movie.childCount);
+    else if (role == IsSmartRole) return QVariant::fromValue(movie.isSmart);
     else if (role == LeafCountRole) return QVariant::fromValue(movie.leafCount);
     else if (role == ViewedLeafCountRole) return QVariant::fromValue(movie.viewedLeafCount);
     else if (role == ServerUrlRole) return movie.serverUrl;
@@ -102,6 +103,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[ParentIndexRole] = "parentIndex";
     roles[IndexRole] = "index";
     roles[ChildCountRole] = "childCount";
+    roles[IsSmartRole] = "smart";
     roles[LeafCountRole] = "leafCount";
     roles[ViewedLeafCountRole] = "viewedLeafCount";
     roles[ServerUrlRole] = "serverUrl";
@@ -121,6 +123,151 @@ void PlexModel::fetchEndpoint(const QString &serverUrl, const QString &token, co
     connect(reply, &QNetworkReply::finished, this, [this, reply]() { onReplyFinished(reply); });
 }
 
+
+void PlexModel::putEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    QUrl url(effectiveUrl + endpoint);
+    QNetworkRequest request(url);
+    request.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    request.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *reply = m_networkManager->put(request, QByteArray());
+    connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) { reply->ignoreSslErrors(); });
+    connect(reply, &QNetworkReply::finished, this, [reply]() { 
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "[PlexModel] PUT Request failed:" << reply->errorString();
+        } else {
+            qDebug() << "[PlexModel] PUT Request succeeded.";
+        }
+        reply->deleteLater(); 
+    });
+}
+
+void PlexModel::postEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    QUrl url(effectiveUrl + endpoint);
+    QNetworkRequest request(url);
+    request.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    request.setRawHeader("Accept", "application/json");
+    request.setRawHeader("Content-Type", "application/x-www-form-urlencoded");
+    
+    QNetworkReply *reply = m_networkManager->post(request, QByteArray());
+    connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) { reply->ignoreSslErrors(); });
+    connect(reply, &QNetworkReply::finished, this, [reply]() { 
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "[PlexModel] POST Request failed:" << reply->errorString();
+        } else {
+            qDebug() << "[PlexModel] POST Request succeeded.";
+        }
+        reply->deleteLater(); 
+    });
+}
+
+void PlexModel::addToCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &ids) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    
+    // Step 1: Fetch machineIdentifier from root
+    QUrl rootUrl(effectiveUrl + "/");
+    QNetworkRequest rootReq(rootUrl);
+    rootReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    rootReq.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *rootReply = m_networkManager->get(rootReq);
+    connect(rootReply, &QNetworkReply::sslErrors, rootReply, [rootReply](const QList<QSslError>&) { rootReply->ignoreSslErrors(); });
+    connect(rootReply, &QNetworkReply::finished, this, [this, rootReply, effectiveUrl, collectionId, ids]() {
+        if (rootReply->error() == QNetworkReply::NoError) {
+            QByteArray data = rootReply->readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            QJsonObject mc = doc.object()["MediaContainer"].toObject();
+            QString machineId = mc["machineIdentifier"].toString();
+            
+            if (!machineId.isEmpty()) {
+                // Step 2: PUT to add items
+                QString uriStr = "server://" + machineId + "/com.plexapp.plugins.library/library/metadata/" + ids;
+                QString encodedUri = QUrl::toPercentEncoding(uriStr, "");
+                
+                QUrl putUrl(effectiveUrl + "/library/collections/" + collectionId + "/items?uri=" + encodedUri);
+                QNetworkRequest putReq(putUrl);
+                putReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+                putReq.setRawHeader("Accept", "application/json");
+                
+                QNetworkReply *putReply = m_networkManager->put(putReq, QByteArray());
+                connect(putReply, &QNetworkReply::sslErrors, putReply, [putReply](const QList<QSslError>&) { putReply->ignoreSslErrors(); });
+                connect(putReply, &QNetworkReply::finished, this, [putReply]() {
+                    if (putReply->error() != QNetworkReply::NoError) {
+                        qDebug() << "[PlexModel] AddToCollection PUT failed:" << putReply->errorString();
+                    } else {
+                        qDebug() << "[PlexModel] AddToCollection PUT succeeded.";
+                    }
+                    putReply->deleteLater();
+                });
+            } else {
+                qDebug() << "[PlexModel] AddToCollection: Could not find machineIdentifier";
+            }
+        } else {
+            qDebug() << "[PlexModel] AddToCollection Root GET failed:" << rootReply->errorString();
+        }
+        rootReply->deleteLater();
+    });
+}
+
+void PlexModel::createSmartCollection(const QString &serverUrl, const QString &token, const QString &title, const QString &typeStr, const QString &sectionId, const QString &queryString) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    
+    // Step 1: Fetch machineIdentifier from root
+    QUrl rootUrl(effectiveUrl + "/");
+    QNetworkRequest rootReq(rootUrl);
+    rootReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    rootReq.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *rootReply = m_networkManager->get(rootReq);
+    connect(rootReply, &QNetworkReply::sslErrors, rootReply, [rootReply](const QList<QSslError>&) { rootReply->ignoreSslErrors(); });
+    connect(rootReply, &QNetworkReply::finished, this, [this, rootReply, effectiveUrl, title, typeStr, sectionId, queryString]() {
+        if (rootReply->error() == QNetworkReply::NoError) {
+            QByteArray data = rootReply->readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            QJsonObject mc = doc.object()["MediaContainer"].toObject();
+            QString machineId = mc["machineIdentifier"].toString();
+            
+            if (!machineId.isEmpty()) {
+                // Step 2: POST to create smart collection
+                QString contentUri = "server://" + machineId + "/com.plexapp.plugins.library/library/sections/" + sectionId + "/all?" + queryString;
+                QString encodedUri = QUrl::toPercentEncoding(contentUri, "");
+                QString encodedTitle = QUrl::toPercentEncoding(title, "");
+                
+                QUrl postUrl(effectiveUrl + "/library/collections?type=" + typeStr + "&title=" + encodedTitle + "&smart=1&sectionId=" + sectionId + "&uri=" + encodedUri);
+                QNetworkRequest postReq(postUrl);
+                postReq.setRawHeader("X-Plex-Token", m_token.toUtf8());
+                postReq.setRawHeader("Accept", "application/json");
+                postReq.setRawHeader("Content-Type", "application/x-www-form-urlencoded");
+                
+                QNetworkReply *postReply = m_networkManager->post(postReq, QByteArray());
+                connect(postReply, &QNetworkReply::sslErrors, postReply, [postReply](const QList<QSslError>&) { postReply->ignoreSslErrors(); });
+                connect(postReply, &QNetworkReply::finished, this, [postReply]() {
+                    if (postReply->error() != QNetworkReply::NoError) {
+                        qDebug() << "[PlexModel] createSmartCollection POST failed:" << postReply->errorString();
+                    } else {
+                        qDebug() << "[PlexModel] createSmartCollection POST succeeded.";
+                    }
+                    postReply->deleteLater();
+                });
+            } else {
+                qDebug() << "[PlexModel] createSmartCollection: Could not find machineIdentifier";
+            }
+        } else {
+            qDebug() << "[PlexModel] createSmartCollection Root GET failed:" << rootReply->errorString();
+        }
+        rootReply->deleteLater();
+    });
+}
 void PlexModel::playVideo(const QString &mediaUrl) {
     if (mediaUrl.isEmpty()) return;
     QStringList args;
@@ -231,6 +378,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         m.parentIndex = obj["parentIndex"].toInt();
         m.index = obj["index"].toInt();
         m.childCount = obj["childCount"].toInt();
+        m.isSmart = obj["smart"].toString() == "1" || obj["smart"].toBool() == true;
         
         // Build absolute thumb URL if needed
         QString thumb = obj["thumb"].toString();

@@ -2779,4 +2779,180 @@ TestCase {
             tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Grid should restore to all movies after filter removed")
         }
     }
+
+    function setup_save_as_test() {
+        console.log("Setting app settings for Save As test...")
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1 // Library Recommend View
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libraryTabBtn = findChild(recommendView, "libraryTab")
+        mouseClick(libraryTabBtn, libraryTabBtn.width/2, libraryTabBtn.height/2)
+        wait(500)
+        
+        return findChild(recommendView, "libraryBrowserView")
+    }
+
+    function test_83_save_as_collection_add_existing() {
+        var browserView = setup_save_as_test()
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libraryBrowserModel = mainWindow.controller.libraryAllModel
+        
+        tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Should load all movies initially")
+        
+        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
+        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        wait(500)
+        
+        var valInput = findChild(recommendView, "advValueInput")
+        verify(valInput !== null, "advValueInput should exist")
+        valInput.text = "Matrix"
+        wait(500)
+        tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down to exactly 1 movie")
+        
+        var saveAsBtn = findChild(recommendView, "saveAsBtn")
+        verify(saveAsBtn !== null, "saveAsBtn should exist")
+        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        wait(500)
+        
+        var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
+        verify(addToColOpt !== null, "Add to Collection option should exist")
+        addToColOpt.clicked()
+        wait(500)
+        
+        var colListView = findChild(mainWindow, "addToCollectionListView")
+        // Check model rowCount directly
+        var cBaseModel = colListView.model;
+        tryVerify(function() { return cBaseModel.rowCount() > 0; }, 5000, "Collection model should be loaded")
+        console.log("Model rowCount: " + cBaseModel.rowCount())
+        console.log("First item ratingKey: " + cBaseModel.get(0).ratingKey)
+        console.log("First item title: " + cBaseModel.get(0).title)
+        
+        tryVerify(function() { return findChild(colListView, "colOption_" + cBaseModel.get(0).ratingKey) !== null; }, 5000, "Collection should be loaded in view")
+        var colOpt = findChild(colListView, "colOption_" + cBaseModel.get(0).ratingKey)
+        colOpt.clicked()
+        wait(500)
+        
+        var mockCheckModel = Qt.createQmlObject('import flex.plex 1.0; PlexModel { connectionManager: mainWindow.controller.connectionManager }', mainWindow, "mockCheck")
+        mockCheckModel.fetchEndpoint("https://127.0.0.1:32400", "test_token", "/library/collections/300/children")
+        tryVerify(function() { return mockCheckModel.rowCount() > 1; }, 5000, "Collection should now have added items")
+    }
+
+    function test_84_save_as_collection_search() {
+        var browserView = setup_save_as_test()
+        var recommendView = findChild(mainWindow, "libraryView")
+        
+        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        wait(500)
+        var valInput = findChild(recommendView, "advValueInput")
+        valInput.text = "Matrix"
+        wait(500)
+        
+        var saveAsBtn = findChild(recommendView, "saveAsBtn")
+        verify(saveAsBtn !== null, "saveAsBtn should exist")
+        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        wait(500)
+        
+        var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
+        addToColOpt.clicked()
+        wait(500)
+        
+        var searchInput = findChild(mainWindow, "collectionSearchInput")
+        verify(searchInput !== null, "collectionSearchInput should exist")
+        searchInput.text = "Mock Col"
+        wait(500)
+        
+        var colListView = findChild(mainWindow, "addToCollectionListView")
+        var cBaseModel = colListView.model;
+        tryVerify(function() { return cBaseModel.rowCount() > 0; }, 5000, "Search filtered collection model")
+        wait(1000)
+        var colOpt = findChild(colListView, "colOption_" + cBaseModel.get(0).ratingKey)
+        if (colOpt !== null) {
+            colOpt.clicked()
+        } else {
+            // Click manually because object instantiation might be suppressed by QML optimizing visible items
+            mouseClick(colListView, colListView.width/2, 25)
+        }
+        wait(500)
+    }
+
+    function test_85_save_as_collection_create_new() {
+        var browserView = setup_save_as_test()
+        var recommendView = findChild(mainWindow, "libraryView")
+        
+        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        wait(500)
+        var valInput = findChild(recommendView, "advValueInput")
+        valInput.text = "Matrix"
+        wait(500)
+        
+        var saveAsBtn = findChild(recommendView, "saveAsBtn")
+        verify(saveAsBtn !== null, "saveAsBtn should exist")
+        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        wait(500)
+        
+        var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
+        addToColOpt.clicked()
+        wait(500)
+        
+        var searchInput = findChild(mainWindow, "collectionSearchInput")
+        verify(searchInput !== null, "collectionSearchInput should exist")
+        searchInput.text = "Brand New Collection"
+        wait(500)
+        
+        var createBtn = findChild(mainWindow, "createCollectionBtn")
+        verify(createBtn !== null, "createCollectionBtn should exist")
+        mouseClick(createBtn, createBtn.width/2, createBtn.height/2)
+        wait(500)
+        
+        var mockCheckModel = Qt.createQmlObject('import flex.plex 1.0; PlexModel { connectionManager: mainWindow.controller.connectionManager }', mainWindow, "mockCheck")
+        mockCheckModel.fetchEndpoint("https://127.0.0.1:32400", "test_token", "/library/collections/301/children")
+        tryVerify(function() { return mockCheckModel.rowCount() > 0; }, 5000, "Newly created collection should have items")
+    }
+
+    function test_86_save_as_smart_collection() {
+        var browserView = setup_save_as_test()
+        var recommendView = findChild(mainWindow, "libraryView")
+        
+        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        wait(500)
+        var valInput = findChild(recommendView, "advValueInput")
+        valInput.text = "Matrix"
+        wait(500)
+        
+        var saveAsBtn = findChild(recommendView, "saveAsBtn")
+        verify(saveAsBtn !== null, "saveAsBtn should exist")
+        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        wait(500)
+        
+        var smartColOpt = findChild(mainWindow, "saveAsOpt_saveSmartCollection")
+        verify(smartColOpt !== null, "Save as Smart Collection option should exist")
+        smartColOpt.clicked()
+        wait(500)
+        
+        var smartInput = findChild(mainWindow, "smartCollectionNameInput")
+        verify(smartInput !== null, "smartCollectionNameInput should exist")
+        smartInput.text = "My Smart Matrix Collection"
+        wait(500)
+        
+        var saveSmartBtn = findChild(mainWindow, "saveSmartBtn")
+        verify(saveSmartBtn !== null, "saveSmartBtn should exist")
+        mouseClick(saveSmartBtn, saveSmartBtn.width/2, saveSmartBtn.height/2)
+        wait(500)
+    }
+
 }

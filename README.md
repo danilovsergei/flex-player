@@ -63,6 +63,8 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 - **Movies library:**
   - Recently Added movies
   - Collections tab support
+  - Filters and Advanced Filters
+  - Saving filtered Movies as Collection and Smart collection
 - **Movie Posters:**
   - Watched progress bars
   - Watched status checkmarks
