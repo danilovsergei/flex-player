@@ -181,7 +181,17 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         ]
                     }
                 }
-            elif any(query.get(f.strip('/'), [''])[0] in ['val1', 'val2', '2024', 'action'] for f in filter_types):
+            elif query.get('or', [''])[0] == '1':
+                response_data = {
+                    "MediaContainer": {
+                        "size": 2,
+                        "Metadata": [
+                            {"type": "movie", "title": "OR Match 1", "ratingKey": "908", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/908/file.mkv"}]}]},
+                            {"type": "movie", "title": "OR Match 2", "ratingKey": "909", "duration": 50000, "viewOffset": 0, "Media": [{"Part": [{"key": "/library/parts/909/file.mkv"}]}]}
+                        ]
+                    }
+                }
+            elif any(v[0] in ['val1', 'val2', '2024', 'action'] for k, v in query.items()):
                 response_data = {
                     "MediaContainer": {
                         "size": 1,

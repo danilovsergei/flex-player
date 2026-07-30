@@ -3010,4 +3010,71 @@ TestCase {
             return collectionsGrid.model.rowCount() === initialCount - 1; 
         }, 5000, "Collection count should decrease by 1")
     }
+
+    function test_88_advanced_filters_match_toggle() {
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libTab = findChild(recommendView, "libraryTab")
+        mouseClick(libTab, libTab.width/2, libTab.height/2)
+        wait(500)
+        
+        var grid = findChild(recommendView, "browserGrid")
+        
+        // Add two advanced filters
+        var addBtn = findChild(recommendView, "addAdvancedFilterBtn")
+        verify(addBtn !== null, "addAdvancedFilterBtn should exist")
+        mouseClick(addBtn, addBtn.width/2, addBtn.height/2)
+        wait(200)
+        mouseClick(addBtn, addBtn.width/2, addBtn.height/2)
+        wait(200)
+        
+        var chip1 = findChild(recommendView, "advancedFilterChip_0")
+        var chip2 = findChild(recommendView, "advancedFilterChip_1")
+        verify(chip1 !== null && chip2 !== null, "Both advanced filters should exist")
+        
+        var val1 = findChild(chip1, "advValueInput")
+        var val2 = findChild(chip2, "advValueInput")
+        
+        val1.text = "action"
+        val1.editingFinished()
+        wait(200)
+        
+        val2.text = "2024"
+        val2.editingFinished()
+        wait(500)
+        
+                // Default is ALL. Should match 1 item.
+        tryVerify(function() { 
+            console.warn("rowCount: " + grid.model.rowCount());
+            return grid.model.rowCount() === 1; 
+        }, 5000, "Should match 1 item with ALL")
+        
+        var toggleBtn = findChild(recommendView, "matchToggleBtn")
+        verify(toggleBtn !== null, "matchToggleBtn should exist")
+        mouseClick(toggleBtn, toggleBtn.width/2, toggleBtn.height/2)
+        wait(500)
+        
+        var matchMenu = findChild(toggleBtn, "matchMenu")
+        verify(matchMenu !== null, "matchMenu should exist")
+        
+        var anyOpt = matchMenu.itemAt(1) // 0 is All, 1 is Any
+        verify(anyOpt !== null, "matchAnyOption should exist")
+        anyOpt.triggered()
+        wait(1000)
+        
+        // Match ANY should yield 2 items
+        tryVerify(function() { return grid.model.rowCount() === 2; }, 5000, "Should match 2 items with ANY")
+    }
 }

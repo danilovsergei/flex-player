@@ -11,8 +11,8 @@ ColumnLayout {
     
     property var appCtrl: typeof mainWindow !== "undefined" ? mainWindow.controller : (typeof rootApp !== "undefined" ? appCtrl : null)
     property var appSet: typeof mainWindow !== "undefined" ? mainWindow.appSettings : (typeof rootApp !== "undefined" ? appSet : null)
-
     property bool unwatchedFilterActive: false
+    property bool advancedMatchAny: false
     property bool hdrFilterActive: false
     property bool doviFilterActive: false
     property bool atmosFilterActive: false
@@ -345,17 +345,99 @@ ColumnLayout {
                 spacing: 10
                 visible: advancedFiltersModel.count > 0
 
+                Rectangle {
+                    id: matchToggleBtn
+                    objectName: "matchToggleBtn"
+                    height: 32
+                    width: matchToggleRow.implicitWidth + 20
+                    radius: 16
+                    color: matchToggleMouse.containsMouse ? "#444" : "#333"
+                    visible: true
+                    
+                    RowLayout {
+                        id: matchToggleRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: "Match:"
+                            color: "white"
+                            font.pixelSize: 14
+                        }
+                        Text {
+                            text: root.advancedMatchAny ? "Any" : "All"
+                            color: "#E5A00D"
+                            font.pixelSize: 14
+                            font.bold: true
+                        }
+                        Text {
+                            text: "▾"
+                            color: "#E5A00D"
+                            font.pixelSize: 12
+                        }
+                    }
+                    MouseArea {
+                        id: matchToggleMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            matchMenu.popup(matchToggleBtn, 0, matchToggleBtn.height)
+                        }
+                    }
+                    Menu {
+                        id: matchMenu
+                        objectName: "matchMenu"
+                        background: Rectangle {
+                            color: "#222"
+                            radius: 4
+                            border.color: "#444"
+                            border.width: 1
+                        }
+                        MenuItem {
+                            text: "All"
+                            objectName: "matchAllOption"
+                            contentItem: Text {
+                                text: "All"
+                                color: !root.advancedMatchAny ? "#E5A00D" : "white"
+                                font.bold: !root.advancedMatchAny
+                                font.pixelSize: 16
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
+                            onTriggered: {
+                                root.advancedMatchAny = false;
+                                advancedFilterRow.requestApply();
+                            }
+                        }
+                        MenuItem {
+                            text: "Any"
+                            objectName: "matchAnyOption"
+                            contentItem: Text {
+                                text: "Any"
+                                color: root.advancedMatchAny ? "#E5A00D" : "white"
+                                font.bold: root.advancedMatchAny
+                                font.pixelSize: 16
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
+                            onTriggered: {
+                                root.advancedMatchAny = true;
+                                advancedFilterRow.requestApply();
+                            }
+                        }
+                    }
+                }
+
                 Repeater {
                     id: advancedFilterRepeater
                     model: advancedFiltersModel
                     delegate: AdvancedFilterChip {
+                        objectName: "advancedFilterChip_" + index
                         appCtrl: root.appCtrl
                         appSet: root.appSet
                         initialField: model.fieldKey !== undefined ? model.fieldKey : "title"
                         initialOp: model.operatorModifier !== undefined ? model.operatorModifier : "="
                         initialVal: model.filterValue !== undefined ? model.filterValue : ""
                         onFilterChanged: function(fField, fOp, fVal, fLabel) {
-                            parent.requestApply()
+                            advancedFilterRow.requestApply()
                         }
                         onRemoveClicked: {
                             var p = parent
@@ -501,8 +583,12 @@ ColumnLayout {
     
     function buildFilterParams() {
         var params = []
+        if (root.advancedMatchAny) {
+            params.push("or=1")
+        }
         
         var typeStr = root.appCtrl.currentLibraryType === "show" ? "2" : "1"
+
         params.push("type=" + typeStr)
         
         if (root.unwatchedFilterActive) params.push("unwatched=1")
@@ -777,7 +863,12 @@ ColumnLayout {
                         
                         var params = root.buildFilterParams();
                         params.push("sort=addedAt:desc"); // Match standard smart collection sorting
-                        var typeStr = root.appCtrl.currentLibraryType === "show" ? "2" : "1";
+        if (root.advancedMatchAny) {
+            params.push("or=1")
+        }
+        
+        var typeStr = root.appCtrl.currentLibraryType === "show" ? "2" : "1"
+;
                         var queryString = params.join("&");
                         
                         root.appCtrl.libraryAllModel.createSmartCollection(url, root.appSet.token, smartCollectionNameInput.text, typeStr, root.appCtrl.currentLibraryId, queryString)
