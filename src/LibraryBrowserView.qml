@@ -450,12 +450,10 @@ ColumnLayout {
                     id: saveAsBtn
                     objectName: "saveAsBtn"
                     visible: advancedFilterRow.hasValidAdvancedFilter
-                    height: 32
-                    width: saveAsRow.implicitWidth + 30
-                    radius: 16
-                    color: "transparent"
-                    border.color: "#555"
-                    border.width: 1
+                    height: 40
+                    width: saveAsRow.implicitWidth + 40
+                    radius: 8
+                    color: saveAsMouse.containsMouse ? Qt.lighter("#E5A00D", 1.1) : "#E5A00D"
                     
                     RowLayout {
                         id: saveAsRow
@@ -464,18 +462,22 @@ ColumnLayout {
                         Text {
                             text: "Save As"
                             color: "white"
-                            font.pixelSize: 14
+                            font.pixelSize: 16
                             font.bold: true
+                            verticalAlignment: Text.AlignVCenter
                         }
                         Text {
                             text: "▾"
                             color: "white"
-                            font.pixelSize: 14
+                            font.pixelSize: 16
+                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                     
                     MouseArea {
+                        id: saveAsMouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: saveAsPopup.open()
                     }
