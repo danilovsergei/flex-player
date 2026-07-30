@@ -2955,4 +2955,59 @@ TestCase {
         wait(500)
     }
 
+    function test_87_delete_collection() {
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Mock Server_1": { "id": "1", "title": "Test Movies", "type": "movie", "serverName": "Mock Server", "serverUrl": "https://127.0.0.1:32400" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token"
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Test Movies", "movie", "https://127.0.0.1:32400", "Mock Server_1")
+        mainWindow.currentTab = 1 // Library Recommend View
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var collectionsTabBtn = findChild(recommendView, "collectionsTab")
+        verify(collectionsTabBtn !== null, "Collections tab should exist")
+        mouseClick(collectionsTabBtn, collectionsTabBtn.width/2, collectionsTabBtn.height/2)
+        wait(500)
+        
+        var collectionsGrid = findChild(recommendView, "collectionsGrid")
+        verify(collectionsGrid !== null, "collectionsGrid should exist")
+        
+                var initialCount = 0;
+        tryVerify(function() { 
+            initialCount = collectionsGrid.model.rowCount();
+            return initialCount > 0;
+        }, 5000, "Should have collections loaded")
+        
+        console.log("collectionsGrid rowCount is " + initialCount);
+        
+        // Wait for items to be instantiated
+        tryVerify(function() { return collectionsGrid.contentItem.children.length > 0; }, 5000, "Collection items should be rendered")
+        
+                var firstItem = null;
+        for (var i = 0; i < collectionsGrid.contentItem.children.length; i++) {
+            if (collectionsGrid.contentItem.children[i].objectName === "movieItem") {
+                firstItem = collectionsGrid.contentItem.children[i];
+                break;
+            }
+        }
+        verify(firstItem !== null, "First collection item should exist")
+        
+                var contextMenu = findChild(firstItem, "contextMenu")
+        verify(contextMenu !== null, "contextMenu should exist")
+        
+        var deleteOpt = contextMenu.itemAt(1)
+        verify(deleteOpt !== null, "Delete option should exist in menu")
+        deleteOpt.triggered()
+        wait(1500)
+        
+        tryVerify(function() { 
+            return collectionsGrid.model.rowCount() === initialCount - 1; 
+        }, 5000, "Collection count should decrease by 1")
+    }
 }

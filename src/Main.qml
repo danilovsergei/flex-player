@@ -207,6 +207,26 @@ Window {
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
                 controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
             }
+            onDeleteCollectionRequested: function(ratingKey, itemServerUrl) {
+                console.log("Deleting collection: " + ratingKey);
+                var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+                controller.libraryAllModel.deleteEndpoint(url, appSettings.token, "/library/collections/" + ratingKey);
+                
+                // Refresh the current view
+                refreshCollectionsTimer.start();
+            }
+        }
+
+    }
+
+    Timer {
+        id: refreshCollectionsTimer
+        interval: 1000
+        onTriggered: {
+            var url = controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl;
+            if (controller.currentLibraryId !== "") {
+                controller.libraryCollectionsModel.fetchEndpoint(url, appSettings.token, "/library/sections/" + controller.currentLibraryId + "/collections")
+            }
         }
     }
 

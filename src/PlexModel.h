@@ -72,6 +72,7 @@ public:
     Q_INVOKABLE void fetchEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint);
     Q_INVOKABLE void putEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint);
     Q_INVOKABLE void postEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint);
+    Q_INVOKABLE void deleteEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint);
     Q_INVOKABLE void addToCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &ids);
     Q_INVOKABLE void createSmartCollection(const QString &serverUrl, const QString &token, const QString &title, const QString &typeStr, const QString &sectionId, const QString &queryString);
     Q_INVOKABLE void checkConnection(const QString &serverUrl, const QString &token, bool isTestMode = false);

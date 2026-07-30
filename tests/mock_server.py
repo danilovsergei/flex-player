@@ -86,6 +86,27 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json_bytes)
 
+    def do_DELETE(self):
+        with open("/app/tests/mock_server_requests.log", "a") as logf:
+            logf.write("DELETE " + self.path + "\n")
+            
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+
+        if path.startswith("/library/collections/"):
+            col_id = path.split("/")[3]
+            if col_id in COLLECTIONS:
+                del COLLECTIONS[col_id]
+
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Connection', 'close')
+        json_bytes = b"{}"
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self.end_headers()
+        self.wfile.write(json_bytes)
+
     def do_GET(self):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
             logf.write("GET " + self.path + "\n")
@@ -111,10 +132,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
 
         query = parse_qs(parsed_path.query)
         filter_types = ["/genre", "/year", "/decade", "/contentRating", "/collection", "/director", "/actor", "/writer", "/producer", "/country", "/studio", "/resolution", "/videoCodec", "/audioCodec", "/subtitleCodec", "/audioLayout", "/audioLanguage", "/subtitleLanguage", "/editionTitle", "/label"]
-        response_data = {}
-        
-        filter_types = ["/genre", "/year", "/decade", "/contentRating", "/collection", "/director", "/actor", "/writer", "/producer", "/country", "/studio", "/resolution", "/videoCodec", "/audioCodec", "/subtitleCodec", "/audioLayout", "/audioLanguage", "/subtitleLanguage", "/editionTitle", "/label"]
-        matched_filter = next((f for f in filter_types if f in path), None)
+        matched_filter = next((f for f in filter_types if f in path and not path.endswith("/collections")), None)
         
         if matched_filter:
             ftype = matched_filter.strip('/')

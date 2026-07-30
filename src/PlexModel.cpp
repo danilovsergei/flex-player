@@ -167,6 +167,27 @@ void PlexModel::postEndpoint(const QString &serverUrl, const QString &token, con
     });
 }
 
+void PlexModel::deleteEndpoint(const QString &serverUrl, const QString &token, const QString &endpoint) {
+    m_serverUrl = serverUrl;
+    m_token = token;
+    QString effectiveUrl = resolveUrl(serverUrl);
+    QUrl url(effectiveUrl + endpoint);
+    QNetworkRequest request(url);
+    request.setRawHeader("X-Plex-Token", m_token.toUtf8());
+    request.setRawHeader("Accept", "application/json");
+    
+    QNetworkReply *reply = m_networkManager->deleteResource(request);
+    connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) { reply->ignoreSslErrors(); });
+    connect(reply, &QNetworkReply::finished, this, [reply]() { 
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "[PlexModel] DELETE Request failed:" << reply->errorString();
+        } else {
+            qDebug() << "[PlexModel] DELETE Request succeeded.";
+        }
+        reply->deleteLater(); 
+    });
+}
+
 void PlexModel::addToCollection(const QString &serverUrl, const QString &token, const QString &collectionId, const QString &ids) {
     m_serverUrl = serverUrl;
     m_token = token;
@@ -335,9 +356,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         qDebug() << "[PlexModel] Error: Response is not a JSON object";
         reply->deleteLater();
         return;
-    }
-
-    QJsonObject rootObj = jsonDoc.object();
+    }    QJsonObject rootObj = jsonDoc.object();
     QJsonObject mediaContainer = rootObj["MediaContainer"].toObject();
     QJsonArray directory = mediaContainer["Metadata"].toArray();
     if (directory.isEmpty()) {

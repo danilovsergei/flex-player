@@ -22,6 +22,7 @@ Item {
     signal openShow(string ratingKey, string serverUrl)
     signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
     signal openDetails(string ratingKey, string serverUrl)
+    signal deleteCollectionRequested(string ratingKey, string serverUrl)
 
     Rectangle {
         anchors.fill: parent
@@ -156,12 +157,12 @@ Item {
             radius: 4
             border.color: "#444444"
         }
-        MenuItem {
     // When true, UI elements sensitive to mouse hover (like the Three-Dots button)
     // are forced to be visible. This is essential for headless testing where
     // mouse movements are not always reliably processed by the compositor.
     property bool isTestMode: false
 
+        MenuItem {
             id: detailsMenuItem
             text: "Details"
             objectName: "detailsMenuItem"
@@ -178,6 +179,31 @@ Item {
             onTriggered: {
                 var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
                 root.openDetails(mRatingKey)
+            }
+        }
+        
+        MenuItem {
+            id: deleteCollectionMenuItem
+            text: "Delete Collection"
+            objectName: "deleteCollectionMenuItem"
+            visible: {
+                var mType = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.type) !== 'undefined' ? (typeof model !== "undefined" && model.type) : type
+                return mType === "collection"
+            }
+            contentItem: Text {
+                text: deleteCollectionMenuItem.text
+                color: "#E53935"
+                font.pixelSize: 16
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: deleteCollectionMenuItem.highlighted ? "#444444" : "transparent"
+                radius: 4
+            }
+            onTriggered: {
+                var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
+                var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
+                root.deleteCollectionRequested(mRatingKey, mServerUrl)
             }
         }
     }
