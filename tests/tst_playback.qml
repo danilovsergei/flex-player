@@ -3077,4 +3077,46 @@ TestCase {
         // Match ANY should yield 2 items
         tryVerify(function() { return grid.model.rowCount() === 2; }, 5000, "Should match 2 items with ANY")
     }
+
+    function test_89_poster_context_menu_details() {
+        mainWindow.currentTab = 0;
+        wait(1000);
+        
+        var homeView = findChild(mainWindow, "homeView");
+        verify(homeView !== null, "homeView should exist");
+        
+        var homeCol = findChild(homeView, "homeContentColumn");
+        var rep = findChild(homeCol, "libraryRepeater");
+        tryVerify(function() { return rep.count > 0; }, 10000, "Should load recently added rails");
+        
+        var rail = rep.itemAt(0);
+        var list = findChild(rail, "recentlyAddedList");
+        tryVerify(function() { return list.count > 0; }, 10000, "Rail should fetch items");
+        tryVerify(function() { return list.itemAtIndex(0) !== null; }, 5000, "Delegate should instantiate");
+        
+        var poster = list.itemAtIndex(0);
+        verify(poster !== null, "Poster should exist");
+        
+        var threeDots = findChild(poster, "threeDotsButton");
+        verify(threeDots !== null, "Three dots button should exist on poster");
+        
+        console.log("Clicking three dots menu on poster...");
+        mouseClick(threeDots, threeDots.width/2, threeDots.height/2);
+        wait(500);
+        
+        var contextMenu = findChild(poster, "contextMenu");
+        verify(contextMenu !== null, "contextMenu should exist");
+        
+        var detailsOpt = findChild(poster, "detailsMenuItem");
+        verify(detailsOpt !== null, "Details option should exist in menu");
+        
+        console.log("Triggering Details from context menu...");
+        detailsOpt.triggered();
+        wait(1500);
+        
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView");
+        verify(movieDetailsView !== null, "Movie details view should exist");
+        
+        tryVerify(function() { return mainWindow.currentTab === 3 || mainWindow.currentTab === 4; }, 5000, "App should switch to Movie or Series Details tab");
+    }
 }

@@ -166,6 +166,10 @@ Item {
             id: detailsMenuItem
             text: "Details"
             objectName: "detailsMenuItem"
+            visible: {
+                var mType = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.type) !== 'undefined' ? (typeof model !== "undefined" && model.type) : type
+                return mType !== "collection"
+            }
             contentItem: Text {
                 text: detailsMenuItem.text
                 color: "#E5A00D"
@@ -178,7 +182,8 @@ Item {
             }
             onTriggered: {
                 var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
-                root.openDetails(mRatingKey)
+                var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
+                root.openDetails(mRatingKey, mServerUrl)
             }
         }
         
