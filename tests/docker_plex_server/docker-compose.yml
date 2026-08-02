@@ -1,0 +1,18 @@
+version: "3"
+services:
+  plex-test:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex-test-server
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - VERSION=docker
+      # - PLEX_CLAIM= # optionally insert a claim token from https://plex.tv/claim
+    volumes:
+      - ./config:/config
+      - ./media/movies:/media/movies
+      - ./media/series:/media/series
+    restart: unless-stopped
+

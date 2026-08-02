@@ -22,3 +22,9 @@ tests/results/
 
 # Qt6 CMake auto-generated deploy directories
 .qt/
+
+# Plex Docker Test Server Volumes
+tests/docker_plex_server/config/
+tests/docker_plex_server/config_shared_lib/
+tests/docker_plex_server/media/
+
