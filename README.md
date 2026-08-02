@@ -98,6 +98,8 @@ Flex Player uses the Plex server API directly to fetch and display your library.
 - Detects and switches between inside/outside of local network connection to a Plex server. The same way Plex client does not
 - Uses HTTPS for secure connection
 - Configurable hotkeys through Settings
+- Multiple plex servers support
+- Libraries shared by friends support
 
 Application settings can be configured either through the in-app settings page or directly by editing `~/.config/flex-player/config.ini`.
 
