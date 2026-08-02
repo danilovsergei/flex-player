@@ -12,6 +12,7 @@ ColumnLayout {
     property string libraryId: ""
     property string libraryType: ""
     property string serverUrl: ""
+    property string serverToken: ""
     
     property string lastFetchedEndpoint: ""
     property Component movieDelegate
@@ -48,7 +49,7 @@ ColumnLayout {
         var activeUrl = serverUrl !== "" ? serverUrl : (rootApp.controller.connectionManager ? rootApp.controller.connectionManager.activeUrl : "");
         if (activeUrl !== "") {
             console.log("LibraryRail [" + libraryTitle + "] (Type: " + libraryType + "): Fetching from " + activeUrl + endpoint);
-            delegateRecentModel.fetchEndpoint(activeUrl, rootApp.appSettings.token, endpoint);
+            delegateRecentModel.fetchEndpoint(activeUrl, serverToken !== "" ? serverToken : rootApp.appSettings.token, endpoint);
         } else {
             console.log("LibraryRail retryTimer.restart() for " + libraryTitle);
             retryTimer.restart();

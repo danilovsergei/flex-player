@@ -133,6 +133,9 @@ void PlexAuth::onServersFetched() {
             QVariantMap server;
             server["name"] = obj["name"].toString();
             server["product"] = obj["product"].toString();
+            server["accessToken"] = obj["accessToken"].toString();
+            server["owned"] = obj["owned"].toBool() || obj["owned"].toString() == "1";
+            server["sourceTitle"] = obj["sourceTitle"].toString();
             
             QVariantList connections;
             QJsonArray connArray = obj["connections"].toArray();

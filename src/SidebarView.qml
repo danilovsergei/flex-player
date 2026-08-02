@@ -56,6 +56,8 @@ Rectangle {
                     }
 
                     Repeater {
+                        id: sidebarLibraryRepeater
+                        objectName: "sidebarLibraryRepeater"
                         model: mainWindow.controller ? mainWindow.controller.homeLibrariesList : []
                         delegate: Button {
                             visible: true
@@ -73,6 +75,7 @@ Rectangle {
                             property string mType: (typeof modelData !== 'undefined' && modelData.type) ? modelData.type : model.type
                             property string mTitle: (typeof modelData !== 'undefined' && modelData.title) ? modelData.title : model.title
                             property string mServerUrl: (typeof modelData !== 'undefined' && modelData.serverUrl) ? modelData.serverUrl : ((typeof model !== 'undefined' && model.serverUrl) ? model.serverUrl : "")
+                            property string mServerToken: (typeof modelData !== 'undefined' && modelData.serverToken) ? modelData.serverToken : ((typeof model !== 'undefined' && model.serverToken) ? model.serverToken : "")
                             
                             objectName: "libTabButton_" + mUniqueId
                             Layout.fillWidth: true
@@ -85,7 +88,7 @@ Rectangle {
                             }
                             background: Rectangle { color: "transparent" }
                             onClicked: {
-                                mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId)
+                                mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId, mServerToken)
                                 mainWindow.currentTab = 1 // Switch to library Recommend view
                             }
                         }

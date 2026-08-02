@@ -14,6 +14,7 @@ ColumnLayout {
     property bool unwatchedFilterActive: false
     property bool advancedMatchAny: false
     property bool hdrFilterActive: false
+    property alias testAdvancedFiltersModel: advancedFiltersModel
     property bool doviFilterActive: false
     property bool atmosFilterActive: false
     property bool inProgressFilterActive: false
@@ -294,6 +295,7 @@ ColumnLayout {
                     }
                     
                     MouseArea {
+                        objectName: "addAdvancedFilterMouse"
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: advancedFiltersModel.append({fieldKey: "title", operatorModifier: "=", filterValue: ""})
@@ -455,7 +457,7 @@ ColumnLayout {
                 Rectangle {
                     id: saveAsBtn
                     objectName: "saveAsBtn"
-                    visible: advancedFilterRow.hasValidAdvancedFilter
+                    visible: advancedFilterRow.hasValidAdvancedFilter && (root.appCtrl.currentServerToken === "" || root.appCtrl.currentServerToken === root.appSet.token)
                     height: 40
                     width: saveAsRow.implicitWidth + 40
                     radius: 8
@@ -498,7 +500,7 @@ ColumnLayout {
                                 // Update collection directly
                                 var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : root.appCtrl.connectionManager.activeUrl;
                                 var q = buildQueryString();
-                                root.appCtrl.libraryAllModel.updateSmartCollection(url, appSet.token, root.editingCollectionId, root.appCtrl.currentLibraryId, q);
+                                root.appCtrl.libraryAllModel.updateSmartCollection(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : appSet.token, root.editingCollectionId, root.appCtrl.currentLibraryId, q);
                                 // Exit editing mode
                                 root.editingCollectionId = "";
                                 root.editingCollectionTitle = "";
@@ -510,6 +512,7 @@ ColumnLayout {
                     
                     Popup {
                         id: saveAsPopup
+                        objectName: "saveAsPopup"
                         y: saveAsBtn.height + 5
                         width: 200
                         height: 80
@@ -789,31 +792,51 @@ ColumnLayout {
         if (root.unmatchedFilterActive) params.push("unmatched=1")
         if (root.duplicatesFilterActive) params.push("duplicate=1")
         
-        if (root.genreFilterValue !== "") params.push("genre=" + encodeURIComponent(root.genreFilterValue))
-        if (root.yearFilterValue !== "") params.push("year=" + encodeURIComponent(root.yearFilterValue))
-        if (root.decadeFilterValue !== "") params.push("decade=" + encodeURIComponent(root.decadeFilterValue))
-        if (root.contentRatingFilterValue !== "") params.push("contentRating=" + encodeURIComponent(root.contentRatingFilterValue))
-        if (root.collectionFilterValue !== "") params.push("collection=" + encodeURIComponent(root.collectionFilterValue))
-        if (root.directorFilterValue !== "") params.push("director=" + encodeURIComponent(root.directorFilterValue))
-        if (root.actorFilterValue !== "") params.push("actor=" + encodeURIComponent(root.actorFilterValue))
-        if (root.writerFilterValue !== "") params.push("writer=" + encodeURIComponent(root.writerFilterValue))
-        if (root.producerFilterValue !== "") params.push("producer=" + encodeURIComponent(root.producerFilterValue))
-        if (root.countryFilterValue !== "") params.push("country=" + encodeURIComponent(root.countryFilterValue))
-        if (root.studioFilterValue !== "") params.push("studio=" + encodeURIComponent(root.studioFilterValue))
-        if (root.resolutionFilterValue !== "") params.push("resolution=" + encodeURIComponent(root.resolutionFilterValue))
-        if (root.videoCodecFilterValue !== "") params.push("videoCodec=" + encodeURIComponent(root.videoCodecFilterValue))
-        if (root.audioCodecFilterValue !== "") params.push("audioCodec=" + encodeURIComponent(root.audioCodecFilterValue))
-        if (root.subtitleCodecFilterValue !== "") params.push("subtitleCodec=" + encodeURIComponent(root.subtitleCodecFilterValue))
-        if (root.audioLayoutFilterValue !== "") params.push("audioLayout=" + encodeURIComponent(root.audioLayoutFilterValue))
-        if (root.audioLanguageFilterValue !== "") params.push("audioLanguage=" + encodeURIComponent(root.audioLanguageFilterValue))
-        if (root.subtitleLanguageFilterValue !== "") params.push("subtitleLanguage=" + encodeURIComponent(root.subtitleLanguageFilterValue))
-        if (root.editionTitleFilterValue !== "") params.push("editionTitle=" + encodeURIComponent(root.editionTitleFilterValue))
-        if (root.labelFilterValue !== "") params.push("label=" + encodeURIComponent(root.labelFilterValue))
+        var _safeEncode = function(key, rawVal) {
+            var decoded = rawVal;
+            try {
+                var prev = "";
+                while (decoded !== prev) {
+                    prev = decoded;
+                    decoded = decodeURIComponent(decoded);
+                }
+            } catch(e) {}
+            return key + "=" + encodeURIComponent(decoded);
+        }
+        
+        if (root.genreFilterValue !== "") params.push(_safeEncode("genre", root.genreFilterValue))
+        if (root.yearFilterValue !== "") params.push(_safeEncode("year", root.yearFilterValue))
+        if (root.decadeFilterValue !== "") params.push(_safeEncode("decade", root.decadeFilterValue))
+        if (root.contentRatingFilterValue !== "") params.push(_safeEncode("contentRating", root.contentRatingFilterValue))
+        if (root.collectionFilterValue !== "") params.push(_safeEncode("collection", root.collectionFilterValue))
+        if (root.directorFilterValue !== "") params.push(_safeEncode("director", root.directorFilterValue))
+        if (root.actorFilterValue !== "") params.push(_safeEncode("actor", root.actorFilterValue))
+        if (root.writerFilterValue !== "") params.push(_safeEncode("writer", root.writerFilterValue))
+        if (root.producerFilterValue !== "") params.push(_safeEncode("producer", root.producerFilterValue))
+        if (root.countryFilterValue !== "") params.push(_safeEncode("country", root.countryFilterValue))
+        if (root.studioFilterValue !== "") params.push(_safeEncode("studio", root.studioFilterValue))
+        if (root.resolutionFilterValue !== "") params.push(_safeEncode("resolution", root.resolutionFilterValue))
+        if (root.videoCodecFilterValue !== "") params.push(_safeEncode("videoCodec", root.videoCodecFilterValue))
+        if (root.audioCodecFilterValue !== "") params.push(_safeEncode("audioCodec", root.audioCodecFilterValue))
+        if (root.subtitleCodecFilterValue !== "") params.push(_safeEncode("subtitleCodec", root.subtitleCodecFilterValue))
+        if (root.audioLayoutFilterValue !== "") params.push(_safeEncode("audioLayout", root.audioLayoutFilterValue))
+        if (root.audioLanguageFilterValue !== "") params.push(_safeEncode("audioLanguage", root.audioLanguageFilterValue))
+        if (root.subtitleLanguageFilterValue !== "") params.push(_safeEncode("subtitleLanguage", root.subtitleLanguageFilterValue))
+        if (root.editionTitleFilterValue !== "") params.push(_safeEncode("editionTitle", root.editionTitleFilterValue))
+        if (root.labelFilterValue !== "") params.push(_safeEncode("label", root.labelFilterValue))
 
         for (var i = 0; i < advancedFilterRepeater.count; i++) {
             var chip = advancedFilterRepeater.itemAt(i)
             if (chip && (chip.currentVal !== "" || chip.isBoolean)) {
-                var valPart = chip.isBoolean ? "" : encodeURIComponent(chip.currentVal)
+                var cv = chip.currentVal;
+                try {
+                    var prev = "";
+                    while (cv !== prev) {
+                        prev = cv;
+                        cv = decodeURIComponent(cv);
+                    }
+                } catch(e) {}
+                var valPart = chip.isBoolean ? "" : encodeURIComponent(cv)
                 var p = encodeURIComponent(chip.currentField) + chip.currentOp + valPart
                 params.push(p)
             }
@@ -917,7 +940,7 @@ ColumnLayout {
                     onClicked: {
                         var ids = getFilteredIds();
                         var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
-                        root.appCtrl.libraryAllModel.addToCollection(url, root.appSet.token, model.ratingKey, ids)
+                        root.appCtrl.libraryAllModel.addToCollection(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, model.ratingKey, ids)
                         addToCollectionDialog.close()
                         reloadTimer.start()
                     }
@@ -949,7 +972,7 @@ ColumnLayout {
                     onClicked: {
                         var ids = getFilteredIds();
                         var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
-                        root.appCtrl.libraryAllModel.putEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/all?type=" + (root.appCtrl.currentLibraryType === "show" ? "2" : "1") + "&id=" + ids + "&collection[0].tag.tag=" + encodeURIComponent(collectionSearchInput.text))
+                        root.appCtrl.libraryAllModel.putEndpoint(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/all?type=" + (root.appCtrl.currentLibraryType === "show" ? "2" : "1") + "&id=" + ids + "&collection[0].tag.tag=" + encodeURIComponent(collectionSearchInput.text))
                         addToCollectionDialog.close()
                         reloadTimer.start()
                     }
@@ -962,19 +985,34 @@ ColumnLayout {
             interval: 1500
             onTriggered: {
                 var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
-                root.appCtrl.libraryCollectionsModel.fetchEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+                root.appCtrl.libraryCollectionsModel.fetchEndpoint(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+            }
+        }
+        
+        Connections {
+            target: root.appCtrl ? root.appCtrl.libraryAllModel : null
+            function onSmartCollectionCreated() {
+                console.log("Smart collection created! Triggering immediate reload...")
+                var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                root.appCtrl.libraryCollectionsModel.fetchEndpoint(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+            }
+            function onSmartCollectionUpdated() {
+                console.log("Smart collection updated! Triggering immediate reload...")
+                var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
+                root.appCtrl.libraryCollectionsModel.fetchEndpoint(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
             }
         }
         
         onOpened: {
             collectionSearchInput.text = "";
             var url = root.appCtrl.currentServerUrl !== "" ? root.appCtrl.currentServerUrl : (root.appCtrl.connectionManager.activeUrl !== "" ? root.appCtrl.connectionManager.activeUrl : root.appSet.serverUrl);
-            collectionsBaseModel.fetchEndpoint(url, root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
+            collectionsBaseModel.fetchEndpoint(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, "/library/sections/" + root.appCtrl.currentLibraryId + "/collections")
         }
     }
 
     Popup {
         id: saveSmartCollectionDialog
+        objectName: "saveSmartCollectionDialog"
         anchors.centerIn: parent
         width: 400
         height: 200
@@ -1061,9 +1099,8 @@ ColumnLayout {
 ;
                         var queryString = params.join("&");
                         
-                        root.appCtrl.libraryAllModel.createSmartCollection(url, root.appSet.token, smartCollectionNameInput.text, typeStr, root.appCtrl.currentLibraryId, queryString)
+                        root.appCtrl.libraryAllModel.createSmartCollection(url, root.appCtrl.currentServerToken !== "" ? root.appCtrl.currentServerToken : root.appSet.token, smartCollectionNameInput.text, typeStr, root.appCtrl.currentLibraryId, queryString)
                         saveSmartCollectionDialog.close()
-                        reloadTimer.start()
                     }
                 }
             }
@@ -1081,7 +1118,7 @@ ColumnLayout {
         var params = root.buildFilterParams()
         params.push("sort=addedAt:desc")
         
-        console.log("FULL PARAMS: " + params.join("&"))
+        console.warn("LibraryBrowserView applyFilters -> url: " + appCtrl.currentServerUrl + " token: " + (appCtrl.currentServerToken ? "provided" : "empty"));
 
         if (params.length > 0) {
             fullEndpoint += "?" + params.join("&")
@@ -1090,7 +1127,7 @@ ColumnLayout {
         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : (appCtrl.connectionManager.activeUrl !== "" ? appCtrl.connectionManager.activeUrl : appSet.serverUrl);
         
         if (appCtrl.libraryAllModel) {
-            appCtrl.libraryAllModel.fetchEndpoint(url, appSet.token, fullEndpoint)
+            appCtrl.libraryAllModel.fetchEndpoint(url, appCtrl.currentServerToken !== "" ? appCtrl.currentServerToken : appSet.token, fullEndpoint)
         }
     }
 }

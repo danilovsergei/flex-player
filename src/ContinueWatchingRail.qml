@@ -10,6 +10,7 @@ ColumnLayout {
     property var rootApp
     property string serverName: ""
     property string serverUrl: ""
+    property string serverToken: ""
     property Component movieDelegate
     property bool hasItems: delegateCwList.count > 0
 
@@ -23,7 +24,7 @@ ColumnLayout {
     function refresh() {
         var activeUrl = serverUrl !== "" ? serverUrl : (rootApp.controller.connectionManager ? rootApp.controller.connectionManager.activeUrl : "");
         if (activeUrl !== "") {
-            delegateCwModel.fetchEndpoint(activeUrl, rootApp.appSettings.token, "/library/onDeck");
+            delegateCwModel.fetchEndpoint(activeUrl, serverToken !== "" ? serverToken : rootApp.appSettings.token, "/library/onDeck");
         } else {
             retryTimer.restart();
         }

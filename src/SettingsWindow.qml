@@ -108,6 +108,9 @@ Rectangle {
                     name: s.name,
                     product: s.product,
                     connections: s.connections,
+                    accessToken: s.accessToken,
+                    owned: s.owned,
+                    sourceTitle: s.sourceTitle,
                     enabled: existing ? existing.enabled : true
                 })
             }
@@ -447,6 +450,7 @@ Rectangle {
 
                     ListView {
                         id: serverLibrariesList
+                        objectName: "serverLibrariesList"
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         model: localServersList.filter(function(s) { return s.enabled })
@@ -459,6 +463,9 @@ Rectangle {
                             
                             property string serverUrl: ""
                             property string serverName: modelData.name
+                            property string serverToken: modelData.accessToken !== undefined && modelData.accessToken !== "" ? modelData.accessToken : appSettings.token
+                            property bool isOwned: modelData.owned !== undefined ? modelData.owned : true
+                            property string sourceTitle: modelData.sourceTitle !== undefined ? modelData.sourceTitle : ""
 
                             Connections {
                                 target: typeof connectionManager !== "undefined" ? connectionManager : null
@@ -537,7 +544,12 @@ Rectangle {
                             
                             Component.onCompleted: updateServerUrl()
 
-                            Text { text: "📁 Server: " + serverDelegateRoot.serverName; color: "#E5A00D"; font.pixelSize: 22; font.bold: true }
+                            Text { 
+                                text: "📁 Server: " + serverDelegateRoot.serverName + (serverDelegateRoot.isOwned ? "" : " (Shared by " + serverDelegateRoot.sourceTitle + ")"); 
+                                color: "#E5A00D"; 
+                                font.pixelSize: 22; 
+                                font.bold: true 
+                            }
                             
                             PlexModel {
                                 id: serverLibrariesModel
@@ -545,8 +557,8 @@ Rectangle {
                                 
                                 function tryFetch() {
                                     if (serverDelegateRoot.serverUrl !== "") {
-                                        console.log("[Settings] serverLibrariesModel fetching for " + serverDelegateRoot.serverName + " with URL: " + serverDelegateRoot.serverUrl);
-                                        fetchEndpoint(serverDelegateRoot.serverUrl, appSettings.token, "/library/sections");
+                                        console.log("[Settings] serverLibrariesModel fetching for " + serverDelegateRoot.serverName + " with URL: " + serverDelegateRoot.serverUrl + " token: " + (serverDelegateRoot.serverToken !== appSettings.token ? "custom" : "global"));
+                                        fetchEndpoint(serverDelegateRoot.serverUrl, serverDelegateRoot.serverToken, "/library/sections");
                                     }
                                 }
                                 
@@ -584,7 +596,8 @@ Rectangle {
                                                     "type": model.type, 
                                                     "title": model.title, 
                                                     "serverName": serverDelegateRoot.serverName,
-                                                    "serverUrl": serverDelegateRoot.serverUrl
+                                                    "serverUrl": serverDelegateRoot.serverUrl,
+                                                    "serverToken": serverDelegateRoot.serverToken
                                                 } 
                                             }
                                             else { delete map[uniqueKey] }

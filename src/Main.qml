@@ -64,7 +64,7 @@ Window {
     readonly property color plexOrange: "#E5A00D"
 
     function startupLogic() { controller.startupLogic() }
-    function loadLibraryContent(id, title, type, serverUrl, uniqueId) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId) }
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) }
     function getLibraryIcon(type) { return controller.getLibraryIcon(type) }
     function formatTime(seconds) { return controller.formatTime(seconds) }
     
@@ -84,14 +84,14 @@ Window {
         mainWindow.currentTab = 2;
     }
 
-    function openShow(ratingKey, itemServerUrl) {
+    function openShow(ratingKey, itemServerUrl, itemServerToken) {
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-        controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+        controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
     }
 
-    function openDetails(ratingKey, itemServerUrl) {
+    function openDetails(ratingKey, itemServerUrl, itemServerToken) {
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-        controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+        controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
     }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
     function runHdrCommand(cmd) { controller.runHdrCommand(cmd) }
@@ -182,7 +182,7 @@ Window {
     Component {
         id: movieDelegate
         MoviePosterDelegate {
-            onOpenCollection: function(ratingKey, itemServerUrl) {
+            onOpenCollection: function(ratingKey, itemServerUrl, itemServerToken) {
                 console.log("Opening collection: " + ratingKey)
                 if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
                     mainWindow.previousTab = mainWindow.currentTab;
@@ -191,10 +191,10 @@ Window {
                 controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children")
                 mainWindow.currentTab = 2
             }
-            onOpenShow: function(ratingKey, itemServerUrl) {
+            onOpenShow: function(ratingKey, itemServerUrl, itemServerToken) {
                 console.log("Opening show/season: " + ratingKey)
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-                controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+                controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
             }
             onPlayMedia: function(title, mediaUrl, viewOffset, ratingKey, duration) {
                 console.log("Starting embedded playback for: " + title + " | mediaUrl: " + mediaUrl)
@@ -202,15 +202,16 @@ Window {
                 playerView.visible = true
                 playerView.playMedia(mediaUrl, viewOffset, ratingKey, duration, "auto", "no", [])
             }
-            onOpenDetails: function(ratingKey, itemServerUrl) {
+            onOpenDetails: function(ratingKey, itemServerUrl, itemServerToken) {
                 console.log("Opening details for: " + ratingKey + " itemServerUrl: " + itemServerUrl);
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-                controller.detailsModel.fetchItemDetails(url, appSettings.token, ratingKey);
+                controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
             }
             onDeleteCollectionRequested: function(ratingKey, itemServerUrl) {
                 console.log("Deleting collection: " + ratingKey);
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-                controller.libraryAllModel.deleteEndpoint(url, appSettings.token, "/library/collections/" + ratingKey);
+                var token = controller.currentServerToken !== "" ? controller.currentServerToken : appSettings.token;
+                controller.libraryAllModel.deleteEndpoint(url, token, "/library/collections/" + ratingKey);
                 
                 // Refresh the current view
                 refreshCollectionsTimer.start();
@@ -272,6 +273,7 @@ Window {
 
             SidebarView {
                 id: sidebar
+                objectName: "sidebarView"
                 mainWindow: mainWindow
             }
 

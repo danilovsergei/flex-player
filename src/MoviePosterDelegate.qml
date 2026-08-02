@@ -18,10 +18,10 @@ Item {
     property color plexOrange: "#E5A00D"
 
     signal posterClicked()
-    signal openCollection(string ratingKey, string serverUrl)
-    signal openShow(string ratingKey, string serverUrl)
+    signal openCollection(string ratingKey, string serverUrl, string serverToken)
+    signal openShow(string ratingKey, string serverUrl, string serverToken)
     signal playMedia(string title, string mediaUrl, int viewOffset, string ratingKey, int duration)
-    signal openDetails(string ratingKey, string serverUrl)
+    signal openDetails(string ratingKey, string serverUrl, string serverToken)
     signal deleteCollectionRequested(string ratingKey, string serverUrl)
     signal editSmartCollectionRequested(string ratingKey, string title, string content, string serverUrl)
 
@@ -184,7 +184,8 @@ Item {
             onTriggered: {
                 var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
                 var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
-                root.openDetails(mRatingKey, mServerUrl)
+                var mServerToken = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverToken) !== 'undefined' ? (typeof model !== "undefined" && model.serverToken) : ""
+                root.openDetails(mRatingKey, mServerUrl, mServerToken)
             }
         }
         
@@ -195,7 +196,9 @@ Item {
             visible: {
                 var mType = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.type) !== 'undefined' ? (typeof model !== "undefined" && model.type) : type
                 var mSmart = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.smart) !== 'undefined' ? (typeof model !== "undefined" && model.smart) : smart
-                return mType === "collection" && mSmart
+                var mServerToken = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverToken) !== 'undefined' ? (typeof model !== "undefined" && model.serverToken) : ""
+                var isGlobal = (mServerToken === "" || (typeof appSettings !== 'undefined' && mServerToken === appSettings.token))
+                return mType === "collection" && mSmart && isGlobal
             }
             contentItem: Text {
                 text: editFilterMenuItem.text
@@ -212,6 +215,7 @@ Item {
                 var mTitle = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.title) !== 'undefined' ? (typeof model !== "undefined" && model.title) : title
                 var mContent = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.content) !== 'undefined' ? (typeof model !== "undefined" && model.content) : content
                 var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
+                var mServerToken = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverToken) !== 'undefined' ? (typeof model !== "undefined" && model.serverToken) : ""
                 console.warn('Firing editSmartCollectionRequested for ' + mRatingKey + ' with content ' + mContent);
                 root.editSmartCollectionRequested(mRatingKey, mTitle, mContent, mServerUrl)
             }
@@ -223,7 +227,9 @@ Item {
             objectName: "deleteCollectionMenuItem"
             visible: {
                 var mType = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.type) !== 'undefined' ? (typeof model !== "undefined" && model.type) : type
-                return mType === "collection"
+                var mServerToken = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverToken) !== 'undefined' ? (typeof model !== "undefined" && model.serverToken) : ""
+                var isGlobal = (mServerToken === "" || (typeof appSettings !== 'undefined' && mServerToken === appSettings.token))
+                return mType === "collection" && isGlobal
             }
             contentItem: Text {
                 text: deleteCollectionMenuItem.text
@@ -238,6 +244,7 @@ Item {
             onTriggered: {
                 var mRatingKey = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.ratingKey) !== 'undefined' ? (typeof model !== "undefined" && model.ratingKey) : ratingKey
                 var mServerUrl = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverUrl) !== 'undefined' ? (typeof model !== "undefined" && model.serverUrl) : serverUrl
+                var mServerToken = typeof model !== 'undefined' && typeof (typeof model !== "undefined" && model.serverToken) !== 'undefined' ? (typeof model !== "undefined" && model.serverToken) : ""
                 root.deleteCollectionRequested(mRatingKey, mServerUrl)
             }
         }
@@ -316,14 +323,18 @@ Item {
                 if (typeof model !== "undefined" && model.serverUrl !== undefined) mServerUrl = model.serverUrl
                 else if (typeof serverUrl !== "undefined") mServerUrl = serverUrl
                 
-                console.log("MoviePoster clicked! mType=" + mType + " mRatingKey=" + mRatingKey + " mServerUrl=" + mServerUrl)
+                var mServerToken = ""
+                if (typeof model !== "undefined" && model.serverToken !== undefined) mServerToken = model.serverToken
+                else if (typeof serverToken !== "undefined") mServerToken = serverToken
+                
+                console.log("MoviePoster clicked! mType=" + mType + " mRatingKey=" + mRatingKey + " mServerUrl=" + mServerUrl + " token: " + (mServerToken ? "custom" : "none"))
                 
                 if (mType === "collection") {
-                    root.openCollection(mRatingKey, mServerUrl)
+                    root.openCollection(mRatingKey, mServerUrl, mServerToken)
                 } else if (mType === "show" || mType === "season") {
-                    root.openShow(mRatingKey, mServerUrl)
+                    root.openShow(mRatingKey, mServerUrl, mServerToken)
                 } else {
-                    root.openDetails(mRatingKey, mServerUrl)
+                    root.openDetails(mRatingKey, mServerUrl, mServerToken)
                 }
             } catch(e) {
                 console.log("Error in poster click:", e)

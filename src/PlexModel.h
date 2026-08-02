@@ -26,6 +26,7 @@ struct Movie {
     int leafCount = 0;
     int viewedLeafCount = 0;
     QString serverUrl;
+    QString serverToken;
     QString content;
 };
 
@@ -35,6 +36,7 @@ class PlexModel : public QAbstractListModel {
     Q_PROPERTY(bool hasFlatpakSpawnPermission READ hasFlatpakSpawnPermission NOTIFY permissionStatusChanged)
     Q_PROPERTY(PlexConnectionManager* connectionManager READ connectionManager WRITE setConnectionManager NOTIFY connectionManagerChanged)
     Q_PROPERTY(QString currentServerUrl READ currentServerUrl NOTIFY currentServerUrlChanged)
+    Q_PROPERTY(QString currentServerToken READ currentServerToken NOTIFY currentServerUrlChanged)
 public:
     enum MovieRoles {
         TitleRole = Qt::UserRole + 1,
@@ -54,6 +56,7 @@ public:
         LeafCountRole,
         ViewedLeafCountRole,
         ServerUrlRole,
+        ServerTokenRole,
         ContentRole
     };
 
@@ -66,6 +69,7 @@ public:
     void setConnectionManager(PlexConnectionManager *cm);
     
     QString currentServerUrl() const;
+    QString currentServerToken() const { return m_token; }
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -95,6 +99,8 @@ signals:
     void permissionStatusChanged();
     void connectionManagerChanged();
     void currentServerUrlChanged();
+    void smartCollectionCreated();
+    void smartCollectionUpdated();
 
 private slots:
     void onReplyFinished(QNetworkReply *reply);

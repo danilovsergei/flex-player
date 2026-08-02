@@ -71,6 +71,7 @@ ScrollView {
             delegate: ContinueWatchingRail {
                 serverName: modelData.serverName
                 serverUrl: modelData.serverUrl
+                serverToken: (typeof modelData.serverToken !== 'undefined' && modelData.serverToken !== null) ? modelData.serverToken : ""
                 rootApp: root.rootApp
                 movieDelegate: root.movieDelegate
                 Layout.fillWidth: true
@@ -89,6 +90,7 @@ ScrollView {
                 libraryId: modelData.id
                 libraryType: modelData.type
                 serverUrl: (typeof modelData.serverUrl !== 'undefined' && modelData.serverUrl !== null) ? modelData.serverUrl : ""
+                serverToken: (typeof modelData.serverToken !== 'undefined' && modelData.serverToken !== null) ? modelData.serverToken : ""
                 rootApp: root.rootApp
                 movieDelegate: root.movieDelegate
                 Layout.fillWidth: true

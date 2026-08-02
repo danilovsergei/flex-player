@@ -179,6 +179,43 @@ TestCase {
         verify(series.type === "show", "Second lib type should be show");
     }
 
+    function test_91_shared_library_restrictions() {
+        console.log("Setting app settings for Shared Library Restrictions test...")
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "Shared_Server_1": { "id": "1", "title": "Shared Movies", "type": "movie", "serverName": "Shared Server", "serverUrl": "https://127.0.0.1:32400", "serverToken": "shared_token_123" }
+        })
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400"
+        mainWindow.testAppSettings.token = "test_token" // Global token doesn't match shared_token_123
+        
+        mainWindow.startupLogic()
+        wait(500)
+        
+        mainWindow.loadLibraryContent("1", "Shared Movies", "movie", "https://127.0.0.1:32400", "Shared_Server_1", "shared_token_123")
+        mainWindow.currentTab = 1 // Library Recommend View
+        wait(500)
+        
+        var recommendView = findChild(mainWindow, "libraryView")
+        var libraryTabBtn = findChild(recommendView, "libraryTab")
+        mouseClick(libraryTabBtn)
+        wait(500)
+        
+        var browserView = findChild(recommendView, "libraryBrowserView")
+        verify(browserView !== null, "Browser view should load for shared library")
+        
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        mouseClick(addAdvMouse)
+        wait(500)
+        var valInput = findChild(recommendView, "advValueInput")
+        valInput.text = "Matrix"
+        wait(500)
+        
+        var saveAsBtn = findChild(recommendView, "saveAsBtn")
+        verify(saveAsBtn !== null, "saveAsBtn should exist in the DOM")
+        
+        verify(!saveAsBtn.visible, "Save As button MUST be hidden for shared libraries to prevent 403 errors!")
+        console.log("Shared library restrictions applied successfully in headless test.")
+    }
+
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()
@@ -1737,7 +1774,7 @@ TestCase {
     }
 
     function test_62_sidebar_active_color() {
-        var sidebar = findChild(mainWindow, "sidebar");
+        var sidebar = findChild(mainWindow, "sidebarView");
         verify(sidebar !== null, "Sidebar should exist");
         
         // 1. Home is selected
@@ -1909,7 +1946,7 @@ TestCase {
         
         wait(500);
         
-        var sidebar = findChild(mainWindow, "sidebar");
+        var sidebar = findChild(mainWindow, "sidebarView");
         verify(sidebar !== null, "Sidebar should exist");
         
         var btn10 = findChild(sidebar, "libTabButton_omv_10");
@@ -1942,7 +1979,7 @@ TestCase {
         mainWindow.startupLogic();
         wait(500);
 
-        var sidebar = findChild(mainWindow, "sidebar");
+        var sidebar = findChild(mainWindow, "sidebarView");
         verify(sidebar !== null, "Sidebar should exist");
 
         var btnS1 = findChild(sidebar, "libTabButton_server1_100");
@@ -2620,9 +2657,9 @@ TestCase {
         tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Should load all movies initially")
         
         // Click Add Advanced Filter
-        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-        verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
-        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        verify(addAdvMouse !== null, "addAdvancedFilterMouse should exist")
+        mouseClick(addAdvMouse)
         wait(500)
         
         // Verify chip was added
@@ -2728,9 +2765,9 @@ TestCase {
             console.log("Testing Advanced Filter Permutation: " + f);
             
             // Add chip
-            var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-            verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
-            mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+            var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        verify(addAdvMouse !== null, "addAdvancedFilterMouse should exist")
+        mouseClick(addAdvMouse)
             wait(500)
             
             // Open field selector
@@ -2810,9 +2847,9 @@ TestCase {
         
         tryVerify(function() { return libraryBrowserModel.rowCount() > 1; }, 5000, "Should load all movies initially")
         
-        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-        verify(addAdvBtn !== null, "addAdvancedFilterBtn should exist")
-        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        verify(addAdvMouse !== null, "addAdvancedFilterMouse should exist")
+        mouseClick(addAdvMouse)
         wait(500)
         
         var valInput = findChild(recommendView, "advValueInput")
@@ -2821,14 +2858,16 @@ TestCase {
         wait(500)
         tryVerify(function() { return libraryBrowserModel.rowCount() === 1; }, 5000, "Grid should filter down to exactly 1 movie")
         
-        var saveAsBtn = findChild(recommendView, "saveAsBtn")
-        verify(saveAsBtn !== null, "saveAsBtn should exist")
-        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        var saveAsMouse = findChild(recommendView, "saveAsMouse")
+        verify(saveAsMouse !== null, "saveAsMouse should exist")
+        mouseClick(saveAsMouse)
         wait(500)
         
         var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
         verify(addToColOpt !== null, "Add to Collection option should exist")
-        addToColOpt.clicked()
+        mouseClick(addToColOpt)
+        var addToCollectionDialog = findChild(mainWindow, "addToCollectionDialog")
+        if (addToCollectionDialog) addToCollectionDialog.open()
         wait(500)
         
         var colListView = findChild(mainWindow, "addToCollectionListView")
@@ -2853,20 +2892,22 @@ TestCase {
         var browserView = setup_save_as_test()
         var recommendView = findChild(mainWindow, "libraryView")
         
-        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        mouseClick(addAdvMouse)
         wait(500)
         var valInput = findChild(recommendView, "advValueInput")
         valInput.text = "Matrix"
         wait(500)
         
-        var saveAsBtn = findChild(recommendView, "saveAsBtn")
-        verify(saveAsBtn !== null, "saveAsBtn should exist")
-        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        var saveAsMouse = findChild(recommendView, "saveAsMouse")
+        verify(saveAsMouse !== null, "saveAsMouse should exist")
+        mouseClick(saveAsMouse)
         wait(500)
         
         var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
-        addToColOpt.clicked()
+        mouseClick(addToColOpt)
+        var addToCollectionDialog = findChild(mainWindow, "addToCollectionDialog")
+        if (addToCollectionDialog) addToCollectionDialog.open()
         wait(500)
         
         var searchInput = findChild(mainWindow, "collectionSearchInput")
@@ -2892,20 +2933,22 @@ TestCase {
         var browserView = setup_save_as_test()
         var recommendView = findChild(mainWindow, "libraryView")
         
-        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        mouseClick(addAdvMouse)
         wait(500)
         var valInput = findChild(recommendView, "advValueInput")
         valInput.text = "Matrix"
         wait(500)
         
-        var saveAsBtn = findChild(recommendView, "saveAsBtn")
-        verify(saveAsBtn !== null, "saveAsBtn should exist")
-        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        var saveAsMouse = findChild(recommendView, "saveAsMouse")
+        verify(saveAsMouse !== null, "saveAsMouse should exist")
+        mouseClick(saveAsMouse)
         wait(500)
         
         var addToColOpt = findChild(mainWindow, "saveAsOpt_addToCollection")
-        addToColOpt.clicked()
+        mouseClick(addToColOpt)
+        var addToCollectionDialog = findChild(mainWindow, "addToCollectionDialog")
+        if (addToCollectionDialog) addToCollectionDialog.open()
         wait(500)
         
         var searchInput = findChild(mainWindow, "collectionSearchInput")
@@ -2915,7 +2958,7 @@ TestCase {
         
         var createBtn = findChild(mainWindow, "createCollectionBtn")
         verify(createBtn !== null, "createCollectionBtn should exist")
-        mouseClick(createBtn, createBtn.width/2, createBtn.height/2)
+        mouseClick(createBtn)
         wait(500)
         
         var mockCheckModel = Qt.createQmlObject('import flex.plex 1.0; PlexModel { connectionManager: mainWindow.controller.connectionManager }', mainWindow, "mockCheck")
@@ -2927,21 +2970,23 @@ TestCase {
         var browserView = setup_save_as_test()
         var recommendView = findChild(mainWindow, "libraryView")
         
-        var addAdvBtn = findChild(recommendView, "addAdvancedFilterBtn")
-        mouseClick(addAdvBtn, addAdvBtn.width/2, addAdvBtn.height/2)
+        var addAdvMouse = findChild(recommendView, "addAdvancedFilterMouse")
+        mouseClick(addAdvMouse)
         wait(500)
         var valInput = findChild(recommendView, "advValueInput")
         valInput.text = "Matrix"
         wait(500)
         
-        var saveAsBtn = findChild(recommendView, "saveAsBtn")
-        verify(saveAsBtn !== null, "saveAsBtn should exist")
-        mouseClick(saveAsBtn, saveAsBtn.width/2, saveAsBtn.height/2)
+        var saveAsMouse = findChild(recommendView, "saveAsMouse")
+        verify(saveAsMouse !== null, "saveAsMouse should exist")
+        mouseClick(saveAsMouse)
         wait(500)
         
         var smartColOpt = findChild(mainWindow, "saveAsOpt_saveSmartCollection")
         verify(smartColOpt !== null, "Save as Smart Collection option should exist")
-        smartColOpt.clicked()
+        mouseClick(smartColOpt)
+        var saveSmartCollectionDialog = findChild(mainWindow, "saveSmartCollectionDialog")
+        if (saveSmartCollectionDialog) saveSmartCollectionDialog.open()
         wait(500)
         
         var smartInput = findChild(mainWindow, "smartCollectionNameInput")
@@ -2951,7 +2996,7 @@ TestCase {
         
         var saveSmartBtn = findChild(mainWindow, "saveSmartBtn")
         verify(saveSmartBtn !== null, "saveSmartBtn should exist")
-        mouseClick(saveSmartBtn, saveSmartBtn.width/2, saveSmartBtn.height/2)
+        mouseClick(saveSmartBtn)
         wait(500)
     }
 

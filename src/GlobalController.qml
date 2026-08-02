@@ -24,6 +24,7 @@ Item {
     property string currentLibraryTitle: "Movies"
     property string currentLibraryType: "movie"
     property string currentServerUrl: ""
+    property string currentServerToken: ""
 
 
     signal hdrCommandExecuted(string command)
@@ -90,8 +91,9 @@ Item {
             if (serverUrl === "") continue; // Still unresolved, skip
             
             var targetUrl = serverUrl + "/hubs/search?query=" + encodeURIComponent(query);
-            (function(url, name) {
-                connectionManager.fetchJson(targetUrl, appSettings.token, function(responseText) {
+            var serverToken = servers[i].serverToken || appSettings.token;
+            (function(url, name, token) {
+                connectionManager.fetchJson(targetUrl, token, function(responseText) {
                     completedRequests++;
                     if (reqId === currentSearchId && responseText !== "") {
                         try {
@@ -110,7 +112,7 @@ Item {
                                             }
                                             var thumb = item.thumb || "";
                                             if (thumb !== "" && thumb.indexOf("http") !== 0) {
-                                                thumb = url + thumb + (thumb.indexOf("?") !== -1 ? "&" : "?") + "X-Plex-Token=" + appSettings.token;
+                                                thumb = url + thumb + (thumb.indexOf("?") !== -1 ? "&" : "?") + "X-Plex-Token=" + token;
                                             }
                                             var iType = item.type || hub.type;
                                             var leafCount = item.leafCount || 0;
@@ -144,7 +146,7 @@ Item {
                         isSearching = false;
                     }
                 });
-            })(serverUrl, serverName);
+            })(serverUrl, serverName, serverToken);
         }
     }
 
@@ -237,13 +239,16 @@ Item {
         }
     }
     
-    function loadLibraryContent(id, title, type, serverUrl, uniqueId) {
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) {
+        console.warn("GlobalController loadLibraryContent -> id: " + id + " url: " + serverUrl + " token: " + (serverToken ? "provided" : "empty"));
         currentLibraryId = id
         currentLibraryUniqueId = uniqueId || id
         currentLibraryTitle = title
         currentLibraryType = type
         currentServerUrl = serverUrl || ""
+        currentServerToken = serverToken || appSettings.token
         var url = currentServerUrl !== "" ? currentServerUrl : (connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl);
+        var token = currentServerToken;
         
         m_libraryRecentlyAddedModel.clear();
         m_libraryContinueWatchingModel.clear();
@@ -253,13 +258,13 @@ Item {
         // Universally fetch ALL items sorted by addedAt descending to ensure we get the full list
         // instead of relying on the potentially broken or limited /recentlyAdded endpoint per library.
         if (type === "show") {
-            m_libraryRecentlyAddedModel.fetchEndpoint(url, appSettings.token, "/library/sections/" + id + "/all?type=2&sort=addedAt:desc")
+            m_libraryRecentlyAddedModel.fetchEndpoint(url, token, "/library/sections/" + id + "/all?type=2&sort=addedAt:desc")
         } else {
-            m_libraryRecentlyAddedModel.fetchEndpoint(url, appSettings.token, "/library/sections/" + id + "/all?type=1&sort=addedAt:desc")
+            m_libraryRecentlyAddedModel.fetchEndpoint(url, token, "/library/sections/" + id + "/all?type=1&sort=addedAt:desc")
         }
         
-        m_libraryContinueWatchingModel.fetchEndpoint(url, appSettings.token, "/library/sections/" + id + "/onDeck")
-        m_libraryCollectionsModel.fetchEndpoint(url, appSettings.token, "/library/sections/" + id + "/collections")
+        m_libraryContinueWatchingModel.fetchEndpoint(url, token, "/library/sections/" + id + "/onDeck")
+        m_libraryCollectionsModel.fetchEndpoint(url, token, "/library/sections/" + id + "/collections")
     }
 
     function openSettings(tabIndex) {
@@ -339,7 +344,7 @@ Item {
 
         var primary = enabledServers[0];
         console.log("GlobalController: Probing primary server: " + primary.name);
-        connectionManager.token = appSettings.token;
+        connectionManager.token = primary.accessToken || appSettings.token;
                 console.log("GlobalController: Probing primary " + primary.name + " with " + (primary.connections ? primary.connections.length : 0) + " connections");
         if (primary.connections) {
             for (var i = 0; i < primary.connections.length; i++) {
@@ -353,6 +358,8 @@ Item {
         var libArray = [];
         var enabledServerNames = [];
         for (var k = 0; k < enabledServers.length; k++) { enabledServerNames.push(enabledServers[k].name); }
+        console.warn("GlobalController: enabledServerNames -> " + JSON.stringify(enabledServerNames));
+        console.warn("GlobalController: enabledLibs -> " + JSON.stringify(enabledLibs));
 
         var activeServersMap = {};
         var keys = Object.keys(enabledLibs);
@@ -361,13 +368,17 @@ Item {
             if (lib.type !== "movie" && lib.type !== "show" && lib.type !== "season") continue;
             
             var sName = lib.serverName || primary.name;
-            if (enabledServerNames.indexOf(sName) === -1) continue;
+            if (enabledServerNames.indexOf(sName) === -1) {
+                console.warn("GlobalController: skipping library because " + sName + " is not in enabledServerNames");
+                continue;
+            }
             
             var sUrl = lib.serverUrl || "";
             if (sName === primary.name) {
                 sUrl = ""; // FORCE dynamic resolution for the primary server
             }
-            if (!activeServersMap[sName]) activeServersMap[sName] = sUrl;
+            var sToken = lib.serverToken || appSettings.token;
+            if (!activeServersMap[sName]) activeServersMap[sName] = { url: sUrl, token: sToken };
             
             libArray.push({
                 uniqueId: keys[i],
@@ -375,7 +386,8 @@ Item {
                 title: lib.title,
                 type: lib.type,
                 serverName: sName,
-                serverUrl: sUrl
+                serverUrl: sUrl,
+                serverToken: sToken
             });
         }
         homeLibrariesList = libArray;
@@ -383,7 +395,7 @@ Item {
         var serverArray = [];
         var sKeys = Object.keys(activeServersMap);
         for (var j = 0; j < sKeys.length; j++) {
-            serverArray.push({ serverName: sKeys[j], serverUrl: activeServersMap[sKeys[j]] });
+            serverArray.push({ serverName: sKeys[j], serverUrl: activeServersMap[sKeys[j]].url, serverToken: activeServersMap[sKeys[j]].token });
         }
         activeServersList = serverArray;
 
@@ -409,9 +421,10 @@ Item {
             console.log("GlobalController: Resolution finished, success=" + success + " activeUrl=" + connectionManager.activeUrl);
             if (success) {
                 var activeUrl = connectionManager.activeUrl;
-                m_allLibrariesModel.fetchEndpoint(activeUrl, appSettings.token, "/library/sections");
-                m_continueWatchingModel.fetchEndpoint(activeUrl, appSettings.token, "/library/onDeck");
-                m_recentlyAddedModel.fetchEndpoint(activeUrl, appSettings.token, "/library/recentlyAdded");
+                var token = connectionManager.token || appSettings.token; // Use the connection manager's resolved primary token
+                m_allLibrariesModel.fetchEndpoint(activeUrl, token, "/library/sections");
+                m_continueWatchingModel.fetchEndpoint(activeUrl, token, "/library/onDeck");
+                m_recentlyAddedModel.fetchEndpoint(activeUrl, token, "/library/recentlyAdded");
             }
         }
     }

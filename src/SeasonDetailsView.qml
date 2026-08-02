@@ -122,7 +122,7 @@ Item {
                     objectName: "seasonDetailsPoster"
                     Layout.preferredWidth: 300
                     Layout.preferredHeight: 450
-                    source: detailsData && detailsData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + detailsData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
+                    source: detailsData && detailsData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + detailsData.thumb + "?X-Plex-Token=" + (rootApp.controller.detailsModel.currentServerToken !== "" ? rootApp.controller.detailsModel.currentServerToken : rootApp.token) : "") : ""
                     fillMode: Image.PreserveAspectCrop
                 }
                 
@@ -172,7 +172,7 @@ Item {
                         onClicked: {
                             if (root.epToPlay && root.epToPlay.Media && root.epToPlay.Media.length > 0) {
                                 var part = root.epToPlay.Media[0].Part[0];
-                                var mediaUrl = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + rootApp.token : "";
+                                var mediaUrl = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + (rootApp.controller.detailsModel.currentServerToken !== "" ? rootApp.controller.detailsModel.currentServerToken : rootApp.token) : "";
                                 var streams = part.Stream || [];
                                 root.playMediaRequested(root.epToPlay.title, mediaUrl, root.epToPlay.viewOffset || 0, root.epToPlay.ratingKey, root.epToPlay.duration || 0, "auto", "no", streams);
                             }
@@ -213,7 +213,7 @@ Item {
                     
                     Image {
                         anchors.fill: parent
-                        source: modelData && modelData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + modelData.thumb + "?X-Plex-Token=" + rootApp.token : "") : ""
+                        source: modelData && modelData.thumb ? (rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + modelData.thumb + "?X-Plex-Token=" + (rootApp.controller.detailsModel.currentServerToken !== "" ? rootApp.controller.detailsModel.currentServerToken : rootApp.token) : "") : ""
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
@@ -286,7 +286,7 @@ Item {
                         onClicked: {
                             if (modelData && modelData.Media && modelData.Media.length > 0) {
                                 var part = modelData.Media[0].Part[0];
-                                var mediaUrl = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + rootApp.token : "";
+                                var mediaUrl = rootApp ? (rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : (rootApp ? rootApp.serverUrl : "")) + part.key + "?X-Plex-Token=" + (rootApp.controller.detailsModel.currentServerToken !== "" ? rootApp.controller.detailsModel.currentServerToken : rootApp.token) : "";
                                 var streams = part.Stream || [];
                                 root.playMediaRequested(modelData.title, mediaUrl, modelData.viewOffset || 0, modelData.ratingKey, modelData.duration || 0, "auto", "no", streams);
                             }

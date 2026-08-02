@@ -42,6 +42,8 @@ QVariantMap PlexModel::get(int index) const {
         map["childCount"] = m.childCount;
         map["leafCount"] = m.leafCount;
         map["viewedLeafCount"] = m.viewedLeafCount;
+        map["serverUrl"] = m.serverUrl;
+        map["serverToken"] = m.serverToken;
     }
     return map;
 }
@@ -85,6 +87,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == LeafCountRole) return QVariant::fromValue(movie.leafCount);
     else if (role == ViewedLeafCountRole) return QVariant::fromValue(movie.viewedLeafCount);
     else if (role == ServerUrlRole) return movie.serverUrl;
+    else if (role == ServerTokenRole) return movie.serverToken;
     else if (role == ContentRole) return movie.content;
     return QVariant();
 }
@@ -108,6 +111,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[LeafCountRole] = "leafCount";
     roles[ViewedLeafCountRole] = "viewedLeafCount";
     roles[ServerUrlRole] = "serverUrl";
+    roles[ServerTokenRole] = "serverToken";
     roles[ContentRole] = "content";
     return roles;
 }
@@ -274,11 +278,12 @@ void PlexModel::createSmartCollection(const QString &serverUrl, const QString &t
                 
                 QNetworkReply *postReply = m_networkManager->post(postReq, QByteArray());
                 connect(postReply, &QNetworkReply::sslErrors, postReply, [postReply](const QList<QSslError>&) { postReply->ignoreSslErrors(); });
-                connect(postReply, &QNetworkReply::finished, this, [postReply]() {
+                connect(postReply, &QNetworkReply::finished, this, [this, postReply]() {
                     if (postReply->error() != QNetworkReply::NoError) {
                         qDebug() << "[PlexModel] createSmartCollection POST failed:" << postReply->errorString();
                     } else {
                         qDebug() << "[PlexModel] createSmartCollection POST succeeded.";
+                        emit smartCollectionCreated();
                     }
                     postReply->deleteLater();
                 });
@@ -387,6 +392,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         m.leafCount = obj["leafCount"].toInt();
         m.viewedLeafCount = obj["viewedLeafCount"].toInt();
         m.serverUrl = currentServerUrl();
+        m.serverToken = m_token;
         
         if (m.type == "show" || m.type == "season") {
             m.isWatched = (m.leafCount > 0 && m.viewedLeafCount == m.leafCount);
@@ -589,10 +595,14 @@ void PlexModel::fetchItemDetails(const QString &serverUrl, const QString &token,
     request.setRawHeader("X-Plex-Token", token.toUtf8());
     QNetworkReply *reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::sslErrors, reply, [reply](const QList<QSslError>&) { reply->ignoreSslErrors(); });
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, url, token]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit itemDetailsLoaded(QString::fromUtf8(reply->readAll()));
+        } else {
+            qDebug() << "[PlexModel] fetchItemDetails failed for URL:" << url << "Token:" << token << "Error:" << reply->errorString();
+            emit itemDetailsLoaded("{}");
+        }
         reply->deleteLater();
-        if (reply->error() == QNetworkReply::NoError) emit itemDetailsLoaded(QString::fromUtf8(reply->readAll()));
-        else emit itemDetailsLoaded("{}");
     });
 }
 

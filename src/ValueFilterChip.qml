@@ -78,7 +78,8 @@ Rectangle {
                             endpoint += "?" + params.join("&")
                         }
                         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : (appCtrl.connectionManager.activeUrl !== "" ? appCtrl.connectionManager.activeUrl : appSet.serverUrl);
-                        filterOptionsModel.fetchEndpoint(url, appSet.token, endpoint)
+                        var token = appCtrl.currentServerToken !== "" ? appCtrl.currentServerToken : appSet.token;
+                        filterOptionsModel.fetchEndpoint(url, token, endpoint)
                     }
                 }
             }

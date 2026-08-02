@@ -209,7 +209,8 @@ Rectangle {
                 }
                 var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : (appCtrl.connectionManager && appCtrl.connectionManager.activeUrl !== "" ? appCtrl.connectionManager.activeUrl : (appSet ? appSet.serverUrl : ""));
                 if (url !== "") {
-                    filterOptionsModel.fetchEndpoint(url, appSet.token, endpoint)
+                    var token = appCtrl.currentServerToken !== "" ? appCtrl.currentServerToken : (appSet ? appSet.token : "");
+                    filterOptionsModel.fetchEndpoint(url, token, endpoint)
                 }
             }
         }
@@ -477,7 +478,8 @@ Rectangle {
                             endpoint += "?" + params.join("&")
                         }
                         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : (appCtrl.connectionManager.activeUrl !== "" ? appCtrl.connectionManager.activeUrl : appSet.serverUrl);
-                        filterOptionsModel.fetchEndpoint(url, appSet.token, endpoint)
+                        var token = appCtrl.currentServerToken !== "" ? appCtrl.currentServerToken : (appSet ? appSet.token : "");
+                    filterOptionsModel.fetchEndpoint(url, token, endpoint)
                     }
                 }
             }
