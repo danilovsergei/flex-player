@@ -121,10 +121,10 @@ Item {
 
         if (offset > 0) {
             mpvObject.setProperty("start", (offset / 1000).toString())
-            mpvObject.command(["loadfile", url])
         } else {
-            mpvObject.command(["loadfile", url])
+            mpvObject.setProperty("start", "0")
         }
+        mpvObject.command(["loadfile", url])
         mpvObject.paused = false
     }
 

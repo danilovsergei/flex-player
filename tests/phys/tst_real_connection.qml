@@ -443,6 +443,100 @@ TestCase {
         console.log("Successfully verified that Smart Collection creation is safely disabled for shared libraries.")
     }
 
+    function test_z_playback_start_offset_cleared() {
+        console.log("Starting test_z_playback_start_offset_cleared...")
+        
+        var sidebar = findChild(app, "sidebarView")
+        var libraryRepeater = findChild(sidebar, "sidebarLibraryRepeater")
+        var omvButton = null;
+        for (var i = 0; i < libraryRepeater.count; i++) {
+            var btn = libraryRepeater.itemAt(i);
+            if (btn && btn.mTitle === "Movies" && (btn.mServerToken === "" || btn.mServerToken === app.appSettings.token)) {
+                omvButton = btn;
+                break;
+            }
+        }
+        verify(omvButton !== null, "Could not find the omv Movies library button");
+        app.loadLibraryContent(omvButton.mId, omvButton.mTitle, omvButton.mType, omvButton.mServerUrl, omvButton.mUniqueId, omvButton.mServerToken)
+        wait(1000)
+        
+        app.currentTab = 1
+        var recommendView = findChild(app, "libraryView")
+        recommendView.libraryTab = 0
+        wait(500)
+        
+        // 1. Play something with an offset (from Continue Watching)
+        var cwList = findChild(recommendView, "continueWatchingListLib")
+        verify(cwList !== null && cwList.count > 0, "Continue Watching should have items")
+        
+        var firstCW = cwList.contentItem.children[0]
+        var movieDataCW = app.controller.libraryDeckModel.get(0)
+        verify(movieDataCW.viewOffset > 0, "First CW item should have viewOffset > 0")
+        
+        var cwOffsetSecs = movieDataCW.viewOffset / 1000;
+        console.log("CW Item Offset: " + cwOffsetSecs + " seconds")
+        
+        var mUrl = (movieDataCW.serverUrl !== undefined && movieDataCW.serverUrl !== "") ? movieDataCW.serverUrl : omvButton.mServerUrl;
+        var mToken = (movieDataCW.serverToken !== undefined && movieDataCW.serverToken !== "") ? movieDataCW.serverToken : omvButton.mServerToken;
+        
+        app.controller.detailsModel.fetchItemDetails(mUrl, mToken, movieDataCW.ratingKey)
+        app.currentTab = 3
+        wait(1000)
+        
+        var movieDetailsView = findChild(app, "movieDetailsView")
+        var playBtn = findChild(movieDetailsView, "detailsPlayButton")
+        playBtn.clicked()
+        
+        var playerView = findChild(app, "playerView")
+        tryVerify(function() { return playerView.visible; }, 5000, "Player should be visible")
+        
+        var mpvItem = findChild(playerView, "mpvObject")
+        tryVerify(function() { return mpvItem.duration > 0; }, 15000, "Playback should start")
+        wait(1000)
+        
+        var pos1 = mpvItem.position;
+        console.log("Current MPV Position: " + pos1)
+        verify(pos1 > (cwOffsetSecs - 5), "Playback should start near the offset")
+        
+        // Stop playback
+        findChild(playerView, "backButton").clicked()
+        app.currentTab = 1
+        wait(500)
+        
+        // 2. Play something WITHOUT an offset (from Recently Added)
+        var raList = findChild(recommendView, "recentlyAddedListLib")
+        var movieDataRA = null;
+        for (var k = 0; k < app.controller.libraryRecentModel.rowCount(); k++) {
+            var item = app.controller.libraryRecentModel.get(k);
+            if (!item.viewOffset || item.viewOffset === 0) {
+                movieDataRA = item;
+                break;
+            }
+        }
+        verify(movieDataRA !== null, "Should find an unwatched movie in recently added")
+        console.log("Found unwatched movie: " + movieDataRA.title)
+        
+        mUrl = (movieDataRA.serverUrl !== undefined && movieDataRA.serverUrl !== "") ? movieDataRA.serverUrl : omvButton.mServerUrl;
+        mToken = (movieDataRA.serverToken !== undefined && movieDataRA.serverToken !== "") ? movieDataRA.serverToken : omvButton.mServerToken;
+        
+        app.controller.detailsModel.fetchItemDetails(mUrl, mToken, movieDataRA.ratingKey)
+        app.currentTab = 3
+        wait(1000)
+        
+        playBtn = findChild(movieDetailsView, "detailsPlayButton")
+        playBtn.clicked()
+        
+        tryVerify(function() { return playerView.visible; }, 5000, "Player should be visible")
+        tryVerify(function() { return mpvItem.duration > 0; }, 15000, "Playback should start")
+        wait(1000)
+        
+        var pos2 = mpvItem.position;
+        console.log("Second MPV Position: " + pos2)
+        verify(pos2 < 5, "Playback should start from the beginning (offset 0), NOT inherit previous offset!")
+        
+        findChild(playerView, "backButton").clicked()
+    }
+
     function cleanupTestCase() {
         if (app) app.destroy()
     }
