@@ -154,6 +154,8 @@ TestCase {
      * successfully routes the custom token to fetch and display the media.
      */
     function test_real_shared_library_connection() {
+        console.log("App object is: " + app)
+        verify(app !== null, "App should not be null")
         var settingsWindow = findChild(app, "settingsWindow")
         verify(settingsWindow !== null)
         

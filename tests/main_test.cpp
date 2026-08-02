@@ -39,6 +39,7 @@ public:
 public slots:
     void applicationAvailable()
     {
+        QCoreApplication::setApplicationName("flex-player-test");
         QSurfaceFormat format;
         format.setVersion(4, 6);
         format.setProfile(QSurfaceFormat::CoreProfile);
