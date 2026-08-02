@@ -19,7 +19,23 @@ ScrollView {
     property Component movieDelegate
     property color plexOrange: "#E5A00D"
 
+
     signal openSettingsRequested()
+
+    Connections {
+        target: rootApp && rootApp.controller ? rootApp.controller : null
+        function onHomeContentRefreshRequested() {
+            console.log("HomeView: Reloading rails");
+            for (var i = 0; i < continueWatchingRepeater.count; i++) {
+                var cw = continueWatchingRepeater.itemAt(i);
+                if (cw && cw.refresh) cw.refresh();
+            }
+            for (var j = 0; j < libraryRepeater.count; j++) {
+                var lib = libraryRepeater.itemAt(j);
+                if (lib && lib.refresh) lib.refresh();
+            }
+        }
+    }
 
     ColumnLayout {
         objectName: "homeContentColumn"

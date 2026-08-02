@@ -261,6 +261,58 @@ TestCase {
         mouseClick(backButton)
     }
 
+    function test_93_resume_time_updated_on_stop() {
+        console.log("Starting test_93_resume_time_updated_on_stop...")
+        var playerView = findChild(mainWindow, "playerView")
+        var mpvObject = findChild(mainWindow, "mpvObject")
+        verify(playerView !== null, "playerView should exist")
+        verify(mpvObject !== null, "mpvObject should exist")
+        
+        mainWindow.currentTab = 3 // Details tab
+        var movieDetailsView = findChild(mainWindow, "movieDetailsView")
+        verify(movieDetailsView !== null, "movieDetailsView should exist")
+        
+        // Use a mock response for fetchItemDetails
+        var mockJson = { "MediaContainer": { "Metadata": [{ "ratingKey": "999", "title": "Mock Detail Title", "duration": 5400000, "viewOffset": 0, "Genre": [], "Role": [] }] } };
+        mainWindow.controller.detailsModel.fetchItemDetails("https://127.0.0.1:32400", "mocktoken", mockJson.MediaContainer.Metadata[0].ratingKey);
+        
+        tryVerify(function() { return movieDetailsView.detailsData && movieDetailsView.detailsData.ratingKey === "999"; }, 5000, "Details data should be loaded")
+        
+        playerView.visible = true
+        console.log("Starting playback with 0ms offset")
+        playerView.playMedia("https://127.0.0.1:32400/library/parts/2/file.mkv", 0, "999", 5400000, "auto", "no", [])
+        
+        tryVerify(function() { return mpvObject.duration > 0; }, 15000, "Playback should start")
+        wait(500) // Let it play a little bit
+        
+        var spy = Qt.createQmlObject('import QtTest; SignalSpy {}', mainWindow);
+        spy.target = playerView;
+        spy.signalName = "playbackStopped";
+        
+        var backButton = findChild(playerView, "backButton")
+        mouseClick(backButton)
+        
+        spy.wait(2000);
+        verify(spy.count === 1, "playbackStopped should be emitted");
+        
+        var args = spy.signalArguments[0];
+        var finalPosMs = args[0];
+        console.log("Stopped playback at position: " + finalPosMs);
+        verify(finalPosMs > 0, "Final position should be > 0");
+        
+        // Check if detailsModel fired itemDetailsLoaded
+        var spy2 = Qt.createQmlObject('import QtTest; SignalSpy {}', mainWindow);
+        spy2.target = mainWindow.controller.detailsModel;
+        spy2.signalName = "itemDetailsLoaded";
+        
+        // we might have to wait for the fetch request
+        spy2.wait(5000);
+        verify(spy2.count > 0, "itemDetailsLoaded should be emitted after playback stops");
+        
+        spy.destroy();
+        spy2.destroy();
+    }
+
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()

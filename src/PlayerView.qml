@@ -26,7 +26,7 @@ Item {
 
     property bool hdrWasEnabledByApp: false
 
-    signal playbackStopped()
+    signal playbackStopped(int finalTimeMs)
     signal timelineUpdateRequested(string state, int timeMs)
 
     function getCurrentAudioName() {
@@ -356,10 +356,11 @@ Item {
                     playerView.hdrWasEnabledByApp = false
                 }
                 
+                var finalPosMs = Math.floor(mpvObject.position * 1000)
                 videoBlackout.visible = true
                 mpvObject.command(["stop"])
                 playerView.visible = false
-                playbackStopped()
+                playbackStopped(finalPosMs)
                 if (playerView.isFullScreenMode && playerView.rootApp) {
                     playerView.rootApp.showNormal()
                 }
@@ -733,9 +734,10 @@ Item {
     }
 
     function stopPlayback() {
+        var finalPosMs = Math.floor(mpvObject.position * 1000)
         mpvObject.command(["stop"])
         playerView.visible = false
-        playbackStopped()
+        playbackStopped(finalPosMs)
     }
 }
 

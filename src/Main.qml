@@ -409,11 +409,17 @@ Window {
                 controller.globalDeckModel.updateTimeline(appSettings.serverUrl, appSettings.token, playerView.currentRatingKey, state, timeMs, playerView.currentDuration)
             }
         }
-        onPlaybackStopped: {
+        onPlaybackStopped: function(finalTimeMs) {
             if (playerView.currentRatingKey !== "") {
-                controller.globalDeckModel.updateTimeline(appSettings.serverUrl, appSettings.token, playerView.currentRatingKey, "stopped", 0, playerView.currentDuration);
+                controller.globalDeckModel.updateTimeline(appSettings.serverUrl, appSettings.token, playerView.currentRatingKey, "stopped", finalTimeMs, playerView.currentDuration);
+                
+                var mToken = controller.detailsModel.currentServerToken !== "" ? controller.detailsModel.currentServerToken : appSettings.token;
+                var mUrl = controller.detailsModel.currentServerUrl !== "" ? controller.detailsModel.currentServerUrl : appSettings.serverUrl;
+                controller.detailsModel.fetchItemDetails(mUrl, mToken, playerView.currentRatingKey);
+                
                 playerView.currentRatingKey = "";
             }
+            controller.refreshAllContent();
             rootLayout.visible = true
         }
     }

@@ -271,6 +271,19 @@ Item {
         settingsWindow.openTab(tabIndex, connectionManager.activeUrl, appSettings.token)
     }
 
+
+    signal homeContentRefreshRequested()
+
+    function refreshAllContent() {
+        console.log("GlobalController: Refreshing all content after playback");
+        homeContentRefreshRequested();
+        
+        if (currentLibraryId !== "") {
+            console.log("GlobalController: Reloading current library content");
+            loadLibraryContent(currentLibraryId, currentLibraryTitle, currentLibraryType, currentServerUrl, currentLibraryUniqueId, currentServerToken);
+        }
+    }
+
     function startupLogic() {
         // ONE-TIME FACTORY RESET for Connectivity Refactor
         if (appSettings.connectionVersion < 4) {
