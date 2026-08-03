@@ -126,24 +126,35 @@ Rectangle {
         }
     }
 
+    property var currentlyTestingNode: null
+
     function testAndSetBestConnection(serverData) {
         settingsWindow.connectionState = 1
         discoverStatusText.text = "Testing connection to " + serverData.name + "..."
-        connectionManager.token = tokenField.text
-        connectionManager.startExhaustiveProbe(serverData.connections || [])
+        
+        var node = connectionManager.getServer(serverData.name);
+        if (node) {
+            currentlyTestingNode = node;
+            node.forceProbe();
+        } else {
+            discoverStatusText.text = "Server node not found.";
+            settingsWindow.connectionState = 3;
+        }
     }
 
     Connections {
-        target: connectionManager
+        target: currentlyTestingNode
         function onResolutionFinished(success) {
+            var sName = currentlyTestingNode ? currentlyTestingNode.name : "Server";
             if (success) {
                 settingsWindow.connectionState = 2
-                discoverStatusText.text = "Connected to " + connectionManager.activeUrl
+                discoverStatusText.text = sName + ": Connected to " + currentlyTestingNode.activeUrl
             } else {
                 settingsWindow.connectionState = 3
-                settingsWindow.connectionError = "Could not reach server."
-                discoverStatusText.text = "Connection failed."
+                settingsWindow.connectionError = sName + ": Could not reach server."
+                discoverStatusText.text = sName + ": Connection failed."
             }
+            currentlyTestingNode = null;
         }
     }
 
@@ -305,7 +316,9 @@ Rectangle {
                                         localServersList = list
                                     }
                                 }
-                                Text { text: "🖥️ " + modelData.name; color: "white"; font.pixelSize: 18; Layout.fillWidth: true }
+                                property var serverNode: typeof connectionManager !== "undefined" ? connectionManager.getServer(modelData.name) : null
+                                property bool isOffline: serverNode ? !serverNode.isOnline : false
+                                Text { text: "🖥️ " + modelData.name + (isOffline ? " ❌" : ""); color: isOffline ? "#888" : "white"; font.pixelSize: 18; Layout.fillWidth: true }
                                 Button {
                                     text: "Test"
                                     onClicked: testAndSetBestConnection(modelData)
@@ -545,10 +558,19 @@ Rectangle {
                             Component.onCompleted: updateServerUrl()
 
                             Text { 
-                                text: "📁 Server: " + serverDelegateRoot.serverName + (serverDelegateRoot.isOwned ? "" : " (Shared by " + serverDelegateRoot.sourceTitle + ")"); 
-                                color: "#E5A00D"; 
+                                text: "📁 Server: " + serverDelegateRoot.serverName + (serverDelegateRoot.isOwned ? "" : " (Shared by " + serverDelegateRoot.sourceTitle + ")") + (serverDelegateRoot.isOffline ? " ❌" : ""); 
+                                color: serverDelegateRoot.isOffline ? "#888" : "#E5A00D"; 
                                 font.pixelSize: 22; 
                                 font.bold: true 
+                            }
+                            
+                            Text {
+                                text: "❌ Server unreachable. Please check connection."
+                                color: "#AA0000"
+                                font.pixelSize: 16
+                                font.italic: true
+                                visible: serverDelegateRoot.isOffline
+                                Layout.leftMargin: 30
                             }
                             
                             PlexModel {
@@ -577,6 +599,7 @@ Rectangle {
                             }
                             
                             Repeater {
+                                visible: !serverDelegateRoot.isOffline
                                 model: serverLibrariesModel
                                 delegate: RowLayout {
                                     Layout.leftMargin: 30
