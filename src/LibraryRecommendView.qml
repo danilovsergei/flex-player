@@ -7,6 +7,12 @@ Item {
     implicitWidth: 1280
     implicitHeight: 720
     id: root
+
+    ServerOfflineOverlay {
+        connectionManager: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.connectionManager : null
+        serverName: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.currentServerName : ""
+    }
+
     objectName: "libraryView"
     
     property int libraryTab: 0

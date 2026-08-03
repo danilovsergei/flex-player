@@ -5,6 +5,12 @@ import flex.plex 1.0
 
 ColumnLayout {
     id: root
+
+    ServerOfflineOverlay {
+        connectionManager: root.appCtrl ? root.appCtrl.connectionManager : null
+        serverName: root.appCtrl ? root.appCtrl.currentServerName : ""
+    }
+
     objectName: "libraryBrowserView"
 
 

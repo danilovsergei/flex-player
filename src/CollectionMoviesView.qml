@@ -7,6 +7,12 @@ Item {
     implicitWidth: 1280
     implicitHeight: 720
     id: root
+
+    ServerOfflineOverlay {
+        connectionManager: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.connectionManager : null
+        serverName: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.currentServerName : ""
+    }
+
     objectName: "collectionMoviesView"
     
     property color plexOrange: "#E5A00D"

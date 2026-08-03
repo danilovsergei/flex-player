@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     
     // Register our custom MPV QML Type
     qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
+    qmlRegisterUncreatableType<PlexServerNode>("flex.plex", 1, 0, "PlexServerNode", "Cannot create PlexServerNode in QML");
     qmlRegisterType<PlexConnectionManager>("flex.plex", 1, 0, "PlexConnectionManager");
     qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
     qmlRegisterType<PlexAuth>("flex.plex", 1, 0, "PlexAuth");

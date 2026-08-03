@@ -52,7 +52,8 @@ public slots:
         engine->setNetworkAccessManagerFactory(new MyNetworkAccessManagerFactory);
 
         qmlRegisterType<MpvObject>("flex.mpv", 1, 0, "MpvObject");
-        qmlRegisterType<PlexConnectionManager>("flex.plex", 1, 0, "PlexConnectionManager");
+        qmlRegisterUncreatableType<PlexServerNode>("flex.plex", 1, 0, "PlexServerNode", "Cannot create PlexServerNode in QML");
+    qmlRegisterType<PlexConnectionManager>("flex.plex", 1, 0, "PlexConnectionManager");
         qmlRegisterType<PlexModel>("flex.plex", 1, 0, "PlexModel");
         qmlRegisterType<PlexAuth>("flex.plex", 1, 0, "PlexAuth");
         qmlRegisterType<ScreenSaverInhibitor>("flex.plex", 1, 0, "ScreenSaverInhibitor");

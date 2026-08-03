@@ -57,7 +57,7 @@ for FUNC in $FUNCS; do
         RES_FILE="$OUT_DIR/$FNAME.res"
         
         # Run test in docker
-        docker run --rm --pull=never --add-host mock-remote.plex.tv:127.0.0.1 $IMAGE_NAME "$FNAME" > "$LOG_FILE" 2>&1
+        timeout 60s docker run --rm --pull=never --add-host mock-remote.plex.tv:127.0.0.1 $IMAGE_NAME "$FNAME" > "$LOG_FILE" 2>&1
         local_ret=$?
         
         if [ $local_ret -eq 0 ] && grep -q "PASS   : .*$FNAME" "$LOG_FILE"; then

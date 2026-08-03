@@ -5,12 +5,19 @@ import flex.plex 1.0
 
 ColumnLayout {
     id: railRoot
+
+    ServerOfflineOverlay {
+        connectionManager: railRoot.rootApp ? railRoot.rootApp.controller.connectionManager : null
+        serverName: railRoot.serverName
+    }
+
     Layout.preferredWidth: 1200
     objectName: "libraryRail_" + libraryId
     property var rootApp
     property string libraryTitle: ""
     property string libraryId: ""
     property string libraryType: ""
+    property string serverName: ""
     property string serverUrl: ""
     property string serverToken: ""
     

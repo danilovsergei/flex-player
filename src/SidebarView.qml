@@ -5,7 +5,7 @@ import flex.plex 1.0
 
 Rectangle {
                 property var mainWindow
-                                Layout.preferredWidth: mainWindow.sidebarCollapsed ? 60 : 200
+                                Layout.preferredWidth: mainWindow.sidebarCollapsed ? 60 : 260
                 Layout.fillHeight: true
                 color: "#151515"
                 objectName: "sidebar"
@@ -76,19 +76,28 @@ Rectangle {
                             property string mTitle: (typeof modelData !== 'undefined' && modelData.title) ? modelData.title : model.title
                             property string mServerUrl: (typeof modelData !== 'undefined' && modelData.serverUrl) ? modelData.serverUrl : ((typeof model !== 'undefined' && model.serverUrl) ? model.serverUrl : "")
                             property string mServerToken: (typeof modelData !== 'undefined' && modelData.serverToken) ? modelData.serverToken : ((typeof model !== 'undefined' && model.serverToken) ? model.serverToken : "")
+                            property string mServerName: (typeof modelData !== 'undefined' && modelData.serverName) ? modelData.serverName : ((typeof model !== 'undefined' && model.serverName) ? model.serverName : "")
+                            
+                            property var serverNode: mainWindow.controller && mainWindow.controller.connectionManager ? mainWindow.controller.connectionManager.getServer(mServerName) : null
+                            property bool isOffline: serverNode ? !serverNode.isOnline : false
                             
                             objectName: "libTabButton_" + mUniqueId
                             Layout.fillWidth: true
                             contentItem: Text {
-                                text: parent.text
-                                color: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString() ? mainWindow.plexOrange : "white"
+                                text: {
+                                    var sName = mServerName ? " (" + mServerName + ")" : "";
+                                    var offlineStr = isOffline ? " ❌" : "";
+                                    return mainWindow.sidebarCollapsed ? mainWindow.getLibraryIcon(mType) : mainWindow.getLibraryIcon(mType) + " " + mTitle + sName + offlineStr;
+                                }
+                                color: isOffline ? "#888" : ((mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString() ? mainWindow.plexOrange : "white")
                                 font.pixelSize: 18
                                 font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString()
                                 horizontalAlignment: mainWindow.sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
                             }
                             background: Rectangle { color: "transparent" }
                             onClicked: {
-                                mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId, mServerToken)
+                                if (isOffline) { if (serverNode) serverNode.forceProbe(); return; }
+                                mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId, mServerToken, mServerName)
                                 mainWindow.currentTab = 1 // Switch to library Recommend view
                             }
                         }

@@ -5,6 +5,12 @@ import flex.plex 1.0
 
 ColumnLayout {
     id: cwRoot
+
+    ServerOfflineOverlay {
+        connectionManager: cwRoot.rootApp ? cwRoot.rootApp.controller.connectionManager : null
+        serverName: cwRoot.serverName
+    }
+
     Layout.preferredWidth: 1200
     objectName: "continueWatchingRail_" + serverName
     property var rootApp

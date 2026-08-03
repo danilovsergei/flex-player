@@ -25,6 +25,7 @@ Item {
     property string currentLibraryType: "movie"
     property string currentServerUrl: ""
     property string currentServerToken: ""
+    property string currentServerName: ""
 
 
     signal hdrCommandExecuted(string command)
@@ -239,7 +240,7 @@ Item {
         }
     }
     
-    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) {
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) {
         console.warn("GlobalController loadLibraryContent -> id: " + id + " url: " + serverUrl + " token: " + (serverToken ? "provided" : "empty"));
         currentLibraryId = id
         currentLibraryUniqueId = uniqueId || id
@@ -247,6 +248,7 @@ Item {
         currentLibraryType = type
         currentServerUrl = serverUrl || ""
         currentServerToken = serverToken || appSettings.token
+        currentServerName = serverName || "" 
         var url = currentServerUrl !== "" ? currentServerUrl : (connectionManager.activeUrl !== "" ? connectionManager.activeUrl : appSettings.serverUrl);
         var token = currentServerToken;
         
@@ -280,7 +282,7 @@ Item {
         
         if (currentLibraryId !== "") {
             console.log("GlobalController: Reloading current library content");
-            loadLibraryContent(currentLibraryId, currentLibraryTitle, currentLibraryType, currentServerUrl, currentLibraryUniqueId, currentServerToken);
+            loadLibraryContent(currentLibraryId, currentLibraryTitle, currentLibraryType, currentServerUrl, currentLibraryUniqueId, currentServerToken, currentServerName);
         }
     }
 
@@ -358,13 +360,7 @@ Item {
         var primary = enabledServers[0];
         console.log("GlobalController: Probing primary server: " + primary.name);
         connectionManager.token = primary.accessToken || appSettings.token;
-                console.log("GlobalController: Probing primary " + primary.name + " with " + (primary.connections ? primary.connections.length : 0) + " connections");
-        if (primary.connections) {
-            for (var i = 0; i < primary.connections.length; i++) {
-                var c = primary.connections[i];
-                console.log("  - Candidate: " + c.address + ":" + c.port + " (" + c.protocol + ", local: " + c.local + ")");
-            }
-        }
+        connectionManager.syncServers(appSettings.serverList, appSettings.token);
         connectionManager.startExhaustiveProbe(primary.connections || []);
 
         var enabledLibs = parseEnabledLibraries();

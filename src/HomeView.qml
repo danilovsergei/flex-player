@@ -85,7 +85,7 @@ ScrollView {
             objectName: "continueWatchingRepeater"
             model: rootApp && rootApp.controller ? rootApp.controller.activeServersList : []
             delegate: ContinueWatchingRail {
-                serverName: modelData.serverName
+                serverName: modelData.serverName || ""
                 serverUrl: modelData.serverUrl
                 serverToken: (typeof modelData.serverToken !== 'undefined' && modelData.serverToken !== null) ? modelData.serverToken : ""
                 rootApp: root.rootApp
@@ -105,6 +105,7 @@ ScrollView {
                 libraryTitle: modelData.title + (modelData.serverName ? " (" + modelData.serverName + ")" : "")
                 libraryId: modelData.id
                 libraryType: modelData.type
+                serverName: modelData.serverName || ""
                 serverUrl: (typeof modelData.serverUrl !== 'undefined' && modelData.serverUrl !== null) ? modelData.serverUrl : ""
                 serverToken: (typeof modelData.serverToken !== 'undefined' && modelData.serverToken !== null) ? modelData.serverToken : ""
                 rootApp: root.rootApp

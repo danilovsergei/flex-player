@@ -64,7 +64,7 @@ Window {
     readonly property color plexOrange: "#E5A00D"
 
     function startupLogic() { controller.startupLogic() }
-    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken) }
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) }
     function getLibraryIcon(type) { return controller.getLibraryIcon(type) }
     function formatTime(seconds) { return controller.formatTime(seconds) }
     
