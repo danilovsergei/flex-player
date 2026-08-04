@@ -273,7 +273,8 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         "size": 2,
                         "Metadata": [
                             { "ratingKey": "500", "title": "Artist A", "type": "folder" },
-                            { "ratingKey": "600", "title": "Track 1", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track1.mp3"}]}] }
+                            { "ratingKey": "600", "title": "Track 1", "parentTitle": "Mock Album", "grandparentTitle": "Mock Artist", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track1.mp3"}]}] },
+                            { "ratingKey": "604", "title": "Track Fallback", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/export/Storage/Music/punk/Fallback Artist/2010 - Fallback Album!/01 - Track Fallback.mp3"}]}] }
                         ]
                     }
                 }

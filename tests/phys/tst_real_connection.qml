@@ -515,6 +515,31 @@ TestCase {
         
         tryVerify(function() { return songItem.isPlayingTrack === true; }, 5000, "Song item should be visually marked as playing");
         console.log("Song item is correctly showing playing visual state!");
+        
+        var playlistModel = playlistView.model;
+        var firstItem = playlistModel.get(0);
+        console.log("Verifying item columns for: " + firstItem.title);
+        verify(firstItem.album !== undefined, "Item should have album column");
+        verify(firstItem.artist !== undefined, "Item should have artist column");
+        verify(firstItem.duration !== undefined && firstItem.duration > 0, "Item should have duration column > 0");
+        
+        // Let's verify the text items exist and have text
+        var children = songItem.contentItem.children[0].children;
+        var foundAlbum = false;
+        var foundArtist = false;
+        var foundDuration = false;
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].text !== undefined) {
+                if (children[i].text === firstItem.album && firstItem.album !== "") foundAlbum = true;
+                if (children[i].text === firstItem.artist && firstItem.artist !== "") foundArtist = true;
+                if (children[i].text.indexOf(":") !== -1 && children[i].text !== "00:00") foundDuration = true;
+            }
+        }
+        if (firstItem.album !== "") verify(foundAlbum, "Album text should be visible");
+        if (firstItem.artist !== "") verify(foundArtist, "Artist text should be visible");
+        verify(foundDuration, "Duration text should be visible and formatted");
+        
+        console.log("Columns verified successfully!");
     }
 
     function test_smart_collection_creation() {

@@ -34,7 +34,7 @@ Item {
         var list = [];
         for (var i = 0; i < playlistModel.count; i++) {
             var item = playlistModel.get(i);
-            list.push({"title": item.title, "mediaUrl": item.mediaUrl, "duration": item.duration});
+            list.push({"title": item.title, "album": item.album !== undefined ? item.album : "", "artist": item.artist !== undefined ? item.artist : "", "mediaUrl": item.mediaUrl, "duration": item.duration});
         }
         appCtrl.appSettings.defaultPlaylist = JSON.stringify(list);
     }
@@ -129,9 +129,35 @@ Item {
                             trackUrl = url + partKey + "?X-Plex-Token=" + token;
                         }
                         
+                        var parsedAlbum = item.parentTitle || "";
+                        var parsedArtist = item.grandparentTitle || item.originalTitle || "";
+                        
+                        if ((!parsedAlbum || !parsedArtist) && item.type === "track") {
+                            if (item.Media && item.Media.length > 0 && item.Media[0].Part && item.Media[0].Part.length > 0) {
+                                var filePath = item.Media[0].Part[0].file || "";
+                                if (filePath !== "") {
+                                    var parts = filePath.split("/");
+                                    if (parts.length >= 3) {
+                                        if (!parsedAlbum) {
+                                            parsedAlbum = parts[parts.length - 2].replace(/^\d{4}\s*-\s*/, "").replace(/^\d{4}\s+/, "").replace(/!$/, "").trim();
+                                        }
+                                        if (!parsedArtist) {
+                                            var aStr = parts[parts.length - 3].trim();
+                                            if (aStr === aStr.toUpperCase() && aStr.length > 1) {
+                                                aStr = aStr.charAt(0) + aStr.slice(1).toLowerCase();
+                                            }
+                                            parsedArtist = aStr;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         var node = {
                             "nodeId": itemKey,
                             "title": item.title || "",
+                            "album": parsedAlbum,
+                            "artist": parsedArtist,
                             "type": item.type || "folder",
                             "isFolder": isDir,
                             "parentId": pId,
@@ -253,7 +279,7 @@ Item {
                                             root.loadFolder(root.appCtrl.currentLibraryId, model.parentId, model.depth + 1, index + 1, model.nodeId);
                                         }
                                     } else {
-                                        playlistModel.append({"title": model.title, "mediaUrl": model.mediaUrl, "duration": model.duration});
+                                        playlistModel.append({"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration});
                                         
                                         var pw = null;
                                         if (typeof mainWindow !== "undefined" && mainWindow.playerView) pw = mainWindow.playerView;
@@ -279,7 +305,7 @@ Item {
                         Drag.keys: ["text/plain"]
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: height / 2
-                        property var dragData: {"title": model.title, "mediaUrl": model.mediaUrl, "duration": model.duration, "isFolder": model.isFolder, "parentId": model.parentId}
+                        property var dragData: {"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration, "isFolder": model.isFolder, "parentId": model.parentId}
                     }
                     
                     Menu {
@@ -397,6 +423,8 @@ Item {
                         
                         Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                         
+                        property bool isContextMenuOpen: false
+                        
                         property bool isPlayingTrack: {
                             var pw = (typeof mainWindow !== "undefined" && mainWindow.playerView) ? mainWindow.playerView : ((typeof app !== "undefined" && app.playerView) ? app.playerView : null);
                             if (!pw && root.appCtrl && root.appCtrl.parent) pw = root.appCtrl.parent.playerView;
@@ -421,7 +449,7 @@ Item {
                                 width: parent.width
                                 height: 50
                                 y: playlistView.hoveredDropIndex === index ? 40 : 0
-                                color: isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a")
+                                color: isContextMenuOpen ? "#444444" : (isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a"))
                                 Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                             }
                         }
@@ -463,17 +491,58 @@ Item {
                                 color: isPlayingTrack ? (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d") : "white"
                                 font.bold: isPlayingTrack
                                 Layout.fillWidth: true
+                                Layout.preferredWidth: parent.width * 0.4
                                 elide: Text.ElideRight
                                 font.pixelSize: 16
                             }
                             
-                            Button {
-                                text: "X"
-                                background: Rectangle { color: "#aa0000"; radius: 4 }
-                                contentItem: Text { text: parent.text; color: "white" }
-                                onClicked: playlistModel.remove(index)
+                            Text {
+                                text: model.album !== undefined ? model.album : ""
+                                color: "#ccc"
+                                Layout.preferredWidth: parent.width * 0.25
+                                elide: Text.ElideRight
+                                font.pixelSize: 14
+                            }
+                            
+                            Text {
+                                text: model.artist !== undefined ? model.artist : ""
+                                color: "#ccc"
+                                Layout.preferredWidth: parent.width * 0.2
+                                elide: Text.ElideRight
+                                font.pixelSize: 14
+                            }
+                            
+                            Text {
+                                text: (typeof mainWindow !== "undefined" && model.duration) ? mainWindow.formatTime(model.duration / 1000) : "00:00"
+                                color: "#aaa"
+                                Layout.preferredWidth: parent.width * 0.1
+                                horizontalAlignment: Text.AlignRight
+                                font.pixelSize: 14
                             }
                         }
+                        }
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.RightButton
+                            onClicked: function(mouse) {
+                                isContextMenuOpen = true;
+                                playlistItemContextMenu.popup();
+                            }
+                        }
+                        
+                        Menu {
+                            id: playlistItemContextMenu
+                            objectName: "playlistItemContextMenu"
+                            onClosed: {
+                                isContextMenuOpen = false;
+                            }
+                            MenuItem {
+                                text: "Delete"
+                                onTriggered: {
+                                    playlistModel.remove(index);
+                                }
+                            }
                         }
                     }
                 }
@@ -513,7 +582,7 @@ Item {
                         if (data.isFolder) {
                             root.recursivelyAddFolder(data.parentId, insertIndex);
                         } else {
-                            playlistModel.insert(insertIndex, {"title": data.title, "mediaUrl": data.mediaUrl, "duration": data.duration});
+                            playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration});
                         }
                         drop.accept();
                     }
@@ -562,10 +631,35 @@ Item {
                                 var partKey = item.Media[0].Part[0].key || item.Media[0].Part[0].file;
                                 trackUrl = url + partKey + "?X-Plex-Token=" + token;
                             }
+                            var parsedAlbum2 = item.parentTitle || "";
+                            var parsedArtist2 = item.grandparentTitle || item.originalTitle || "";
+                            
+                            if (!parsedAlbum2 || !parsedArtist2) {
+                                if (item.Media && item.Media.length > 0 && item.Media[0].Part && item.Media[0].Part.length > 0) {
+                                    var filePath2 = item.Media[0].Part[0].file || "";
+                                    if (filePath2 !== "") {
+                                        var parts2 = filePath2.split("/");
+                                        if (parts2.length >= 3) {
+                                            if (!parsedAlbum2) {
+                                                parsedAlbum2 = parts2[parts2.length - 2].replace(/^\d{4}\s*-\s*/, "").replace(/^\d{4}\s+/, "").replace(/!$/, "").trim();
+                                            }
+                                            if (!parsedArtist2) {
+                                                var aStr2 = parts2[parts2.length - 3].trim();
+                                                if (aStr2 === aStr2.toUpperCase() && aStr2.length > 1) {
+                                                    aStr2 = aStr2.charAt(0) + aStr2.slice(1).toLowerCase();
+                                                }
+                                                parsedArtist2 = aStr2;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0};
                             if (state.currentIndex >= playlistModel.count) {
-                                playlistModel.append({"title": item.title, "mediaUrl": trackUrl, "duration": item.duration || 0});
+                                playlistModel.append(trackData);
                             } else {
-                                playlistModel.insert(state.currentIndex, {"title": item.title, "mediaUrl": trackUrl, "duration": item.duration || 0});
+                                playlistModel.insert(state.currentIndex, trackData);
                             }
                             state.currentIndex++;
                         }

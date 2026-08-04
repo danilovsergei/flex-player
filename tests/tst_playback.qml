@@ -530,6 +530,12 @@ TestCase {
         mouseDrag(songNode, songNode.width / 2, songNode.height / 2, 400, 0, Qt.LeftButton, Qt.NoModifier, 500);
         tryVerify(function() { return playlistView.count === 1; }, 5000, "Playlist should have 1 song after single song drag and drop");
         
+        // 5.b Drag and drop fallback song
+        var fallbackNode = treeView.itemAtIndex(2);
+        verify(fallbackNode.children[0].children[0].children[0].text === "🎵", "Item 2 should be a song");
+        mouseDrag(fallbackNode, fallbackNode.width / 2, fallbackNode.height / 2, 400, 0, Qt.LeftButton, Qt.NoModifier, 500);
+        tryVerify(function() { return playlistView.count === 2; }, 5000, "Playlist should have 2 songs after fallback drag and drop");
+        
         // 6, 7, 8. Playback controls
         var mpvObj = findChild(mainWindow, "mpvObject");
         var progressBar = findChild(musicView, "musicProgressBar");
@@ -540,6 +546,34 @@ TestCase {
         verify(songItem !== null, "Song item should exist in playlist");
         mouseClick(songItem);
         tryVerify(function() { return mpvObj.paused === false; }, 5000, "Clicking song should start playback");
+        
+        // Validate Column text visibility
+        var firstItem = playlistModel.get(0);
+        verify(firstItem.album !== undefined, "Item should have album column");
+        verify(firstItem.artist !== undefined, "Item should have artist column");
+        verify(firstItem.duration !== undefined, "Item should have duration column");
+        
+        var fallbackItem = playlistModel.get(1);
+        verify(fallbackItem.album === "Fallback Album", "Fallback should extract album from path: " + fallbackItem.album);
+        verify(fallbackItem.artist === "Fallback Artist", "Fallback should extract artist from path: " + fallbackItem.artist);
+        
+        var children = songItem.contentItem.children[0].children;
+        var foundTitle = false;
+        var foundAlbum = false;
+        var foundArtist = false;
+        var foundDuration = false;
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].text !== undefined) {
+                if (children[i].text.indexOf(firstItem.title) !== -1) foundTitle = true;
+                if (children[i].text === firstItem.album && firstItem.album !== "") foundAlbum = true;
+                if (children[i].text === firstItem.artist && firstItem.artist !== "") foundArtist = true;
+                if (children[i].text.indexOf(":") !== -1 && children[i].text !== "00:00") foundDuration = true;
+            }
+        }
+        verify(foundTitle, "Title text should be visible");
+        if (firstItem.album !== "") verify(foundAlbum, "Album text should be visible");
+        if (firstItem.artist !== "") verify(foundArtist, "Artist text should be visible");
+        verify(foundDuration, "Duration text should be visible and formatted");
         
         mpvObj.position = 0.1; 
         wait(100);
