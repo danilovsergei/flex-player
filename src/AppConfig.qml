@@ -21,6 +21,7 @@ Item {
     property alias autoToggleHdr: playbackSettings.autoToggleHdr
     property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
     property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
+    property alias defaultPlaylist: musicSettings.defaultPlaylist
 
     property alias serverList: loginSettings.serverList
     property alias connectionVersion: loginSettings.connectionVersion
@@ -63,5 +64,12 @@ Item {
         property bool autoToggleHdr: false
         property string hdrEnableCommand: "kscreen-doctor output.DP-1.hdr.enable output.DP-1.wcg.enable"
         property string hdrDisableCommand: "kscreen-doctor output.DP-1.hdr.disable output.DP-1.wcg.disable"
+    }
+
+    Settings {
+        id: musicSettings
+        category: "Music"
+        location: root.isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
+        property string defaultPlaylist: "[]"
     }
 }

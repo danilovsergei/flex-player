@@ -19,13 +19,54 @@ Item {
         id: treeModel
     }
     
+    property bool _isLoadingPlaylist: false
     ListModel {
         id: playlistModel
+        onCountChanged: {
+            if (!root._isLoadingPlaylist) {
+                root.savePlaylist();
+            }
+        }
     }
 
+    function savePlaylist() {
+        if (!appCtrl || !appCtrl.appSettings) return;
+        var list = [];
+        for (var i = 0; i < playlistModel.count; i++) {
+            var item = playlistModel.get(i);
+            list.push({"title": item.title, "mediaUrl": item.mediaUrl, "duration": item.duration});
+        }
+        appCtrl.appSettings.defaultPlaylist = JSON.stringify(list);
+    }
+    
+    function loadPlaylist() {
+        if (!appCtrl || !appCtrl.appSettings) return;
+        try {
+            var listStr = appCtrl.appSettings.defaultPlaylist;
+            if (!listStr || listStr === "[]" || listStr === "") return;
+            var list = JSON.parse(listStr);
+            root._isLoadingPlaylist = true;
+            playlistModel.clear();
+            for (var i = 0; i < list.length; i++) {
+                playlistModel.append(list[i]);
+            }
+            root._isLoadingPlaylist = false;
+        } catch(e) {
+            console.warn("Failed to load defaultPlaylist: " + e);
+            root._isLoadingPlaylist = false;
+        }
+    }
+
+    property bool _hasLoadedPlaylist: false
     onVisibleChanged: {
-        if (visible && treeModel.count === 0 && appCtrl && appCtrl.currentLibraryId !== "") {
-            loadFolder(appCtrl.currentLibraryId, "", 0, -1, "");
+        if (visible) {
+            if (!_hasLoadedPlaylist) {
+                _hasLoadedPlaylist = true;
+                loadPlaylist();
+            }
+            if (treeModel.count === 0 && appCtrl && appCtrl.currentLibraryId !== "") {
+                loadFolder(appCtrl.currentLibraryId, "", 0, -1, "");
+            }
         }
     }
     
@@ -33,7 +74,6 @@ Item {
         target: appCtrl
         function onCurrentLibraryIdChanged() {
             treeModel.clear();
-            playlistModel.clear();
             if (root.visible && appCtrl && appCtrl.currentLibraryId !== "") {
                 loadFolder(appCtrl.currentLibraryId, "", 0, -1, "");
             }
@@ -244,6 +284,7 @@ Item {
                     
                     Menu {
                         id: contextMenu
+                        objectName: "contextMenu"
                         property string folderId: ""
                         MenuItem {
                             text: "Add to Playlist"

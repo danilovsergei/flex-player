@@ -131,7 +131,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         
-        if path.startswith("/library/parts/") or path.endswith(".mkv"):
+        if path.startswith("/library/parts/") or path.endswith(".mkv") or path.endswith(".mp3"):
             try:
                 import os
                 file_size = os.path.getsize('/app/tests/dummy1.mkv')
@@ -244,8 +244,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         elif "/folder" in path:
             # Check for parent query
             import urllib.parse
-            parsed = urllib.parse.urlparse(path)
-            qs = urllib.parse.parse_qs(parsed.query)
+            qs = urllib.parse.parse_qs(parsed_path.query)
             parent = qs.get("parent", [None])[0]
             
             if parent == "500":
@@ -253,7 +252,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     "MediaContainer": {
                         "size": 2,
                         "Metadata": [
-                            { "ratingKey": "/library/sections/2/folder?parent=501", "title": "Album X", "type": "folder" },
+                            { "ratingKey": "501", "title": "Album X", "type": "folder" },
                             { "ratingKey": "601", "title": "Track 2", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track2.mp3"}]}] }
                         ]
                     }
@@ -273,7 +272,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     "MediaContainer": {
                         "size": 2,
                         "Metadata": [
-                            { "ratingKey": "/library/sections/2/folder?parent=500", "title": "Artist A", "type": "folder" },
+                            { "ratingKey": "500", "title": "Artist A", "type": "folder" },
                             { "ratingKey": "600", "title": "Track 1", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track1.mp3"}]}] }
                         ]
                     }
