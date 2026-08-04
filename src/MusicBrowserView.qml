@@ -289,7 +289,7 @@ Item {
                         MenuItem {
                             text: "Add to Playlist"
                             onTriggered: {
-                                root.recursivelyAddFolder(contextMenu.folderId);
+                                root.recursivelyAddFolder(contextMenu.folderId, playlistModel.count);
                             }
                         }
                     }
@@ -389,9 +389,13 @@ Item {
                     model: playlistModel
                     clip: true
                     
+                    property int hoveredDropIndex: -1
+                    
                     delegate: ItemDelegate {
                         width: playlistView.width
-                        height: 50
+                        height: 50 + (playlistView.hoveredDropIndex === index ? 40 : 0)
+                        
+                        Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                         
                         property bool isPlayingTrack: {
                             var pw = (typeof mainWindow !== "undefined" && mainWindow.playerView) ? mainWindow.playerView : ((typeof app !== "undefined" && app.playerView) ? app.playerView : null);
@@ -399,8 +403,27 @@ Item {
                             return pw ? pw.currentMediaUrl === model.mediaUrl : false;
                         }
                         
-                        background: Rectangle {
-                            color: isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a")
+                        background: Item {
+                            Rectangle {
+                                width: parent.width
+                                height: 40
+                                y: 0
+                                visible: playlistView.hoveredDropIndex === index
+                                color: "transparent"
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 2
+                                    anchors.centerIn: parent
+                                    color: typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d"
+                                }
+                            }
+                            Rectangle {
+                                width: parent.width
+                                height: 50
+                                y: playlistView.hoveredDropIndex === index ? 40 : 0
+                                color: isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a")
+                                Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                            }
                         }
                         
                         onClicked: {
@@ -423,9 +446,17 @@ Item {
                             }
                         }
                         
-                        contentItem: RowLayout {
+                        contentItem: Item {
                             anchors.fill: parent
-                            anchors.margins: 10
+                            RowLayout {
+                                width: parent.width
+                                height: 50
+                                y: playlistView.hoveredDropIndex === index ? 40 : 0
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                             
                             Text {
                                 text: (isPlayingTrack ? "🔊 " : "🎵 ") + model.title
@@ -443,6 +474,7 @@ Item {
                                 onClicked: playlistModel.remove(index)
                             }
                         }
+                        }
                     }
                 }
             }
@@ -456,14 +488,32 @@ Item {
                     console.warn("DropArea onEntered!");
                     drag.accept(Qt.CopyAction);
                 }
+                onExited: {
+                    playlistView.hoveredDropIndex = -1;
+                }
+                onPositionChanged: function(drag) {
+                    var pt = playlistDropArea.mapToItem(playlistView.contentItem, drag.x, drag.y);
+                    var idx = playlistView.indexAt(pt.x, pt.y);
+                    if (idx !== -1) {
+                        playlistView.hoveredDropIndex = idx;
+                    } else {
+                        playlistView.hoveredDropIndex = -1;
+                    }
+                }
                 onDropped: function(drop) {
+                    playlistView.hoveredDropIndex = -1;
                     console.warn("DropArea onDropped! source=" + drop.source);
                     if (drop.source && drop.source.dragData) {
                         var data = drop.source.dragData;
+                        var pt = playlistDropArea.mapToItem(playlistView.contentItem, drop.x, drop.y);
+                        var insertIndex = playlistView.indexAt(pt.x, pt.y);
+                        if (insertIndex === -1) {
+                            insertIndex = playlistModel.count;
+                        }
                         if (data.isFolder) {
-                            root.recursivelyAddFolder(data.parentId);
+                            root.recursivelyAddFolder(data.parentId, insertIndex);
                         } else {
-                            playlistModel.append({"title": data.title, "mediaUrl": data.mediaUrl, "duration": data.duration});
+                            playlistModel.insert(insertIndex, {"title": data.title, "mediaUrl": data.mediaUrl, "duration": data.duration});
                         }
                         drop.accept();
                     }
@@ -472,10 +522,12 @@ Item {
         }
     }
 
-    function recursivelyAddFolder(folderId) {
+    function recursivelyAddFolder(folderId, insertIndex) {
         var libId = appCtrl.currentLibraryId;
         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
         var token = appCtrl.currentServerToken;
+        
+        var state = { currentIndex: insertIndex !== undefined ? insertIndex : playlistModel.count };
         
         function fetchDir(pId) {
             var endpoint = "/library/sections/" + libId + "/folder";
@@ -510,7 +562,12 @@ Item {
                                 var partKey = item.Media[0].Part[0].key || item.Media[0].Part[0].file;
                                 trackUrl = url + partKey + "?X-Plex-Token=" + token;
                             }
-                            playlistModel.append({"title": item.title, "mediaUrl": trackUrl, "duration": item.duration || 0});
+                            if (state.currentIndex >= playlistModel.count) {
+                                playlistModel.append({"title": item.title, "mediaUrl": trackUrl, "duration": item.duration || 0});
+                            } else {
+                                playlistModel.insert(state.currentIndex, {"title": item.title, "mediaUrl": trackUrl, "duration": item.duration || 0});
+                            }
+                            state.currentIndex++;
                         }
                     }
                 }
