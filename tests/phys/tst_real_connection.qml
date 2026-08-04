@@ -396,6 +396,127 @@ TestCase {
      * This test verifies that after adding a filter and saving a smart collection,
      * the Collections view updates immediately to display the newly created collection.
      */
+    
+    function test_real_music_browser_view() {
+        console.log("Looking for an artist/music library in the Sidebar...")
+        var sidebar = findChild(app, "sidebarView")
+        verify(sidebar !== null, "sidebarView not found")
+        
+        var libraryRepeater = findChild(sidebar, "sidebarLibraryRepeater")
+        verify(libraryRepeater !== null, "sidebarLibraryRepeater not found")
+        
+        tryVerify(function() { return libraryRepeater.count > 0; }, 10000, "Should load sidebar libraries")
+        
+        var musicBtn = null;
+        for (var i = 0; i < libraryRepeater.count; i++) {
+            var item = libraryRepeater.itemAt(i);
+            var libType = item.mType;
+            if (libType === "artist") {
+                musicBtn = item;
+                console.log("Found Music Library: " + item.mTitle)
+                break;
+            }
+        }
+        
+        if (musicBtn === null) {
+            console.log("SKIP: No Music (artist) library found on the real server to test.")
+            return;
+        }
+        
+        // Click to open music browser
+        var cm = findChild(app, "connectionManager");
+        tryVerify(function() { return cm.isResolving === false; }, 15000, "Should resolve connections");
+        tryVerify(function() { return cm.activeUrl !== ""; }, 5000, "Should have activeUrl");
+        
+        mouseClick(musicBtn);
+        tryVerify(function() { return app.currentTab === 7; }, 5000, "Should switch to music browser tab");
+        
+        var musicView = findChild(app, "musicBrowserView");
+        verify(musicView !== null, "MusicBrowserView should exist");
+        
+        var treeView = findChild(musicView, "musicTreeView");
+        verify(treeView !== null, "musicTreeView should exist");
+        
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        verify(playlistView !== null, "musicPlaylistView should exist");
+        
+        console.log("Waiting for tree root nodes to load...")
+        tryVerify(function() { return treeView && treeView.count > 0; }, 15000, "Music tree should load root folders");
+        
+        // Expand the first folder
+        var initialCount = treeView.count;
+        console.log("Initial tree root count: " + initialCount);
+        
+        var folderNode = null;
+        var folderNodeIndex = -1;
+        for (var k = 0; k < treeView.count; k++) {
+            var tn = treeView.itemAtIndex(k);
+            if (tn && tn.children[0] && tn.children[0].children[0] && tn.children[0].children[0].children[0] && tn.children[0].children[0].children[0].text.indexOf("+") !== -1) {
+                folderNode = tn;
+                folderNodeIndex = k;
+                break;
+            }
+        }
+        
+        if (!folderNode) {
+             folderNode = treeView.itemAtIndex(0);
+             folderNodeIndex = 0;
+        }
+        
+        console.log("Waiting for folderNode to instantiate...");
+        tryVerify(function() { return treeView.itemAtIndex(0) !== null; }, 5000, "itemAtIndex(0) should not be null");
+        folderNode = treeView.itemAtIndex(0);
+        console.log("Clicking folder node to expand...");
+        mouseClick(folderNode);
+        
+        tryVerify(function() { return treeView.count > initialCount; }, 15000, "Tree should expand and load children");
+        
+        console.log("Expanded successfully. Current count: " + treeView.count);
+        
+        // Collapse the folder node
+        console.log("Clicking folder node to collapse...");
+        tryVerify(function() { return treeView.itemAtIndex(0) !== null; }, 5000, "itemAtIndex(0) should not be null before collapse");
+        folderNode = treeView.itemAtIndex(0);
+        mouseClick(folderNode);
+        
+        tryVerify(function() { return treeView.count === initialCount; }, 5000, "Tree should collapse back");
+        console.log("Collapsed successfully.");
+        
+        console.log("Testing Drag and Drop to Playlist...");
+        var beforeDndCount = playlistView.count;
+        var dropArea = findChild(musicView, "playlistDropArea");
+        verify(dropArea !== null, "playlistDropArea should exist");
+        
+        tryVerify(function() { return treeView.itemAtIndex(0) !== null; }, 5000, "itemAtIndex(0) should not be null before drag");
+        folderNode = treeView.itemAtIndex(0);
+        
+        mouseDrag(folderNode, folderNode.width / 2, folderNode.height / 2, 400, 0, Qt.LeftButton, Qt.NoModifier, 500);
+        
+        tryVerify(function() { return playlistView.count > beforeDndCount; }, 5000, "Playlist should populate after drag and drop");
+        console.log("Drag and drop successfully added songs!");
+        
+        console.log("Testing Playback controls...");
+        var playPauseBtn = findChild(musicView, "musicPlayPauseButton");
+        verify(playPauseBtn !== null, "Play/Pause button should exist");
+        var progressBar = findChild(musicView, "musicProgressBar");
+        verify(progressBar !== null, "Progress bar should exist");
+        var volumeSlider = findChild(musicView, "musicVolumeSlider");
+        verify(volumeSlider !== null, "Volume slider should exist");
+        
+        tryVerify(function() { return playlistView.itemAtIndex(0) !== null || playlistView.contentItem.children.length > 0; }, 5000, "Song item should instantiate");
+        var songItem = playlistView.itemAtIndex ? playlistView.itemAtIndex(0) : playlistView.contentItem.children[0];
+        verify(songItem !== null, "Song item should exist in playlist");
+        mouseClick(songItem);
+        
+        var mpvObj = findChild(app, "mpvObject");
+        verify(mpvObj !== null, "mpvObject should exist");
+        tryVerify(function() { return mpvObj.paused === false; }, 5000, "MPV should start playing");
+        console.log("Song playback started successfully in background!");
+        
+        tryVerify(function() { return songItem.isPlayingTrack === true; }, 5000, "Song item should be visually marked as playing");
+        console.log("Song item is correctly showing playing visual state!");
+    }
+
     function test_smart_collection_creation() {
         console.log("Starting test_smart_collection_creation for shared server...")
         

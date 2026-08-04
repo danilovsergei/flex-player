@@ -374,7 +374,7 @@ Item {
         var keys = Object.keys(enabledLibs);
         for (var i = 0; i < keys.length; i++) {
             var lib = enabledLibs[keys[i]];
-            if (lib.type !== "movie" && lib.type !== "show" && lib.type !== "season") continue;
+            if (lib.type !== "movie" && lib.type !== "show" && lib.type !== "season" && lib.type !== "artist") continue;
             
             var sName = lib.serverName || primary.name;
             if (enabledServerNames.indexOf(sName) === -1) {

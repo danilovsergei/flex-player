@@ -241,6 +241,43 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         ]
                     }
                 }
+        elif "/folder" in path:
+            # Check for parent query
+            import urllib.parse
+            parsed = urllib.parse.urlparse(path)
+            qs = urllib.parse.parse_qs(parsed.query)
+            parent = qs.get("parent", [None])[0]
+            
+            if parent == "500":
+                response_data = {
+                    "MediaContainer": {
+                        "size": 2,
+                        "Metadata": [
+                            { "ratingKey": "/library/sections/2/folder?parent=501", "title": "Album X", "type": "folder" },
+                            { "ratingKey": "601", "title": "Track 2", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track2.mp3"}]}] }
+                        ]
+                    }
+                }
+            elif parent == "501":
+                response_data = {
+                    "MediaContainer": {
+                        "size": 2,
+                        "Metadata": [
+                            { "ratingKey": "602", "title": "Track 3", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track3.mp3"}]}] },
+                            { "ratingKey": "603", "title": "Track 4", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track4.mp3"}]}] }
+                        ]
+                    }
+                }
+            else:
+                response_data = {
+                    "MediaContainer": {
+                        "size": 2,
+                        "Metadata": [
+                            { "ratingKey": "/library/sections/2/folder?parent=500", "title": "Artist A", "type": "folder" },
+                            { "ratingKey": "600", "title": "Track 1", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/track1.mp3"}]}] }
+                        ]
+                    }
+                }
         elif path == "/library/onDeck" or path.endswith("/onDeck"):
             response_data = {
                 "MediaContainer": {

@@ -89,16 +89,20 @@ Rectangle {
                                     var offlineStr = isOffline ? " ❌" : "";
                                     return mainWindow.sidebarCollapsed ? mainWindow.getLibraryIcon(mType) : mainWindow.getLibraryIcon(mType) + " " + mTitle + sName + offlineStr;
                                 }
-                                color: isOffline ? "#888" : ((mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString() ? mainWindow.plexOrange : "white")
+                                color: isOffline ? "#888" : ((mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5 || mainWindow.currentTab === 7) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString() ? mainWindow.plexOrange : "white")
                                 font.pixelSize: 18
-                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString()
+                                font.bold: (mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 3 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5 || mainWindow.currentTab === 7) && mainWindow.controller && mainWindow.controller.currentLibraryUniqueId && mainWindow.controller.currentLibraryUniqueId.toString() === mUniqueId.toString()
                                 horizontalAlignment: mainWindow.sidebarCollapsed ? Text.AlignHCenter : Text.AlignLeft
                             }
                             background: Rectangle { color: "transparent" }
                             onClicked: {
                                 if (isOffline) { if (serverNode) serverNode.forceProbe(); return; }
                                 mainWindow.loadLibraryContent(mId, mTitle, mType, mServerUrl, mUniqueId, mServerToken, mServerName)
-                                mainWindow.currentTab = 1 // Switch to library Recommend view
+                                if (mType === "artist") {
+                                    mainWindow.currentTab = 7 // Switch to Music Browser view
+                                } else {
+                                    mainWindow.currentTab = 1 // Switch to library Recommend view
+                                }
                             }
                         }
                     }

@@ -43,6 +43,8 @@ Window {
     property alias token: appSettings.token
     property alias homeLibrariesList: controller.homeLibrariesList
     property alias controller: controller
+    property alias playerView: playerView
+    property alias rootLayout: rootLayout
 
     GlobalController {
         connectionManager: connectionManager
@@ -362,6 +364,10 @@ Window {
                     rootApp: mainWindow
                     movieDelegate: globalMovieDelegate
                 }
+            
+                MusicBrowserView {
+                    id: musicBrowserView
+                }
             }
             
 
@@ -372,7 +378,7 @@ Window {
                         var parsed = JSON.parse(jsonString);
                         var type = parsed.MediaContainer.Metadata[0].type;
                         
-                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2) {
+                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 7) {
                             mainWindow.previousTab = mainWindow.currentTab;
                         }
 
@@ -387,7 +393,7 @@ Window {
                             mainWindow.currentTab = 3;
                         }
                     } catch(e) {
-                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2) {
+                        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 7) {
                             mainWindow.previousTab = mainWindow.currentTab;
                         }
                         movieDetailsView.rawJson = jsonString;

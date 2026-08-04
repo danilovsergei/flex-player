@@ -479,6 +479,9 @@ Rectangle {
                             property string serverToken: modelData.accessToken !== undefined && modelData.accessToken !== "" ? modelData.accessToken : appSettings.token
                             property bool isOwned: modelData.owned !== undefined ? modelData.owned : true
                             property string sourceTitle: modelData.sourceTitle !== undefined ? modelData.sourceTitle : ""
+                            
+                            property var serverNode: typeof connectionManager !== "undefined" && connectionManager !== null ? connectionManager.getServer(serverDelegateRoot.serverName) : null
+                            property bool isOffline: serverNode ? !serverNode.isOnline : false
 
                             Connections {
                                 target: typeof connectionManager !== "undefined" ? connectionManager : null
@@ -609,7 +612,7 @@ Rectangle {
                                     
                                     CheckBox {
                                         objectName: "libraryCheckbox"
-                                        enabled: model.type === "movie" || model.type === "show" || model.type === "season"
+                                        enabled: model.type === "movie" || model.type === "show" || model.type === "season" || model.type === "artist"
                                         checked: !!librariesTabCol.localLibrariesMap[uniqueKey]
                                         onToggled: {
                                             var map = Object.assign({}, librariesTabCol.localLibrariesMap)
@@ -634,7 +637,7 @@ Rectangle {
                                         color: "#AA0000"
                                         font.pixelSize: 14
                                         font.italic: true
-                                        visible: model.type !== "movie" && model.type !== "show" && model.type !== "season"
+                                        visible: model.type !== "movie" && model.type !== "show" && model.type !== "season" && model.type !== "artist"
                                     }
                                 }
                             }

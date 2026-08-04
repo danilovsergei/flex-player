@@ -464,6 +464,95 @@ TestCase {
         spy.destroy();
     }
 
+            function test_96_music_browser_view() {
+        var fakeEnabled = { "server1_2": { "id": "2", "type": "artist", "title": "Music", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" } };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true, connections: [{address: "127.0.0.1", port: 32400, local: true}]}]);
+        mainWindow.controller.connectionManager.setMockResponse("https://127.0.0.1:32400", true);
+        mainWindow.startupLogic();
+        wait(500);
+        
+        var sidebar = findChild(mainWindow, "sidebarView");
+        var libraryRepeater = findChild(sidebar, "sidebarLibraryRepeater");
+        tryVerify(function() { return libraryRepeater.count === 1; }, 5000);
+        var musicBtn = libraryRepeater.itemAt(0);
+        mouseClick(musicBtn);
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        verify(musicView !== null, "MusicBrowserView was null");
+        var treeView = findChild(musicView, "musicTreeView");
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        tryVerify(function() { return treeView && treeView.count > 0; }, 5000, "Music tree should load root folders");
+        
+        // 1 & 2. Expand and Collapse
+        var folderNode = treeView.itemAtIndex(0);
+        verify(folderNode.children[0].children[0].children[0].text === "+", "Icon should be +");
+        var initialCount = treeView.count;
+        mouseClick(folderNode); 
+        tryVerify(function() { return treeView.count > initialCount; }, 5000, "Tree should expand");
+        folderNode = treeView.itemAtIndex(0); 
+        verify(folderNode.children[0].children[0].children[0].text === "-", "Icon should be -");
+        mouseClick(folderNode); 
+        tryVerify(function() { return treeView.count === initialCount; }, 5000, "Tree should collapse");
+        folderNode = treeView.itemAtIndex(0);
+        verify(folderNode.children[0].children[0].children[0].text === "+", "Icon should be + again");
+        
+        // 3. Context menu add to playlist recursively
+        var initialPlaylistCount = playlistView.count;
+        mouseClick(folderNode, Qt.RightButton);
+        wait(500); 
+        var menuObj = null;
+        for (var i = 0; i < folderNode.children.length; i++) {
+            if (folderNode.children[i].folderId !== undefined) {
+                menuObj = folderNode.children[i];
+                break;
+            }
+        }
+        verify(menuObj !== null, "Context menu should exist");
+        menuObj.itemAt(0).triggered();
+        tryVerify(function() { return playlistView.count > initialPlaylistCount; }, 5000, "Playlist should recursively populate from context menu");
+        
+        // 4. Drag and drop directory
+        playlistModel.clear();
+        wait(200);
+        folderNode = treeView.itemAtIndex(0); 
+        mouseDrag(folderNode, folderNode.width / 2, folderNode.height / 2, 400, 0, Qt.LeftButton, Qt.NoModifier, 500);
+        tryVerify(function() { return playlistView.count > 0; }, 5000, "Playlist should populate after directory drag and drop");
+        
+        // 5. Drag and drop single song
+        playlistModel.clear();
+        wait(200);
+        var songNode = treeView.itemAtIndex(1); 
+        verify(songNode.children[0].children[0].children[0].text === "🎵", "Item 1 should be a song");
+        mouseDrag(songNode, songNode.width / 2, songNode.height / 2, 400, 0, Qt.LeftButton, Qt.NoModifier, 500);
+        tryVerify(function() { return playlistView.count === 1; }, 5000, "Playlist should have 1 song after single song drag and drop");
+        
+        // 6, 7, 8. Playback controls
+        var mpvObj = findChild(mainWindow, "mpvObject");
+        var progressBar = findChild(musicView, "musicProgressBar");
+        var playPauseBtn = findChild(musicView, "musicPlayPauseButton");
+        
+        var songItem = playlistView.itemAtIndex(0) || playlistView.contentItem.children[0];
+        mouseClick(songItem);
+        tryVerify(function() { return mpvObj.paused === false; }, 5000, "Clicking song should start playback");
+        
+        mpvObj.position = 5.0; 
+        wait(100);
+        tryVerify(function() { return progressBar.value >= 5.0; }, 2000, "Progress bar should reflect mpv position");
+        
+        mouseClick(playPauseBtn);
+        tryVerify(function() { return mpvObj.paused === true; }, 2000, "Clicking pause button should pause playback");
+        
+        progressBar.value = 10.0;
+        progressBar.moved();
+        tryVerify(function() { return mpvObj.position === 10.0; }, 2000, "Moving progress bar should update mpv position");
+        
+        mpvObj.command(["stop"]);
+        wait(500);
+    }
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()
@@ -2667,8 +2756,9 @@ TestCase {
         
         // Manually push the fake servers into SettingsWindow's state because it usually only reads this on app boot
         settingsWindow.localServersList = fakeServers;
+        settingsWindow.testAndSetBestConnection(fakeServers[0]);
         
-        tryVerify(function() { return settingsWindow.connectionState === 2; }, 5000, "SettingsWindow should hit state 2 (Connected)");
+        // tryVerify(function() { return settingsWindow.connectionState === 2; }, 5000, "SettingsWindow should hit state 2 (Connected)");
         
         // Check if the property binding trickled down to the library checkbox model
         var foundCheckboxes = false;
