@@ -693,22 +693,28 @@ Rectangle {
                 }
 
                 // TAB 2: Hotkeys
-                ColumnLayout {
-                    spacing: 20
-                    Text { text: "Hotkeys"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.maximumWidth: 800
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: availableWidth
+                    clip: true
+                    ColumnLayout {
+                        width: parent.width
                         spacing: 20
-                        Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
-                        Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
-                        Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
-                        Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
-                    }
-                    Rectangle { Layout.fillWidth: true; Layout.maximumWidth: 800; height: 1; color: "#444444" }
-                    
-                    // Fullscreen
-                    RowLayout {
+                        Text { text: "Hotkeys"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
+                        
+                        Text { text: "Video Player"; color: "#E5A00D"; font.pixelSize: 24; font.bold: true; Layout.topMargin: 10 }
+                        RowLayout {
+                            Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                            Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
+                            Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
+                            Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
+                            Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
+                        }
+                        Rectangle { Layout.fillWidth: true; Layout.maximumWidth: 800; height: 1; color: "#444444" }
+                        
+                        // Fullscreen
+                        RowLayout {
                         Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
                         Text { text: "Toggle Full Screen"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
                         Text { text: "Enter/Exit full screen video playback"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
@@ -795,7 +801,96 @@ Rectangle {
                             onClicked: { hotkeyOverlay.actionToBind = "voldown"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
                         }
                     }
+                    
+                    Text { text: "Music Player"; color: "#E5A00D"; font.pixelSize: 24; font.bold: true; Layout.topMargin: 20 }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
+                        Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
+                        Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
+                        Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
+                    }
+                    Rectangle { Layout.fillWidth: true; Layout.maximumWidth: 800; height: 1; color: "#444444" }
+
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Up"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Moves up in the playlist"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicUpHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mUp"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Down"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Moves down in the playlist"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicDownHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mDown"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Select All"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Selects all items"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicSelectAllHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mSelAll"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Delete"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Deletes current selection"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicDeleteHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mDel"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Select & Move Down"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Selects and moves down"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicShiftDownHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mSDown"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Select & Move Up"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Selects and moves up"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicShiftUpHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mSUp"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                        Text { text: "Play/Pause"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                        Text { text: "Pauses and plays selected track"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                        Text { text: appSettings.musicPlayPauseHotkey; color: "#E5A00D"; font.pixelSize: 18; font.bold: true; Layout.preferredWidth: 150 }
+                        Button {
+                            text: "Set"; contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                            background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                            onClicked: { hotkeyOverlay.actionToBind = "mPP"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                        }
+                    }
                     Item { Layout.fillHeight: true }
+                    }
                 }
 
                 // TAB 3: Playback
@@ -955,6 +1050,13 @@ Rectangle {
             else if (actionToBind === "playpause") appSettings.playPauseHotkey = newKey
             else if (actionToBind === "volup") appSettings.volumeUpHotkey = newKey
             else if (actionToBind === "voldown") appSettings.volumeDownHotkey = newKey
+            else if (actionToBind === "mUp") appSettings.musicUpHotkey = newKey
+            else if (actionToBind === "mDown") appSettings.musicDownHotkey = newKey
+            else if (actionToBind === "mSelAll") appSettings.musicSelectAllHotkey = newKey
+            else if (actionToBind === "mDel") appSettings.musicDeleteHotkey = newKey
+            else if (actionToBind === "mSDown") appSettings.musicShiftDownHotkey = newKey
+            else if (actionToBind === "mSUp") appSettings.musicShiftUpHotkey = newKey
+            else if (actionToBind === "mPP") appSettings.musicPlayPauseHotkey = newKey
             visible = false
         }
         Keys.onPressed: function(event) {

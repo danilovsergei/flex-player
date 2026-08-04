@@ -6,6 +6,7 @@ import flex.plex 1.0
 Item {
     id: root
     objectName: "musicBrowserView"
+    focus: true
 
     ServerOfflineOverlay {
         connectionManager: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.connectionManager : null
@@ -29,6 +30,63 @@ Item {
         }
     }
 
+    function deleteSelectedItems() {
+        var hasSelection = false;
+        for (var i = playlistModel.count - 1; i >= 0; i--) {
+            var m = playlistModel.get(i);
+            if (m && m.isSelected) {
+                hasSelection = true;
+                playlistModel.remove(i);
+            }
+        }
+        if (!hasSelection && playlistView.currentIndex >= 0 && playlistView.currentIndex < playlistModel.count) {
+            playlistModel.remove(playlistView.currentIndex);
+        }
+    }
+
+    function triggerShortcut(name) {
+        if (name === "Delete") {
+            root.deleteSelectedItems();
+        } else if (name === "PlayPause") {
+            var pw = null;
+            if (typeof mainWindow !== "undefined" && mainWindow.playerView) pw = mainWindow.playerView;
+            else if (typeof app !== "undefined" && app.playerView) pw = app.playerView;
+            if (pw) {
+                var modelItem = playlistModel.get(playlistView.currentIndex);
+                if (modelItem && pw.currentMediaUrl === modelItem.mediaUrl) {
+                    pw.mpvObject.paused = !pw.mpvObject.paused;
+                } else if (modelItem) {
+                    var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
+                    pw.playMedia(modelItem.mediaUrl, 0, "", modelItem.duration, "auto", "none", streams);
+                }
+            }
+        } else if (name === "Ctrl+A") {
+            for (var i = 0; i < playlistModel.count; i++) playlistModel.setProperty(i, "isSelected", true);
+        } else if (name === "Shift+Up") {
+            if (playlistView.currentIndex > 0) {
+                playlistModel.setProperty(playlistView.currentIndex, "isSelected", true);
+                playlistView.currentIndex--;
+                playlistModel.setProperty(playlistView.currentIndex, "isSelected", true);
+            }
+        } else if (name === "Shift+Down") {
+            if (playlistView.currentIndex < playlistModel.count - 1) {
+                playlistModel.setProperty(playlistView.currentIndex, "isSelected", true);
+                playlistView.currentIndex++;
+                playlistModel.setProperty(playlistView.currentIndex, "isSelected", true);
+            }
+        } else if (name === "Up") {
+            if (playlistView.currentIndex > 0) {
+                for (var j = 0; j < playlistModel.count; j++) playlistModel.setProperty(j, "isSelected", false);
+                playlistView.currentIndex--;
+            }
+        } else if (name === "Down") {
+            if (playlistView.currentIndex < playlistModel.count - 1) {
+                for (var k = 0; k < playlistModel.count; k++) playlistModel.setProperty(k, "isSelected", false);
+                playlistView.currentIndex++;
+            }
+        }
+    }
+
     function savePlaylist() {
         if (!appCtrl || !appCtrl.appSettings) return;
         var list = [];
@@ -48,7 +106,9 @@ Item {
             root._isLoadingPlaylist = true;
             playlistModel.clear();
             for (var i = 0; i < list.length; i++) {
-                playlistModel.append(list[i]);
+                var l = list[i];
+                l.isSelected = false;
+                playlistModel.append(l);
             }
             root._isLoadingPlaylist = false;
         } catch(e) {
@@ -279,7 +339,7 @@ Item {
                                             root.loadFolder(root.appCtrl.currentLibraryId, model.parentId, model.depth + 1, index + 1, model.nodeId);
                                         }
                                     } else {
-                                        playlistModel.append({"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration});
+                                        playlistModel.append({"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration, "isSelected": false});
                                         
                                         var pw = null;
                                         if (typeof mainWindow !== "undefined" && mainWindow.playerView) pw = mainWindow.playerView;
@@ -348,6 +408,8 @@ Item {
                         objectName: "musicPlayPauseButton"
                         text: (typeof mainWindow !== "undefined" && mainWindow.playerView && mainWindow.playerView.mpvObject && mainWindow.playerView.mpvObject.paused) ? "▶" : "⏸"
                         font.pixelSize: 24
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
                         background: Rectangle { color: "transparent" }
                         contentItem: Text {
                             text: parent.text
@@ -407,6 +469,56 @@ Item {
                     }
                 }
                 
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicDeleteHotkey : "Delete"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Delete")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicPlayPauseHotkey : "Space"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("PlayPause")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.seekForwardHotkey : "Right"
+                    enabled: root.visible
+                    onActivated: {
+                        if (root.appCtrl) root.appCtrl.throttleSeek(1);
+                    }
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.seekBackwardHotkey : "Left"
+                    enabled: root.visible
+                    onActivated: {
+                        if (root.appCtrl) root.appCtrl.throttleSeek(-1);
+                    }
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicSelectAllHotkey : "Ctrl+A"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Ctrl+A")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicShiftUpHotkey : "Shift+Up"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Shift+Up")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicShiftDownHotkey : "Shift+Down"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Shift+Down")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicUpHotkey : "Up"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Up")
+                }
+                Shortcut {
+                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicDownHotkey : "Down"
+                    enabled: root.visible
+                    onActivated: root.triggerShortcut("Down")
+                }
+                
                 ListView {
                     id: playlistView
                     objectName: "musicPlaylistView"
@@ -414,10 +526,15 @@ Item {
                     Layout.fillHeight: true
                     model: playlistModel
                     clip: true
+                    keyNavigationEnabled: false
+                    
+                    onCurrentIndexChanged: {
+                        // intentionally blank or handle focus/scrolling if needed in the future
+                    }
                     
                     property int hoveredDropIndex: -1
                     
-                    delegate: ItemDelegate {
+                    delegate: Item {
                         width: playlistView.width
                         height: 50 + (playlistView.hoveredDropIndex === index ? 40 : 0)
                         
@@ -431,60 +548,37 @@ Item {
                             return pw ? pw.currentMediaUrl === model.mediaUrl : false;
                         }
                         
-                        background: Item {
+                        Rectangle {
+                            width: parent.width
+                            height: 40
+                            y: 0
+                            visible: playlistView.hoveredDropIndex === index
+                            color: "transparent"
                             Rectangle {
-                                width: parent.width
-                                height: 40
-                                y: 0
-                                visible: playlistView.hoveredDropIndex === index
-                                color: "transparent"
-                                Rectangle {
-                                    width: parent.width - 20
-                                    height: 2
-                                    anchors.centerIn: parent
-                                    color: typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d"
-                                }
-                            }
-                            Rectangle {
-                                width: parent.width
-                                height: 50
-                                y: playlistView.hoveredDropIndex === index ? 40 : 0
-                                color: isContextMenuOpen ? "#444444" : (isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a"))
-                                Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                                width: parent.width - 20
+                                height: 2
+                                anchors.centerIn: parent
+                                color: typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d"
                             }
                         }
                         
-                        onClicked: {
-                            console.warn("Playlist song clicked! " + model.title);
-                            var pw = null;
-                            if (typeof mainWindow !== "undefined" && mainWindow.playerView) {
-                                pw = mainWindow.playerView;
-                            } else if (typeof app !== "undefined" && app.playerView) {
-                                pw = app.playerView;
-                            }
-                            
-                            console.warn("Found playerView: " + (pw !== null));
-                            
-                            if (pw) {
-                                console.warn("Calling playMedia on playerView...");
-                                var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
-                                pw.playMedia(model.mediaUrl, 0, "", model.duration, "auto", "none", streams);
-                            } else {
-                                console.error("Failed to find playerView!");
-                            }
+                        Rectangle {
+                            width: parent.width
+                            height: 50
+                            y: playlistView.hoveredDropIndex === index ? 40 : 0
+                            color: (isContextMenuOpen || model.isSelected || playlistView.currentIndex === index) ? "#444444" : (isPlayingTrack ? "#3d2200" : (index % 2 === 0 ? "#222" : "#1a1a1a"))
+                            Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                         }
                         
-                        contentItem: Item {
-                            anchors.fill: parent
-                            RowLayout {
-                                width: parent.width
-                                height: 50
-                                y: playlistView.hoveredDropIndex === index ? 40 : 0
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 10
-                                Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                        RowLayout {
+                            width: parent.width
+                            height: 50
+                            y: playlistView.hoveredDropIndex === index ? 40 : 0
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                             
                             Text {
                                 text: (isPlayingTrack ? "🔊 " : "🎵 ") + model.title
@@ -520,14 +614,57 @@ Item {
                                 font.pixelSize: 14
                             }
                         }
-                        }
                         
                         MouseArea {
                             anchors.fill: parent
-                            acceptedButtons: Qt.RightButton
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
                             onClicked: function(mouse) {
-                                isContextMenuOpen = true;
-                                playlistItemContextMenu.popup();
+                                root.forceActiveFocus();
+                                if (mouse.button === Qt.LeftButton) {
+                                    if (mouse.modifiers & Qt.ControlModifier) {
+                                        var curSel = model.isSelected || false;
+                                        playlistModel.setProperty(index, "isSelected", !curSel);
+                                        playlistView.currentIndex = index;
+                                    } else if (mouse.modifiers & Qt.ShiftModifier) {
+                                        var startIdx = Math.min(playlistView.currentIndex, index);
+                                        var endIdx = Math.max(playlistView.currentIndex, index);
+                                        for (var i = 0; i < playlistModel.count; i++) {
+                                            playlistModel.setProperty(i, "isSelected", (i >= startIdx && i <= endIdx));
+                                        }
+                                        playlistView.currentIndex = index;
+                                    } else {
+                                        for (var k = 0; k < playlistModel.count; k++) {
+                                            playlistModel.setProperty(k, "isSelected", false);
+                                        }
+                                        playlistView.currentIndex = index;
+                                    }
+                                }
+                                if (mouse.button === Qt.RightButton) {
+                                    if (!model.isSelected) {
+                                        for (var k2 = 0; k2 < playlistModel.count; k2++) {
+                                            playlistModel.setProperty(k2, "isSelected", false);
+                                        }
+                                        playlistModel.setProperty(index, "isSelected", true);
+                                        playlistView.currentIndex = index;
+                                    }
+                                    isContextMenuOpen = true;
+                                    playlistItemContextMenu.popup();
+                                }
+                            }
+                            onDoubleClicked: function(mouse) {
+                                if (mouse.button === Qt.LeftButton) {
+                                    playlistView.currentIndex = index;
+                                    var pw = null;
+                                    if (typeof mainWindow !== "undefined" && mainWindow.playerView) {
+                                        pw = mainWindow.playerView;
+                                    } else if (typeof app !== "undefined" && app.playerView) {
+                                        pw = app.playerView;
+                                    }
+                                    if (pw) {
+                                        var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
+                                        pw.playMedia(model.mediaUrl, 0, "", model.duration, "auto", "none", streams);
+                                    }
+                                }
                             }
                         }
                         
@@ -540,7 +677,7 @@ Item {
                             MenuItem {
                                 text: "Delete"
                                 onTriggered: {
-                                    playlistModel.remove(index);
+                                    root.deleteSelectedItems();
                                 }
                             }
                         }
@@ -554,8 +691,7 @@ Item {
                 anchors.fill: parent
                 keys: ["text/plain"]
                 onEntered: function(drag) {
-                    console.warn("DropArea onEntered!");
-                    drag.accept(Qt.CopyAction);
+                                        drag.accept(Qt.CopyAction);
                 }
                 onExited: {
                     playlistView.hoveredDropIndex = -1;
@@ -571,8 +707,7 @@ Item {
                 }
                 onDropped: function(drop) {
                     playlistView.hoveredDropIndex = -1;
-                    console.warn("DropArea onDropped! source=" + drop.source);
-                    if (drop.source && drop.source.dragData) {
+                                        if (drop.source && drop.source.dragData) {
                         var data = drop.source.dragData;
                         var pt = playlistDropArea.mapToItem(playlistView.contentItem, drop.x, drop.y);
                         var insertIndex = playlistView.indexAt(pt.x, pt.y);
@@ -582,7 +717,7 @@ Item {
                         if (data.isFolder) {
                             root.recursivelyAddFolder(data.parentId, insertIndex);
                         } else {
-                            playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration});
+                            playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration, "isSelected": false});
                         }
                         drop.accept();
                     }
@@ -655,7 +790,7 @@ Item {
                                 }
                             }
                             
-                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0};
+                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false};
                             if (state.currentIndex >= playlistModel.count) {
                                 playlistModel.append(trackData);
                             } else {

@@ -126,50 +126,7 @@ Window {
         onActivated: toggleFullScreen()
     }
     
-    Shortcut {
-        sequence: appSettings.playPauseHotkey
-        onActivated: {
-            if (playerView.visible) {
-                playerView.mpvObject.paused = !playerView.mpvObject.paused;
-            }
-        }
-    }
-    
-    Shortcut {
-        sequence: appSettings.volumeUpHotkey
-        onActivated: {
-            if (playerView.visible) {
-                playerView.mpvObject.volume = Math.min(100, playerView.mpvObject.volume + 5);
-            }
-        }
-    }
-    
-    Shortcut {
-        sequence: appSettings.volumeDownHotkey
-        onActivated: {
-            if (playerView.visible) {
-                playerView.mpvObject.volume = Math.max(0, playerView.mpvObject.volume - 5);
-            }
-        }
-    }
 
-    Shortcut {
-        sequence: appSettings.seekForwardHotkey
-        onActivated: {
-            if (playerView.visible) {
-                controller.throttleSeek(1)
-            }
-        }
-    }
-    
-    Shortcut {
-        sequence: appSettings.seekBackwardHotkey
-        onActivated: {
-            if (playerView.visible) {
-                controller.throttleSeek(-1)
-            }
-        }
-    }
 
 
     property var testGlobalRecentModel: controller.globalRecentModel

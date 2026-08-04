@@ -541,11 +541,19 @@ TestCase {
         var progressBar = findChild(musicView, "musicProgressBar");
         var playPauseBtn = findChild(musicView, "musicPlayPauseButton");
         
-        tryVerify(function() { return (playlistView.itemAtIndex && playlistView.itemAtIndex(0) !== null) || playlistView.contentItem.children.length > 0; }, 5000, "Song item should instantiate");
-        var songItem = playlistView.itemAtIndex ? playlistView.itemAtIndex(0) : playlistView.contentItem.children[0];
+        tryVerify(function() { return playlistView.itemAtIndex && playlistView.itemAtIndex(0) !== null; }, 5000, "Song item should instantiate");
+        var songItem = playlistView.itemAtIndex(0);
         verify(songItem !== null, "Song item should exist in playlist");
+        
+        // Single click selects
         mouseClick(songItem);
-        tryVerify(function() { return mpvObj.paused === false; }, 5000, "Clicking song should start playback");
+        tryVerify(function() { return playlistView.currentIndex === 0; }, 5000, "Single click should select track");
+        
+        // Arrow navigation omitted from headless testing due to Wayland focus routing flakiness
+
+        // Double click plays
+        mouseDoubleClickSequence(songItem);
+        tryVerify(function() { return mpvObj.paused === false; }, 5000, "Double clicking song should start playback");
         
         // Validate Column text visibility
         var firstItem = playlistModel.get(0);
@@ -557,7 +565,14 @@ TestCase {
         verify(fallbackItem.album === "Fallback Album", "Fallback should extract album from path: " + fallbackItem.album);
         verify(fallbackItem.artist === "Fallback Artist", "Fallback should extract artist from path: " + fallbackItem.artist);
         
-        var children = songItem.contentItem.children[0].children;
+        var rowLayout = null;
+        for (var c = 0; c < songItem.children.length; c++) {
+            if (songItem.children[c].toString().indexOf("RowLayout") !== -1) {
+                rowLayout = songItem.children[c];
+                break;
+            }
+        }
+        var children = rowLayout ? rowLayout.children : [];
         var foundTitle = false;
         var foundAlbum = false;
         var foundArtist = false;
@@ -586,6 +601,67 @@ TestCase {
         progressBar.moved();
         tryVerify(function() { return mpvObj.position >= 0.19; }, 2000, "Moving progress bar should update mpv position");
         
+        // Test Multi-Selection and Delete
+        playlistView.forceActiveFocus();
+        playlistView.currentIndex = 0;
+        
+        // At this point we have at least 2 items. Let's add a few more to test multi-select.
+        musicView._isLoadingPlaylist = true;
+        playlistModel.append({"title": "Multi 1", "mediaUrl": "m1", "duration": 100, "isSelected": false});
+        playlistModel.append({"title": "Multi 2", "mediaUrl": "m2", "duration": 100, "isSelected": false});
+        playlistModel.append({"title": "Multi 3", "mediaUrl": "m3", "duration": 100, "isSelected": false});
+        musicView._isLoadingPlaylist = false;
+        wait(200);
+        
+        var countBeforeMulti = playlistView.count;
+        playlistView.currentIndex = 2;
+        
+        // Shift+Down
+        musicView.triggerShortcut("Shift+Down");
+        wait(100);
+        verify(playlistModel.get(2).isSelected === true, "Item 2 should be selected");
+        verify(playlistModel.get(3).isSelected === true, "Item 3 should be selected");
+        verify(playlistView.currentIndex === 3, "Current index should move to 3");
+        
+        // Shift+Up
+        musicView.triggerShortcut("Shift+Up");
+        wait(100);
+        verify(playlistModel.get(2).isSelected === true, "Item 2 should remain selected");
+        verify(playlistModel.get(3).isSelected === true, "Item 3 should remain selected");
+        verify(playlistView.currentIndex === 2, "Current index should move back to 2");
+        
+        // Delete selected
+        musicView.triggerShortcut("Delete");
+        tryVerify(function() { return playlistView.count === countBeforeMulti - 2; }, 5000, "Should delete 2 selected items");
+
+        // Test normal Up/Down navigation (clears selection)
+        playlistView.currentIndex = 0;
+        musicView.triggerShortcut("Down");
+        wait(100);
+        verify(playlistView.currentIndex === 1, "Down shortcut should move to index 1");
+        verify(playlistModel.get(0).isSelected === false && playlistModel.get(1).isSelected === false, "Normal down should clear selection");
+        
+        musicView.triggerShortcut("Up");
+        wait(100);
+        verify(playlistView.currentIndex === 0, "Up shortcut should move to index 0");
+        
+        // Test PlayPause shortcut
+        musicView.triggerShortcut("PlayPause");
+        tryVerify(function() { return mpvObj.paused === false; }, 3000, "PlayPause shortcut should start playback");
+        musicView.triggerShortcut("PlayPause");
+        tryVerify(function() { return mpvObj.paused === true; }, 3000, "PlayPause shortcut should pause playback");
+
+        // Ctrl+A
+        var countBeforeCtrlA = playlistView.count;
+        musicView.triggerShortcut("Ctrl+A");
+        wait(100);
+        verify(playlistModel.get(0).isSelected === true, "Item 0 should be selected by Ctrl+A");
+        verify(playlistModel.get(countBeforeCtrlA - 1).isSelected === true, "Last item should be selected by Ctrl+A");
+        
+        // Delete all using Delete shortcut
+        musicView.triggerShortcut("Delete");
+        tryVerify(function() { return playlistView.count === 0; }, 5000, "Playlist should be empty after Ctrl+A and Delete shortcut");
+
         mpvObj.command(["stop"]);
         wait(500);
     }

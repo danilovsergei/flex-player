@@ -18,6 +18,15 @@ Item {
     property alias volumeDownHotkey: hotkeySettings.volumeDownHotkey
     property alias seekForwardHotkey: hotkeySettings.seekForwardHotkey
     property alias seekBackwardHotkey: hotkeySettings.seekBackwardHotkey
+    
+    property alias musicUpHotkey: hotkeySettings.musicUpHotkey
+    property alias musicDownHotkey: hotkeySettings.musicDownHotkey
+    property alias musicSelectAllHotkey: hotkeySettings.musicSelectAllHotkey
+    property alias musicDeleteHotkey: hotkeySettings.musicDeleteHotkey
+    property alias musicShiftDownHotkey: hotkeySettings.musicShiftDownHotkey
+    property alias musicShiftUpHotkey: hotkeySettings.musicShiftUpHotkey
+    property alias musicPlayPauseHotkey: hotkeySettings.musicPlayPauseHotkey
+
     property alias autoToggleHdr: playbackSettings.autoToggleHdr
     property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
     property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
@@ -55,6 +64,14 @@ Item {
         property string volumeDownHotkey: "Down"
         property string seekForwardHotkey: "Right"
         property string seekBackwardHotkey: "Left"
+        
+        property string musicUpHotkey: "Up"
+        property string musicDownHotkey: "Down"
+        property string musicSelectAllHotkey: "Ctrl+A"
+        property string musicDeleteHotkey: "Delete"
+        property string musicShiftDownHotkey: "Shift+Down"
+        property string musicShiftUpHotkey: "Shift+Up"
+        property string musicPlayPauseHotkey: "Space"
     }
 
     Settings {

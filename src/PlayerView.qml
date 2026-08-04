@@ -129,6 +129,46 @@ Item {
     }
 
 
+    Shortcut {
+        sequence: (rootApp && rootApp.appSettings) ? rootApp.appSettings.playPauseHotkey : ""
+        enabled: playerView.visible
+        onActivated: {
+            mpvObject.paused = !mpvObject.paused;
+        }
+    }
+    
+    Shortcut {
+        sequence: (rootApp && rootApp.appSettings) ? rootApp.appSettings.volumeUpHotkey : ""
+        enabled: playerView.visible
+        onActivated: {
+            mpvObject.volume = Math.min(100, mpvObject.volume + 5);
+        }
+    }
+    
+    Shortcut {
+        sequence: (rootApp && rootApp.appSettings) ? rootApp.appSettings.volumeDownHotkey : ""
+        enabled: playerView.visible
+        onActivated: {
+            mpvObject.volume = Math.max(0, mpvObject.volume - 5);
+        }
+    }
+
+    Shortcut {
+        sequence: (rootApp && rootApp.appSettings) ? rootApp.appSettings.seekForwardHotkey : ""
+        enabled: playerView.visible
+        onActivated: {
+            if (rootApp && rootApp.controller) rootApp.controller.throttleSeek(1);
+        }
+    }
+    
+    Shortcut {
+        sequence: (rootApp && rootApp.appSettings) ? rootApp.appSettings.seekBackwardHotkey : ""
+        enabled: playerView.visible
+        onActivated: {
+            if (rootApp && rootApp.controller) rootApp.controller.throttleSeek(-1);
+        }
+    }
+
     Timer {
         id: timelineTimer
         objectName: "timelineTimer"

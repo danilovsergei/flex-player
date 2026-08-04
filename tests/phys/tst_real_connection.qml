@@ -503,10 +503,16 @@ TestCase {
         var volumeSlider = findChild(musicView, "musicVolumeSlider");
         verify(volumeSlider !== null, "Volume slider should exist");
         
-        tryVerify(function() { return playlistView.itemAtIndex(0) !== null || playlistView.contentItem.children.length > 0; }, 5000, "Song item should instantiate");
-        var songItem = playlistView.itemAtIndex ? playlistView.itemAtIndex(0) : playlistView.contentItem.children[0];
+        tryVerify(function() { return playlistView.itemAtIndex && playlistView.itemAtIndex(0) !== null; }, 5000, "Song item should instantiate");
+        var songItem = playlistView.itemAtIndex(0);
         verify(songItem !== null, "Song item should exist in playlist");
+        
+        // Single click selects
         mouseClick(songItem);
+        tryVerify(function() { return playlistView.currentIndex === 0; }, 5000, "Single click should select track");
+        
+        // Double click plays
+        mouseDoubleClickSequence(songItem);
         
         var mpvObj = findChild(app, "mpvObject");
         verify(mpvObj !== null, "mpvObject should exist");
@@ -524,7 +530,14 @@ TestCase {
         verify(firstItem.duration !== undefined && firstItem.duration > 0, "Item should have duration column > 0");
         
         // Let's verify the text items exist and have text
-        var children = songItem.contentItem.children[0].children;
+        var rowLayout = null;
+        for (var c = 0; c < songItem.children.length; c++) {
+            if (songItem.children[c].toString().indexOf("RowLayout") !== -1) {
+                rowLayout = songItem.children[c];
+                break;
+            }
+        }
+        var children = rowLayout ? rowLayout.children : [];
         var foundAlbum = false;
         var foundArtist = false;
         var foundDuration = false;
