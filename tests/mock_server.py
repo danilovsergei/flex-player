@@ -362,7 +362,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                             "duration": 3600000,
                             "viewOffset": 0,
                             "type": rtype,
-                            "Media": [{"Part": [{"key": "/library/parts/103/file.mkv", "file": "/app/tests/dummy1.mkv", "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
+                            "Media": [{"bitrate": 320, "Part": [{"key": "/library/parts/103/file.mkv", "file": "/app/tests/dummy1.mkv", "size": 10485760, "Stream": [{"id":1, "streamType": 1, "codec": "h264"}, {"id":2, "streamType":2, "language": "English", "displayTitle": "English (AAC 5.1)"}]}]}]
                         }]
                     }
                 }

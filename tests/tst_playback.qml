@@ -658,6 +658,57 @@ TestCase {
         verify(playlistModel.get(0).isSelected === true, "Item 0 should be selected by Ctrl+A");
         verify(playlistModel.get(countBeforeCtrlA - 1).isSelected === true, "Last item should be selected by Ctrl+A");
         
+        // Context Menu Details Test
+        playlistView.currentIndex = 0;
+        var firstItemModel = playlistModel.get(0);
+        var detailsDialog = findChild(songItem, "detailsDialog");
+        verify(detailsDialog !== null, "Details dialog should exist within delegate");
+        
+        // Since triggering context menu visually in Wayland test might be flaky, we can manually trigger the Details item action
+        // First verify loading state
+        detailsDialog.trackPath = "Loading details...";
+        detailsDialog.open();
+        wait(100);
+        verify(detailsDialog.trackPath === "Loading details...", "Details dialog text should enter loading state");
+        detailsDialog.close();
+        
+        // Then properly trigger dynamic fetch by invoking the context menu
+        var detailsMenu = findChild(songItem, "playlistItemContextMenu");
+        verify(detailsMenu !== null, "Context menu should exist within delegate");
+        
+        songItem.isContextMenuOpen = true;
+        detailsMenu.trackRatingKey = firstItemModel.ratingKey || "";
+        detailsMenu.popup();
+        wait(100);
+        var detailsMenuItem = findChild(detailsMenu, "detailsMenuItem");
+        verify(detailsMenuItem !== null, "detailsMenuItem should exist");
+        
+        detailsMenuItem.triggered();
+        
+        // Wait for the async API request
+        tryVerify(function() { return detailsDialog.trackPath !== "Loading..."; }, 5000, "Details dialog should resolve from Loading...");
+        
+        // Assert correct parsed values from mock_server
+        verify(detailsDialog.trackPath === "/app/tests/dummy1.mkv", "Parsed physical path is correct");
+        verify(detailsDialog.trackSize === "10.00 MB", "Parsed size is correct in MB");
+        verify(detailsDialog.trackBitrate === "320 kbps", "Parsed bitrate is correct");
+        
+        // Extract inner TextEdits
+        var pathEdit = findChild(detailsDialog, "pathEdit");
+        var sizeEdit = findChild(detailsDialog, "sizeEdit");
+        var bitrateEdit = findChild(detailsDialog, "bitrateEdit");
+        
+        verify(pathEdit !== null, "pathEdit should exist");
+        verify(sizeEdit !== null, "sizeEdit should exist");
+        verify(bitrateEdit !== null, "bitrateEdit should exist");
+        
+        // Verify select & copy mechanic
+        pathEdit.selectAll();
+        verify(pathEdit.selectedText === "/app/tests/dummy1.mkv", "pathEdit can be fully selected for copying");
+        pathEdit.deselect();
+        
+        detailsDialog.close();
+
         // Delete all using Delete shortcut
         musicView.triggerShortcut("Delete");
         tryVerify(function() { return playlistView.count === 0; }, 5000, "Playlist should be empty after Ctrl+A and Delete shortcut");

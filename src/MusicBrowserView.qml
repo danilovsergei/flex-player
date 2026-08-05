@@ -92,7 +92,7 @@ Item {
         var list = [];
         for (var i = 0; i < playlistModel.count; i++) {
             var item = playlistModel.get(i);
-            list.push({"title": item.title, "album": item.album !== undefined ? item.album : "", "artist": item.artist !== undefined ? item.artist : "", "mediaUrl": item.mediaUrl, "duration": item.duration});
+            list.push({"title": item.title, "album": item.album !== undefined ? item.album : "", "artist": item.artist !== undefined ? item.artist : "", "mediaUrl": item.mediaUrl, "duration": item.duration, "ratingKey": item.ratingKey || ""});
         }
         appCtrl.appSettings.defaultPlaylist = JSON.stringify(list);
     }
@@ -108,6 +108,7 @@ Item {
             for (var i = 0; i < list.length; i++) {
                 var l = list[i];
                 l.isSelected = false;
+                if (l.ratingKey === undefined) l.ratingKey = "";
                 playlistModel.append(l);
             }
             root._isLoadingPlaylist = false;
@@ -225,7 +226,8 @@ Item {
                             "expanded": false,
                             "mediaUrl": trackUrl,
                             "duration": item.duration || 0,
-                            "parentTreeId": parentModelId || ""
+                            "parentTreeId": parentModelId || "",
+                            "ratingKey": itemKey || ""
                         };
                         
                         if (insertIndex === -1) {
@@ -365,7 +367,7 @@ Item {
                         Drag.keys: ["text/plain"]
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: height / 2
-                        property var dragData: {"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration, "isFolder": model.isFolder, "parentId": model.parentId}
+                        property var dragData: {"title": model.title, "album": model.album !== undefined ? model.album : "", "artist": model.artist !== undefined ? model.artist : "", "mediaUrl": model.mediaUrl, "duration": model.duration, "isFolder": model.isFolder, "parentId": model.parentId, "ratingKey": model.nodeId || ""}
                     }
                     
                     Menu {
@@ -648,6 +650,10 @@ Item {
                                         playlistView.currentIndex = index;
                                     }
                                     isContextMenuOpen = true;
+                                    var pt = mapToItem(null, mouse.x, mouse.y);
+                                    playlistItemContextMenu.trackRatingKey = playlistModel.get(index).ratingKey || "";
+                                    playlistItemContextMenu.clickX = pt.x;
+                                    playlistItemContextMenu.clickY = pt.y;
                                     playlistItemContextMenu.popup();
                                 }
                             }
@@ -671,13 +677,363 @@ Item {
                         Menu {
                             id: playlistItemContextMenu
                             objectName: "playlistItemContextMenu"
+                            property string trackRatingKey: ""
+                            property real clickX: 0
+                            property real clickY: 0
                             onClosed: {
                                 isContextMenuOpen = false;
+                            }
+                            MenuItem {
+                                objectName: "detailsMenuItem"
+                                text: "Details"
+                                onTriggered: {
+                                    var rk = playlistItemContextMenu.trackRatingKey;
+                                    detailsDialog.trackPath = "Loading...";
+                                    detailsDialog.trackSize = "Loading...";
+                                    detailsDialog.trackBitrate = "Loading...";
+                                    detailsDialog.open();
+                                    
+                                    if (rk !== "") {
+                                        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+                                        var token = appCtrl.currentServerToken;
+                                        var req = new XMLHttpRequest();
+                                        
+                                        var endpoint = rk.indexOf("/library/metadata/") === 0 ? rk : ("/library/metadata/" + rk);
+                                        req.open("GET", url + endpoint);
+                                        req.setRequestHeader("X-Plex-Token", token);
+                                        req.setRequestHeader("Accept", "application/json");
+                                        req.onreadystatechange = function() {
+                                            if (req.readyState === XMLHttpRequest.DONE) {
+                                                if (req.status === 200) {
+                                                    try {
+                                                        var json = JSON.parse(req.responseText);
+                                                        if (json.MediaContainer && json.MediaContainer.Metadata && json.MediaContainer.Metadata.length > 0) {
+                                                            var meta = json.MediaContainer.Metadata[0];
+                                                            var physicalPath = "Unknown";
+                                                            var sizeBytes = 0;
+                                                            var bitrate = 0;
+                                                            if (meta.Media && meta.Media.length > 0) {
+                                                                bitrate = meta.Media[0].bitrate || 0;
+                                                                if (meta.Media[0].Part && meta.Media[0].Part.length > 0) {
+                                                                    var part = meta.Media[0].Part[0];
+                                                                    physicalPath = part.file || "Unknown";
+                                                                    sizeBytes = part.size || 0;
+                                                                }
+                                                            }
+                                                            var sMB = sizeBytes > 0 ? (sizeBytes / (1024 * 1024)).toFixed(2) + " MB" : "Unknown";
+                                                            
+                                                            detailsDialog.trackPath = physicalPath;
+                                                            detailsDialog.trackSize = sMB;
+                                                            detailsDialog.trackBitrate = bitrate > 0 ? bitrate + " kbps" : "Unknown";
+                                                        } else {
+                                                            detailsDialog.trackPath = "Failed to parse details.";
+                                                            detailsDialog.trackSize = "Failed";
+                                                            detailsDialog.trackBitrate = "Failed";
+                                                        }
+                                                    } catch (e) {
+                                                        detailsDialog.trackPath = "Failed to parse details response.";
+                                                        detailsDialog.trackSize = "Error";
+                                                        detailsDialog.trackBitrate = "Error";
+                                                    }
+                                                } else {
+                                                    detailsDialog.trackPath = "Failed to fetch details (HTTP " + req.status + ").";
+                                                    detailsDialog.trackSize = "Error";
+                                                    detailsDialog.trackBitrate = "Error";
+                                                }
+                                            }
+                                        }
+                                        req.send();
+                                    } else {
+                                        detailsDialog.trackPath = "No rating key available.";
+                                        detailsDialog.trackSize = "Unknown";
+                                        detailsDialog.trackBitrate = "Unknown";
+                                    }
+                                }
                             }
                             MenuItem {
                                 text: "Delete"
                                 onTriggered: {
                                     root.deleteSelectedItems();
+                                }
+                            }
+                        }
+                        
+                        Dialog {
+                            id: detailsDialog
+                            objectName: "detailsDialog"
+                            property string trackPath: ""
+                            property string trackSize: ""
+                            property string trackBitrate: ""
+                            
+                            width: 600
+                            height: 400
+                            
+                            parent: Overlay.overlay
+                            x: Math.min(Math.max(0, playlistItemContextMenu.clickX), parent ? parent.width - width : 0)
+                            y: Math.min(Math.max(0, playlistItemContextMenu.clickY), parent ? parent.height - height : 0)
+                            modal: true
+                            dim: true
+                            
+                            enter: Transition {
+                                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
+                                NumberAnimation { property: "scale"; from: 0.95; to: 1.0; duration: 200; easing.type: Easing.OutBack }
+                            }
+                            exit: Transition {
+                                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 150 }
+                                NumberAnimation { property: "scale"; from: 1.0; to: 0.95; duration: 150; easing.type: Easing.InBack }
+                            }
+                            
+                            background: Rectangle {
+                                color: "#1A1B26"
+                                radius: 12
+                                border.color: "#33354D"
+                                border.width: 1
+                                
+                                MouseArea {
+                                    width: 20
+                                    height: 20
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    cursorShape: Qt.SizeFDiagCursor
+                                    
+                                    property real startX
+                                    property real startY
+                                    property real startW
+                                    property real startH
+                                    
+                                    onPressed: function(mouse) {
+                                        startX = mouse.x
+                                        startY = mouse.y
+                                        startW = detailsDialog.width
+                                        startH = detailsDialog.height
+                                    }
+                                    onPositionChanged: function(mouse) {
+                                        if (pressed) {
+                                            detailsDialog.width = Math.max(400, startW + (mouse.x - startX))
+                                            detailsDialog.height = Math.max(300, startH + (mouse.y - startY))
+                                        }
+                                    }
+                                }
+                                
+                                Text {
+                                    text: "↘"
+                                    color: "#4C566A"
+                                    font.pixelSize: 14
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    anchors.margins: 4
+                                }
+                            }
+                            
+                            contentItem: ColumnLayout {
+                                spacing: 16
+                                anchors.fill: parent
+                                anchors.margins: 20
+                                
+                                Text {
+                                    text: "Track Details"
+                                    color: "#FFFFFF"
+                                    font.pixelSize: 20
+                                    font.bold: true
+                                    Layout.fillWidth: true
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 1
+                                    color: "#33354D"
+                                }
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    contentWidth: availableWidth
+                                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                                    
+                                    Column {
+                                        width: parent.width
+                                        spacing: 16
+                                        
+                                        // File Path
+                                        Column {
+                                            spacing: 4
+                                            width: parent.width
+                                            Text {
+                                                text: "File Path"
+                                                color: "#B0B5D3"
+                                                font.pixelSize: 13
+                                                font.bold: true
+                                            }
+                                            Rectangle {
+                                                width: parent.width
+                                                height: Math.max(36, pathEdit.contentHeight + 16)
+                                                color: "#15161E"
+                                                radius: 6
+                                                border.color: "#4C566A"
+                                                border.width: 1
+                                                
+                                                TextEdit {
+                                                    id: pathEdit
+                                                    objectName: "pathEdit"
+                                                    text: detailsDialog.trackPath
+                                                    color: "#E2E8F0"
+                                                    font.pixelSize: 14
+                                                    wrapMode: Text.WrapAnywhere
+                                                    readOnly: true
+                                                    selectByMouse: true
+                                                    selectionColor: "#81A1C1"
+                                                    selectedTextColor: "#2E3440"
+                                                    anchors.fill: parent
+                                                    anchors.margins: 8
+                                                    verticalAlignment: TextEdit.AlignVCenter
+                                                    
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.RightButton
+                                                        onClicked: function(mouse) {
+                                                            if (mouse.button === Qt.RightButton) {
+                                                                pathMenu.popup();
+                                                            }
+                                                        }
+                                                    }
+                                                    Menu {
+                                                        id: pathMenu
+                                                        MenuItem {
+                                                            text: "Copy"
+                                                            onTriggered: {
+                                                                if (pathEdit.selectedText !== "") pathEdit.copy();
+                                                                else { pathEdit.selectAll(); pathEdit.copy(); pathEdit.deselect(); }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // File Size
+                                        Column {
+                                            spacing: 4
+                                            width: parent.width
+                                            Text {
+                                                text: "File Size"
+                                                color: "#B0B5D3"
+                                                font.pixelSize: 13
+                                                font.bold: true
+                                            }
+                                            Rectangle {
+                                                width: parent.width
+                                                height: 36
+                                                color: "#15161E"
+                                                radius: 6
+                                                border.color: "#4C566A"
+                                                border.width: 1
+                                                
+                                                TextEdit {
+                                                    id: sizeEdit
+                                                    objectName: "sizeEdit"
+                                                    text: detailsDialog.trackSize
+                                                    color: "#E2E8F0"
+                                                    font.pixelSize: 14
+                                                    readOnly: true
+                                                    selectByMouse: true
+                                                    selectionColor: "#81A1C1"
+                                                    selectedTextColor: "#2E3440"
+                                                    anchors.fill: parent
+                                                    anchors.margins: 8
+                                                    verticalAlignment: TextEdit.AlignVCenter
+                                                    
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.RightButton
+                                                        onClicked: function(mouse) {
+                                                            if (mouse.button === Qt.RightButton) sizeMenu.popup();
+                                                        }
+                                                    }
+                                                    Menu {
+                                                        id: sizeMenu
+                                                        MenuItem {
+                                                            text: "Copy"
+                                                            onTriggered: {
+                                                                if (sizeEdit.selectedText !== "") sizeEdit.copy();
+                                                                else { sizeEdit.selectAll(); sizeEdit.copy(); sizeEdit.deselect(); }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Bitrate
+                                        Column {
+                                            spacing: 4
+                                            width: parent.width
+                                            Text {
+                                                text: "Bitrate"
+                                                color: "#B0B5D3"
+                                                font.pixelSize: 13
+                                                font.bold: true
+                                            }
+                                            Rectangle {
+                                                width: parent.width
+                                                height: 36
+                                                color: "#15161E"
+                                                radius: 6
+                                                border.color: "#4C566A"
+                                                border.width: 1
+                                                
+                                                TextEdit {
+                                                    id: bitrateEdit
+                                                    objectName: "bitrateEdit"
+                                                    text: detailsDialog.trackBitrate
+                                                    color: "#E2E8F0"
+                                                    font.pixelSize: 14
+                                                    readOnly: true
+                                                    selectByMouse: true
+                                                    selectionColor: "#81A1C1"
+                                                    selectedTextColor: "#2E3440"
+                                                    anchors.fill: parent
+                                                    anchors.margins: 8
+                                                    verticalAlignment: TextEdit.AlignVCenter
+                                                    
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.RightButton
+                                                        onClicked: function(mouse) {
+                                                            if (mouse.button === Qt.RightButton) bitrateMenu.popup();
+                                                        }
+                                                    }
+                                                    Menu {
+                                                        id: bitrateMenu
+                                                        MenuItem {
+                                                            text: "Copy"
+                                                            onTriggered: {
+                                                                if (bitrateEdit.selectedText !== "") bitrateEdit.copy();
+                                                                else { bitrateEdit.selectAll(); bitrateEdit.copy(); bitrateEdit.deselect(); }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                Item { Layout.fillHeight: true }
+                                Button {
+                                    text: "Close"
+                                    Layout.alignment: Qt.AlignRight
+                                    Layout.preferredHeight: 36
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                    background: Rectangle {
+                                        color: parent.hovered ? "#3B4252" : "#2D3748"
+                                        radius: 6
+                                    }
+                                    contentItem: Text {
+                                        text: parent.text
+                                        color: "white"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    onClicked: detailsDialog.close()
                                 }
                             }
                         }
@@ -717,7 +1073,7 @@ Item {
                         if (data.isFolder) {
                             root.recursivelyAddFolder(data.parentId, insertIndex);
                         } else {
-                            playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration, "isSelected": false});
+                            playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration, "isSelected": false, "ratingKey": data.ratingKey || ""});
                         }
                         drop.accept();
                     }
@@ -790,7 +1146,7 @@ Item {
                                 }
                             }
                             
-                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false};
+                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false, "ratingKey": item.ratingKey || item.key || ""};
                             if (state.currentIndex >= playlistModel.count) {
                                 playlistModel.append(trackData);
                             } else {
