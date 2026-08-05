@@ -478,8 +478,14 @@ Item {
         }
         
         Rectangle {
+            id: playlistContainer
             SplitView.fillWidth: true
             color: "#111"
+            
+            property real colTitleWidth: 0.40
+            property real colAlbumWidth: 0.25
+            property real colArtistWidth: 0.20
+            property real colTimeWidth: 0.10
             
             ColumnLayout {
                 anchors.fill: parent
@@ -701,6 +707,145 @@ Item {
                     onActivated: root.triggerShortcut("Down")
                 }
                 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.margins: 10
+                    Layout.topMargin: 0
+                    Layout.bottomMargin: 0
+                    
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: playlistContainer.width * playlistContainer.colTitleWidth
+                        height: 30
+                        Text { text: "TITLE"; color: "#666"; font.pixelSize: 12; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle {
+                            width: 12; height: parent.height; anchors.right: parent.right; anchors.rightMargin: -6; color: "transparent"
+                            Rectangle { width: 1; height: 16; anchors.centerIn: parent; color: "#333" }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.SplitHCursor
+                                property real startX: 0
+                                property real startLeft: 0
+                                property real startRight: 0
+                                onPressed: function(mouse) { 
+                                    startX = mapToItem(null, mouse.x, mouse.y).x; 
+                                    startLeft = playlistContainer.colTitleWidth; 
+                                    startRight = playlistContainer.colAlbumWidth; 
+                                }
+                                onPositionChanged: function(mouse) {
+                                    if (pressed) {
+                                        var pt = mapToItem(null, mouse.x, mouse.y);
+                                        var delta = (pt.x - startX) / playlistContainer.width;
+                                        var newLeft = startLeft + delta;
+                                        var newRight = startRight - delta;
+                                        if (newLeft >= 0.1 && newRight >= 0.1) {
+                                            playlistContainer.colTitleWidth = newLeft;
+                                            playlistContainer.colAlbumWidth = newRight;
+                                        } else if (newLeft < 0.1) {
+                                            playlistContainer.colTitleWidth = 0.1;
+                                            playlistContainer.colAlbumWidth = startLeft + startRight - 0.1;
+                                        } else if (newRight < 0.1) {
+                                            playlistContainer.colAlbumWidth = 0.1;
+                                            playlistContainer.colTitleWidth = startLeft + startRight - 0.1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Item {
+                        Layout.preferredWidth: playlistContainer.width * playlistContainer.colAlbumWidth
+                        height: 30
+                        Text { text: "ALBUM"; color: "#666"; font.pixelSize: 12; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle {
+                            width: 12; height: parent.height; anchors.right: parent.right; anchors.rightMargin: -6; color: "transparent"
+                            Rectangle { width: 1; height: 16; anchors.centerIn: parent; color: "#333" }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.SplitHCursor
+                                property real startX: 0
+                                property real startLeft: 0
+                                property real startRight: 0
+                                onPressed: function(mouse) { 
+                                    startX = mapToItem(null, mouse.x, mouse.y).x; 
+                                    startLeft = playlistContainer.colAlbumWidth; 
+                                    startRight = playlistContainer.colArtistWidth; 
+                                }
+                                onPositionChanged: function(mouse) {
+                                    if (pressed) {
+                                        var pt = mapToItem(null, mouse.x, mouse.y);
+                                        var delta = (pt.x - startX) / playlistContainer.width;
+                                        var newLeft = startLeft + delta;
+                                        var newRight = startRight - delta;
+                                        if (newLeft >= 0.1 && newRight >= 0.1) {
+                                            playlistContainer.colAlbumWidth = newLeft;
+                                            playlistContainer.colArtistWidth = newRight;
+                                        } else if (newLeft < 0.1) {
+                                            playlistContainer.colAlbumWidth = 0.1;
+                                            playlistContainer.colArtistWidth = startLeft + startRight - 0.1;
+                                        } else if (newRight < 0.1) {
+                                            playlistContainer.colArtistWidth = 0.1;
+                                            playlistContainer.colAlbumWidth = startLeft + startRight - 0.1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Item {
+                        Layout.preferredWidth: playlistContainer.width * playlistContainer.colArtistWidth
+                        height: 30
+                        Text { text: "ARTIST"; color: "#666"; font.pixelSize: 12; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle {
+                            width: 12; height: parent.height; anchors.right: parent.right; anchors.rightMargin: -6; color: "transparent"
+                            Rectangle { width: 1; height: 16; anchors.centerIn: parent; color: "#333" }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.SplitHCursor
+                                property real startX: 0
+                                property real startLeft: 0
+                                property real startRight: 0
+                                onPressed: function(mouse) { 
+                                    startX = mapToItem(null, mouse.x, mouse.y).x; 
+                                    startLeft = playlistContainer.colArtistWidth; 
+                                    startRight = playlistContainer.colTimeWidth; 
+                                }
+                                onPositionChanged: function(mouse) {
+                                    if (pressed) {
+                                        var pt = mapToItem(null, mouse.x, mouse.y);
+                                        var delta = (pt.x - startX) / playlistContainer.width;
+                                        var newLeft = startLeft + delta;
+                                        var newRight = startRight - delta;
+                                        if (newLeft >= 0.1 && newRight >= 0.08) {
+                                            playlistContainer.colArtistWidth = newLeft;
+                                            playlistContainer.colTimeWidth = newRight;
+                                        } else if (newLeft < 0.1) {
+                                            playlistContainer.colArtistWidth = 0.1;
+                                            playlistContainer.colTimeWidth = startLeft + startRight - 0.1;
+                                        } else if (newRight < 0.08) {
+                                            playlistContainer.colTimeWidth = 0.08;
+                                            playlistContainer.colArtistWidth = startLeft + startRight - 0.08;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Item {
+                        Layout.preferredWidth: playlistContainer.width * playlistContainer.colTimeWidth
+                        height: 30
+                        Text { text: "TIME"; color: "#666"; font.pixelSize: 12; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                    }
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: "#222"
+                    Layout.leftMargin: 10
+                    Layout.rightMargin: 10
+                }
+                
                 ListView {
                     id: playlistView
                     objectName: "musicPlaylistView"
@@ -778,7 +923,7 @@ Item {
                                 color: isPlayingTrack ? (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d") : "white"
                                 font.bold: isPlayingTrack
                                 Layout.fillWidth: true
-                                Layout.preferredWidth: parent.width * 0.4
+                                Layout.preferredWidth: playlistContainer.width * playlistContainer.colTitleWidth
                                 elide: Text.ElideRight
                                 font.pixelSize: 16
                             }
@@ -786,7 +931,7 @@ Item {
                             Text {
                                 text: model.album !== undefined ? model.album : ""
                                 color: "#ccc"
-                                Layout.preferredWidth: parent.width * 0.25
+                                Layout.preferredWidth: playlistContainer.width * playlistContainer.colAlbumWidth
                                 elide: Text.ElideRight
                                 font.pixelSize: 14
                             }
@@ -794,7 +939,7 @@ Item {
                             Text {
                                 text: model.artist !== undefined ? model.artist : ""
                                 color: "#ccc"
-                                Layout.preferredWidth: parent.width * 0.2
+                                Layout.preferredWidth: playlistContainer.width * playlistContainer.colArtistWidth
                                 elide: Text.ElideRight
                                 font.pixelSize: 14
                             }
@@ -802,8 +947,7 @@ Item {
                             Text {
                                 text: (typeof mainWindow !== "undefined" && model.duration) ? mainWindow.formatTime(model.duration / 1000) : "00:00"
                                 color: "#aaa"
-                                Layout.preferredWidth: parent.width * 0.1
-                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: playlistContainer.width * playlistContainer.colTimeWidth
                                 font.pixelSize: 14
                             }
                         }
