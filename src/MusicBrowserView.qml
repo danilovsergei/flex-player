@@ -192,12 +192,17 @@ Item {
                         
                         var parsedAlbum = item.parentTitle || "";
                         var parsedArtist = item.grandparentTitle || item.originalTitle || "";
+                        var parsedTitle = item.title || "";
                         
-                        if ((!parsedAlbum || !parsedArtist) && item.type === "track") {
+                        if ((!parsedTitle || !parsedAlbum || !parsedArtist) && item.type === "track") {
                             if (item.Media && item.Media.length > 0 && item.Media[0].Part && item.Media[0].Part.length > 0) {
                                 var filePath = item.Media[0].Part[0].file || "";
                                 if (filePath !== "") {
                                     var parts = filePath.split("/");
+                                    if (!parsedTitle) {
+                                        var fileName = parts[parts.length - 1];
+                                        parsedTitle = fileName.replace(/\.[^/.]+$/, "");
+                                    }
                                     if (parts.length >= 3) {
                                         if (!parsedAlbum) {
                                             parsedAlbum = parts[parts.length - 2].replace(/^\d{4}\s*-\s*/, "").replace(/^\d{4}\s+/, "").replace(/!$/, "").trim();
@@ -216,7 +221,7 @@ Item {
 
                         var node = {
                             "nodeId": itemKey,
-                            "title": item.title || "",
+                            "title": parsedTitle,
                             "album": parsedAlbum,
                             "artist": parsedArtist,
                             "type": item.type || "folder",
@@ -1124,12 +1129,17 @@ Item {
                             }
                             var parsedAlbum2 = item.parentTitle || "";
                             var parsedArtist2 = item.grandparentTitle || item.originalTitle || "";
+                            var parsedTitle2 = item.title || "";
                             
-                            if (!parsedAlbum2 || !parsedArtist2) {
+                            if (!parsedTitle2 || !parsedAlbum2 || !parsedArtist2) {
                                 if (item.Media && item.Media.length > 0 && item.Media[0].Part && item.Media[0].Part.length > 0) {
                                     var filePath2 = item.Media[0].Part[0].file || "";
                                     if (filePath2 !== "") {
                                         var parts2 = filePath2.split("/");
+                                        if (!parsedTitle2) {
+                                            var fileName2 = parts2[parts2.length - 1];
+                                            parsedTitle2 = fileName2.replace(/\.[^/.]+$/, "");
+                                        }
                                         if (parts2.length >= 3) {
                                             if (!parsedAlbum2) {
                                                 parsedAlbum2 = parts2[parts2.length - 2].replace(/^\d{4}\s*-\s*/, "").replace(/^\d{4}\s+/, "").replace(/!$/, "").trim();
@@ -1146,7 +1156,7 @@ Item {
                                 }
                             }
                             
-                            var trackData = {"title": item.title, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false, "ratingKey": item.ratingKey || item.key || ""};
+                            var trackData = {"title": parsedTitle2, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false, "ratingKey": item.ratingKey || item.key || ""};
                             if (state.currentIndex >= playlistModel.count) {
                                 playlistModel.append(trackData);
                             } else {

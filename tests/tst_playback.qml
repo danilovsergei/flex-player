@@ -564,6 +564,26 @@ TestCase {
         var fallbackItem = playlistModel.get(1);
         verify(fallbackItem.album === "Fallback Album", "Fallback should extract album from path: " + fallbackItem.album);
         verify(fallbackItem.artist === "Fallback Artist", "Fallback should extract artist from path: " + fallbackItem.artist);
+        verify(fallbackItem.title === "01 - Track Fallback", "Fallback should extract title from path: " + fallbackItem.title);
+        
+        var fallbackSongItem = playlistView.itemAtIndex(1);
+        verify(fallbackSongItem !== null, "Fallback song item should exist in playlist UI");
+        var fbRowLayout = null;
+        for (var c2 = 0; c2 < fallbackSongItem.children.length; c2++) {
+            if (fallbackSongItem.children[c2].toString().indexOf("RowLayout") !== -1) {
+                fbRowLayout = fallbackSongItem.children[c2];
+                break;
+            }
+        }
+        var fbChildren = fbRowLayout ? fbRowLayout.children : [];
+        var foundFbTitle = false;
+        for (var i2 = 0; i2 < fbChildren.length; i2++) {
+            if (fbChildren[i2].text !== undefined && fbChildren[i2].text.indexOf("01 - Track Fallback") !== -1) {
+                foundFbTitle = true;
+                break;
+            }
+        }
+        verify(foundFbTitle, "Fallback extracted title text '01 - Track Fallback' must be physically rendered in the UI list delegate");
         
         var rowLayout = null;
         for (var c = 0; c < songItem.children.length; c++) {
