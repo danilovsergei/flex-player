@@ -18,6 +18,7 @@ Item {
     
     property var activeRequests: []
     property string currentlyPlayingMediaUrl: ""
+    property int currentlyPlayingIndex: -1
     
     function playTrackAtIndex(idx) {
         if (idx >= 0 && idx < playlistModel.count) {
@@ -34,6 +35,7 @@ Item {
                 var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
                 pw.playMedia(item.mediaUrl, 0, item.ratingKey, item.duration, "auto", "none", streams);
                 root.currentlyPlayingMediaUrl = item.mediaUrl;
+                root.currentlyPlayingIndex = idx;
             }
         }
     }
@@ -59,10 +61,14 @@ Item {
             var m = playlistModel.get(i);
             if (m && m.isSelected) {
                 hasSelection = true;
+                if (i < root.currentlyPlayingIndex) root.currentlyPlayingIndex--;
+                else if (i === root.currentlyPlayingIndex) root.currentlyPlayingIndex = -1;
                 playlistModel.remove(i);
             }
         }
         if (!hasSelection && playlistView.currentIndex >= 0 && playlistView.currentIndex < playlistModel.count) {
+            if (playlistView.currentIndex < root.currentlyPlayingIndex) root.currentlyPlayingIndex--;
+            else if (playlistView.currentIndex === root.currentlyPlayingIndex) root.currentlyPlayingIndex = -1;
             playlistModel.remove(playlistView.currentIndex);
         }
     }
@@ -76,11 +82,13 @@ Item {
             else if (typeof app !== "undefined" && app.playerView) pw = app.playerView;
             if (pw) {
                 var modelItem = playlistModel.get(playlistView.currentIndex);
-                if (modelItem && pw.currentMediaUrl === modelItem.mediaUrl) {
+                if (modelItem && pw.currentMediaUrl === modelItem.mediaUrl && root.currentlyPlayingIndex === playlistView.currentIndex) {
                     pw.mpvObject.paused = !pw.mpvObject.paused;
                 } else if (modelItem) {
                     var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
                     pw.playMedia(modelItem.mediaUrl, 0, "", modelItem.duration, "auto", "none", streams);
+                    root.currentlyPlayingMediaUrl = modelItem.mediaUrl;
+                    root.currentlyPlayingIndex = playlistView.currentIndex;
                 }
             }
         } else if (name === "Ctrl+A") {
@@ -198,6 +206,7 @@ Item {
                 playTrackAtIndex(0);
             } else {
                 root.currentlyPlayingMediaUrl = "";
+                root.currentlyPlayingIndex = -1;
             }
         }
     }
@@ -729,7 +738,7 @@ Item {
                         property bool isPlayingTrack: {
                             var pw = (typeof mainWindow !== "undefined" && mainWindow.playerView) ? mainWindow.playerView : ((typeof app !== "undefined" && app.playerView) ? app.playerView : null);
                             if (!pw && root.appCtrl && root.appCtrl.parent) pw = root.appCtrl.parent.playerView;
-                            return pw ? pw.currentMediaUrl === model.mediaUrl : false;
+                            return pw ? (pw.currentMediaUrl === model.mediaUrl && index === root.currentlyPlayingIndex) : false;
                         }
                         
                         Rectangle {

@@ -878,6 +878,62 @@ TestCase {
         console.warn("test_96r_repeat_logic complete");
     }
 
+
+    function test_96s_duplicate_highlight() {
+        console.warn("Starting test_96s_duplicate_highlight");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        verify(musicView !== null, "MusicBrowserView must exist");
+        
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        verify(playlistView !== null, "playlistView must exist");
+        var playlistModel = playlistView.model;
+        verify(playlistModel !== null, "playlistModel must exist");
+        
+        // Ensure playlist has exact duplicates
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Dupe Track", "mediaUrl": "url_dupe", "duration": 1000, "isSelected": false, "ratingKey": "dupe1"});
+        playlistModel.append({"title": "Dupe Track", "mediaUrl": "url_dupe", "duration": 1000, "isSelected": false, "ratingKey": "dupe1"});
+        musicView._isLoadingPlaylist = false;
+        wait(200);
+        
+        // Play the first track
+        musicView.playTrackAtIndex(0);
+        wait(200);
+        
+        // Assert currentlyPlayingIndex is 0
+        verify(musicView.currentlyPlayingIndex === 0, "currentlyPlayingIndex should be 0");
+        
+        var item0 = playlistView.itemAtIndex(0);
+        var item1 = playlistView.itemAtIndex(1);
+        verify(item0 !== null, "item 0 must render");
+        verify(item1 !== null, "item 1 must render");
+        
+        // Since isPlayingTrack determines background color dynamically, assert properties directly:
+        verify(item0.isPlayingTrack === true, "Item 0 should be marked as playing");
+        verify(item1.isPlayingTrack === false, "Item 1 should NOT be marked as playing despite matching mediaUrl");
+        
+        // Play the second track
+        musicView.playTrackAtIndex(1);
+        wait(200);
+        
+        verify(musicView.currentlyPlayingIndex === 1, "currentlyPlayingIndex should be 1");
+        verify(item0.isPlayingTrack === false, "Item 0 should no longer be playing");
+        verify(item1.isPlayingTrack === true, "Item 1 should now be marked as playing");
+        
+        // Clean up
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        musicView._isLoadingPlaylist = false;
+        musicView.mediaEndedHandler(); // to clear index
+        
+        console.warn("test_96s_duplicate_highlight complete");
+    }
+
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()
