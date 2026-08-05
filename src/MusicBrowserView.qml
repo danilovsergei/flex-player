@@ -530,6 +530,33 @@ Item {
                                 mainWindow.playerView.mpvObject.position = value;
                             }
                         }
+                        
+                        background: Rectangle {
+                            x: progressBar.leftPadding
+                            y: progressBar.topPadding + progressBar.availableHeight / 2 - height / 2
+                            implicitWidth: 200
+                            implicitHeight: 6
+                            width: progressBar.availableWidth
+                            height: implicitHeight
+                            radius: 3
+                            color: "#444444"
+
+                            Rectangle {
+                                width: progressBar.visualPosition * parent.width
+                                height: parent.height
+                                color: typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "orange"
+                                radius: 3
+                            }
+                        }
+
+                        handle: Rectangle {
+                            x: progressBar.leftPadding + progressBar.visualPosition * (progressBar.availableWidth - width)
+                            y: progressBar.topPadding + progressBar.availableHeight / 2 - height / 2
+                            implicitWidth: 16
+                            implicitHeight: 16
+                            radius: 8
+                            color: progressBar.pressed ? "white" : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "orange")
+                        }
                     }
 
                     Text {
@@ -584,6 +611,33 @@ Item {
                             if (typeof mainWindow !== "undefined" && mainWindow.playerView && mainWindow.playerView.mpvObject && mainWindow.playerView.mpvObject.volume !== value) {
                                 mainWindow.playerView.mpvObject.volume = value;
                             }
+                        }
+                        
+                        background: Rectangle {
+                            x: volumeSlider.leftPadding
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                            implicitWidth: 100
+                            implicitHeight: 4
+                            width: volumeSlider.availableWidth
+                            height: implicitHeight
+                            radius: 2
+                            color: "#444444"
+
+                            Rectangle {
+                                width: volumeSlider.visualPosition * parent.width
+                                height: parent.height
+                                color: typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "orange"
+                                radius: 2
+                            }
+                        }
+
+                        handle: Rectangle {
+                            x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                            implicitWidth: 12
+                            implicitHeight: 12
+                            radius: 6
+                            color: volumeSlider.pressed ? "white" : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "orange")
                         }
                     }
                 }
@@ -646,6 +700,17 @@ Item {
                     model: playlistModel
                     clip: true
                     keyNavigationEnabled: false
+                    
+                    ScrollBar.vertical: ScrollBar {
+                        active: hovered || playlistView.moving
+                        policy: ScrollBar.AsNeeded
+                        background: Rectangle { color: "transparent" }
+                        contentItem: Rectangle {
+                            implicitWidth: 6
+                            radius: 3
+                            color: parent.active ? "#80ffffff" : "#40ffffff"
+                        }
+                    }
                     
                     onCurrentIndexChanged: {
                         // intentionally blank or handle focus/scrolling if needed in the future
