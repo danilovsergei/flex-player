@@ -14,8 +14,30 @@ Item {
     }
 
     property var appCtrl: typeof mainWindow !== "undefined" ? mainWindow.controller : null
+    property var appSettings: typeof mainWindow !== "undefined" ? mainWindow.appSettings : null
     
     property var activeRequests: []
+    property string currentlyPlayingMediaUrl: ""
+    
+    function playTrackAtIndex(idx) {
+        if (idx >= 0 && idx < playlistModel.count) {
+            playlistView.currentIndex = idx;
+            var item = playlistModel.get(idx);
+            
+            for (var k2 = 0; k2 < playlistModel.count; k2++) {
+                playlistModel.setProperty(k2, "isSelected", false);
+            }
+            playlistModel.setProperty(idx, "isSelected", true);
+            
+            var pw = root.getPlayerView();
+            if (pw) {
+                var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
+                pw.playMedia(item.mediaUrl, 0, item.ratingKey, item.duration, "auto", "none", streams);
+                root.currentlyPlayingMediaUrl = item.mediaUrl;
+            }
+        }
+    }
+
     ListModel {
         id: treeModel
     }
@@ -23,6 +45,7 @@ Item {
     property bool _isLoadingPlaylist: false
     ListModel {
         id: playlistModel
+        objectName: "playlistModel" 
         onCountChanged: {
             if (!root._isLoadingPlaylist) {
                 root.savePlaylist();
@@ -88,19 +111,25 @@ Item {
     }
 
     function savePlaylist() {
-        if (!appCtrl || !appCtrl.appSettings) return;
-        var list = [];
-        for (var i = 0; i < playlistModel.count; i++) {
-            var item = playlistModel.get(i);
-            list.push({"title": item.title, "album": item.album !== undefined ? item.album : "", "artist": item.artist !== undefined ? item.artist : "", "mediaUrl": item.mediaUrl, "duration": item.duration, "ratingKey": item.ratingKey || ""});
+        if (!appSettings) return;
+        try {
+            var list = [];
+            for (var i = 0; i < playlistModel.count; i++) {
+                var item = playlistModel.get(i);
+                if (item) {
+                    list.push({"title": item.title || "", "album": item.album !== undefined ? item.album : "", "artist": item.artist !== undefined ? item.artist : "", "mediaUrl": item.mediaUrl || "", "duration": item.duration || 0, "ratingKey": item.ratingKey || ""});
+                }
+            }
+            appSettings.defaultPlaylist = JSON.stringify(list);
+        } catch (e) {
+            console.error("Error saving playlist: " + e);
         }
-        appCtrl.appSettings.defaultPlaylist = JSON.stringify(list);
     }
     
     function loadPlaylist() {
-        if (!appCtrl || !appCtrl.appSettings) return;
+        if (!appSettings) return;
         try {
-            var listStr = appCtrl.appSettings.defaultPlaylist;
+            var listStr = appSettings.defaultPlaylist;
             if (!listStr || listStr === "[]" || listStr === "") return;
             var list = JSON.parse(listStr);
             root._isLoadingPlaylist = true;
@@ -131,6 +160,55 @@ Item {
         }
     }
     
+    
+    function getPlayerView() {
+        if (typeof mainWindow !== "undefined" && mainWindow.playerView) return mainWindow.playerView;
+        if (typeof app !== "undefined" && app.playerView) return app.playerView;
+        
+        // Dynamic fallback for headless testing where playerView isn't bound on mainWindow root
+        var mw = typeof mainWindow !== "undefined" ? mainWindow : null;
+        if (mw && mw.contentItem && mw.contentItem.children) {
+            for (var i = 0; i < mw.contentItem.children.length; i++) {
+                if (mw.contentItem.children[i] && mw.contentItem.children[i].objectName === "playerView") return mw.contentItem.children[i];
+            }
+        } else if (mw && mw.children) {
+            for (var j = 0; j < mw.children.length; j++) {
+                if (mw.children[j] && mw.children[j].objectName === "playerView") return mw.children[j];
+            }
+        }
+        return null;
+    }
+
+    function mediaEndedHandler() {
+        if (!root.currentlyPlayingMediaUrl) return;
+        var pw = root.getPlayerView();
+        
+        if (pw && pw.currentMediaUrl !== root.currentlyPlayingMediaUrl) return;
+
+        var rm = (root.appCtrl && root.appSettings) ? root.appSettings.musicRepeatMode : 0;
+        var idx = playlistView.currentIndex;
+        
+        if (rm === 2) {
+            playTrackAtIndex(idx);
+        } else {
+            var nextIdx = idx + 1;
+            if (nextIdx < playlistModel.count) {
+                playTrackAtIndex(nextIdx);
+            } else if (rm === 1 && playlistModel.count > 0) {
+                playTrackAtIndex(0);
+            } else {
+                root.currentlyPlayingMediaUrl = "";
+            }
+        }
+    }
+
+    Connections {
+        target: root.getPlayerView()
+        function onMediaEnded() {
+            mediaEndedHandler();
+        }
+    }
+
     Connections {
         target: appCtrl
         function onCurrentLibraryIdChanged() {
@@ -461,6 +539,40 @@ Item {
                         font.bold: true
                     }
 
+                    Button {
+                        id: repeatButton
+                        objectName: "repeatButton"
+                        property int repeatMode: root.appSettings ? root.appSettings.musicRepeatMode : 0
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        background: Rectangle { color: "transparent" }
+                        
+                        contentItem: Item {
+                            anchors.fill: parent
+                            Image {
+                                id: repeatIconImg
+                                objectName: "repeatIconImg"
+                                anchors.centerIn: parent
+                                width: 26
+                                height: 26
+                                sourceSize.width: 26
+                                sourceSize.height: 26
+                                source: {
+                                    if (repeatButton.repeatMode === 0) return "../assets/repeat.svg";
+                                    if (repeatButton.repeatMode === 1) return "../assets/repeat_on.svg";
+                                    return "../assets/repeat_one.svg";
+                                }
+                                fillMode: Image.PreserveAspectFit
+                            }
+                        }
+                        
+                        onClicked: {
+                            if (root.appSettings) {
+                                root.appSettings.musicRepeatMode = (root.appSettings.musicRepeatMode + 1) % 3;
+                            }
+                        }
+                    }
+
                     Slider {
                         id: volumeSlider
                         objectName: "musicVolumeSlider"
@@ -477,51 +589,51 @@ Item {
                 }
                 
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicDeleteHotkey : "Delete"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicDeleteHotkey : "Delete"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Delete")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicPlayPauseHotkey : "Space"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicPlayPauseHotkey : "Space"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("PlayPause")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.seekForwardHotkey : "Right"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.seekForwardHotkey : "Right"
                     enabled: root.visible
                     onActivated: {
                         if (root.appCtrl) root.appCtrl.throttleSeek(1);
                     }
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.seekBackwardHotkey : "Left"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.seekBackwardHotkey : "Left"
                     enabled: root.visible
                     onActivated: {
                         if (root.appCtrl) root.appCtrl.throttleSeek(-1);
                     }
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicSelectAllHotkey : "Ctrl+A"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicSelectAllHotkey : "Ctrl+A"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Ctrl+A")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicShiftUpHotkey : "Shift+Up"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicShiftUpHotkey : "Shift+Up"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Shift+Up")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicShiftDownHotkey : "Shift+Down"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicShiftDownHotkey : "Shift+Down"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Shift+Down")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicUpHotkey : "Up"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicUpHotkey : "Up"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Up")
                 }
                 Shortcut {
-                    sequence: (root.appCtrl && root.appCtrl.appSettings) ? root.appCtrl.appSettings.musicDownHotkey : "Down"
+                    sequence: (root.appCtrl && root.appSettings) ? root.appSettings.musicDownHotkey : "Down"
                     enabled: root.visible
                     onActivated: root.triggerShortcut("Down")
                 }
@@ -664,17 +776,7 @@ Item {
                             }
                             onDoubleClicked: function(mouse) {
                                 if (mouse.button === Qt.LeftButton) {
-                                    playlistView.currentIndex = index;
-                                    var pw = null;
-                                    if (typeof mainWindow !== "undefined" && mainWindow.playerView) {
-                                        pw = mainWindow.playerView;
-                                    } else if (typeof app !== "undefined" && app.playerView) {
-                                        pw = app.playerView;
-                                    }
-                                    if (pw) {
-                                        var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
-                                        pw.playMedia(model.mediaUrl, 0, "", model.duration, "auto", "none", streams);
-                                    }
+                                    playTrackAtIndex(index);
                                 }
                             }
                         }

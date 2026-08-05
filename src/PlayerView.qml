@@ -28,6 +28,7 @@ Item {
 
     signal playbackStopped(int finalTimeMs)
     signal timelineUpdateRequested(string state, int timeMs)
+    signal mediaEnded()
 
     function getCurrentAudioName() {
         if (!playerView.mediaStreams) return "Unknown";
@@ -243,6 +244,9 @@ Item {
             console.log(">>> MPV endFile triggered. Reason: " + reason);
             if (reason === "error") {
                 console.log(">>> ERROR: MPV encountered an error fetching or playing URL: " + playerView.currentMediaUrl);
+            } else if (reason === "eof") {
+                console.log(">>> MPV reached EOF, emitting mediaEnded()");
+                playerView.mediaEnded();
             }
         }
 

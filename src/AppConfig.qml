@@ -31,6 +31,7 @@ Item {
     property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
     property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
     property alias defaultPlaylist: musicSettings.defaultPlaylist
+    property alias musicRepeatMode: musicSettings.musicRepeatMode
 
     property alias serverList: loginSettings.serverList
     property alias connectionVersion: loginSettings.connectionVersion
@@ -88,5 +89,6 @@ Item {
         category: "Music"
         location: root.isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property string defaultPlaylist: "[]"
+        property int musicRepeatMode: 0
     }
 }
