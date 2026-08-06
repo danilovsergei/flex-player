@@ -934,6 +934,129 @@ TestCase {
         console.warn("test_96s_duplicate_highlight complete");
     }
 
+
+    function test_96t_playlist_toggle() {
+        console.warn("Starting test_96t_playlist_toggle");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        verify(musicView !== null, "MusicBrowserView must exist");
+        
+        // Force reset
+        musicView.leftViewMode = 0;
+        wait(200);
+        
+        verify(musicView.leftViewMode === 0, "Default view mode should be Folders");
+        
+        var plexPlaylistsView = findChild(musicView, "plexPlaylistsListView");
+        var treeListView = findChild(musicView, "musicTreeView");
+        
+        // 1. Toggle to Playlists
+        musicView.leftViewMode = 1;
+        musicView.loadPlexPlaylists();
+        wait(1000); // Wait for fetch
+        
+        var listModel = plexPlaylistsView.model;
+        verify(listModel !== null, "Playlists model should not be null");
+        verify(listModel.count === 2, "Should load 2 audio playlists from mock server");
+        verify(listModel.get(0).title === "Chill Vibes", "First playlist title match");
+        verify(listModel.get(1).title === "Workout Mix", "Second playlist title match");
+        
+        // 2. Toggle to Folders
+        musicView.leftViewMode = 0;
+        wait(200);
+        var treeModel = treeListView.model;
+        verify(treeModel !== null, "Tree model should not be null");
+        
+        console.warn("test_96t_playlist_toggle complete");
+    }
+
+    function test_96u_playlist_add_context_menu() {
+        console.warn("Starting test_96u_playlist_add_context_menu");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        
+        // Ensure Playlists mode and force layout update by toggling
+        musicView.leftViewMode = 0;
+        wait(200);
+        musicView.leftViewMode = 1;
+        musicView.loadPlexPlaylists();
+        wait(1000);
+        
+        var plexPlaylistsView = findChild(musicView, "plexPlaylistsListView");
+        plexPlaylistsView.forceLayout();
+        
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        // Clear main queue
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        musicView._isLoadingPlaylist = false;
+        
+        // Wait for list to render
+        var plItem0 = null;
+        tryVerify(function() {
+            plItem0 = plexPlaylistsView.itemAtIndex(0);
+            return plItem0 !== null;
+        }, 3000, "Playlist item 0 should render");
+        
+        // Trigger Add to Queue
+        var plContextMenu = findChild(plItem0, "plContextMenu");
+        verify(plContextMenu !== null, "plContextMenu must exist");
+        var plContextMenuAdd = findChild(plContextMenu, "plContextMenuAdd");
+        verify(plContextMenuAdd !== null, "plContextMenuAdd must exist");
+        
+        plContextMenuAdd.triggered();
+        wait(1000); // Wait for items to be fetched and added
+        
+        verify(playlistModel.count === 2, "Should have added 2 tracks to the main playlist");
+        verify(playlistModel.get(0).title === "Playlist Track 1", "First track matched");
+        verify(playlistModel.get(1).title === "Playlist Track 2", "Second track matched");
+        
+        console.warn("test_96u_playlist_add_context_menu complete");
+    }
+
+    function test_96v_playlist_add_drag_drop() {
+        console.warn("Starting test_96v_playlist_add_drag_drop");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var plexPlaylistsView = findChild(musicView, "plexPlaylistsListView");
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        // Ensure Playlists mode
+        musicView.leftViewMode = 1;
+        musicView.loadPlexPlaylists();
+        wait(1000);
+        
+        // Clear main queue
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        musicView._isLoadingPlaylist = false;
+        
+        var listModel = plexPlaylistsView.model;
+        verify(listModel.count === 2, "Playlist list model should have items");
+        
+        // Due to QTest's known limitations with internal drag-and-drop mechanics in QML (DropArea often fails to receive events from DragProxyItem when simulated headlessly), we test the actual logic the DropArea executes.
+        var mockDragData = {"title": listModel.get(0).title, "isPlexPlaylist": true, "ratingKey": listModel.get(0).ratingKey};
+        musicView.addPlexPlaylist(mockDragData.ratingKey, playlistModel.count);
+        wait(1000); // Wait for items to fetch
+        
+        verify(playlistModel.count === 2, "Drag and drop should have added 2 tracks to the main playlist");
+        verify(playlistModel.get(0).title === "Playlist Track 1", "First track matched");
+        
+        console.warn("test_96v_playlist_add_drag_drop complete");
+    }
+
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()

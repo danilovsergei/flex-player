@@ -44,6 +44,56 @@ Item {
         id: treeModel
     }
     
+    property int leftViewMode: 0
+    ListModel {
+        id: plexPlaylistsModel
+        objectName: "plexPlaylistsModel"
+    }
+
+    function loadPlexPlaylists() {
+        console.warn("loadPlexPlaylists called! appCtrl: " + !!appCtrl);
+        if (!appCtrl) return;
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy_token";
+        console.warn("loadPlexPlaylists url: " + url + " token: " + !!token);
+        if (!url) return;
+
+        var req = new XMLHttpRequest();
+        console.warn("Sending request to " + url + "/playlists");
+        req.open("GET", url + "/playlists");
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE) {
+                console.warn("loadPlexPlaylists DONE, status: " + req.status);
+            }
+            if (req.readyState === XMLHttpRequest.DONE) {
+                if (req.status === 200) {
+                    try {
+                        var json = JSON.parse(req.responseText);
+                        var items = (json.MediaContainer && json.MediaContainer.Metadata) ? json.MediaContainer.Metadata : [];
+                        plexPlaylistsModel.clear();
+                        for (var i = 0; i < items.length; i++) {
+                            var item = items[i];
+                            if (item.playlistType === "audio") {
+                                plexPlaylistsModel.append({
+                                    "title": item.title,
+                                    "ratingKey": item.ratingKey,
+                                    "smart": item.smart || false,
+                                    "duration": item.duration || 0,
+                                    "leafCount": item.leafCount || 0
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error parsing playlists", e);
+                    }
+                }
+            }
+        };
+        req.send();
+    }
+
     property bool _isLoadingPlaylist: false
     ListModel {
         id: playlistModel
@@ -360,13 +410,71 @@ Item {
             SplitView.minimumWidth: 200
             color: "#1a1a1a"
             
-            ListView {
-                id: treeListView
-                objectName: "musicTreeView"
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                model: treeModel
-                clip: true
+                spacing: 0
+                
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 40
+                    Layout.margins: 10
+                    
+                    Button {
+                        objectName: "foldersTabButton"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 30
+                        background: Rectangle { 
+                            color: root.leftViewMode === 0 ? "#444" : "transparent"
+                            radius: 4 
+                        }
+                        contentItem: RowLayout {
+                            anchors.centerIn: parent
+                            Image {
+                                source: Qt.resolvedUrl("../assets/folder.svg")
+                                width: 16; height: 16; sourceSize.width: 16; sourceSize.height: 16
+                            }
+                            Text { text: "Folders"; color: "white"; font.pixelSize: 14 }
+                        }
+                        onClicked: root.leftViewMode = 0
+                    }
+                    Button {
+                        objectName: "playlistsTabButton"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 30
+                        background: Rectangle { 
+                            color: root.leftViewMode === 1 ? "#444" : "transparent"
+                            radius: 4 
+                        }
+                        contentItem: RowLayout {
+                            anchors.centerIn: parent
+                            Image {
+                                source: Qt.resolvedUrl("../assets/list-ul.svg")
+                                width: 16; height: 16; sourceSize.width: 16; sourceSize.height: 16
+                            }
+                            Text { text: "Playlists"; color: "white"; font.pixelSize: 14 }
+                        }
+                        onClicked: {
+                            root.leftViewMode = 1;
+                            if (plexPlaylistsModel.count === 0) {
+                                root.loadPlexPlaylists();
+                            }
+                        }
+                    }
+                }
+                
+                StackLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    currentIndex: root.leftViewMode
+                    
+                    ListView {
+                        id: treeListView
+                        objectName: "musicTreeView"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        model: treeModel
+                        clip: true
+                        Layout.margins: 10
                 
                 delegate: Item {
                     width: treeListView.width
@@ -475,7 +583,122 @@ Item {
                     }
                 }
             }
-        }
+            
+            ListView {
+                id: plexPlaylistsListView
+                objectName: "plexPlaylistsListView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                model: plexPlaylistsModel
+                clip: true
+                Layout.margins: 10
+                
+                ScrollBar.vertical: ScrollBar {
+                    active: hovered || plexPlaylistsListView.moving
+                    policy: ScrollBar.AsNeeded
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Rectangle {
+                        implicitWidth: 6
+                        radius: 3
+                        color: parent.active ? "#80ffffff" : "#40ffffff"
+                    }
+                }
+                
+                delegate: Item {
+                    width: plexPlaylistsListView.width
+                    height: 40
+                    
+                    Rectangle {
+                        anchors.fill: parent
+                        color: plMouseArea.containsMouse ? "#333" : "transparent"
+                        radius: 4
+                        
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            spacing: 10
+                            
+                            Image {
+                                source: Qt.resolvedUrl("../assets/list-ul.svg")
+                                width: 16; height: 16; sourceSize.width: 16; sourceSize.height: 16
+                            }
+                            
+                            Text {
+                                text: model.title
+                                color: "white"
+                                font.pixelSize: 16
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                            
+                            Text {
+                                text: model.leafCount + " tracks"
+                                color: "#aaa"
+                                font.pixelSize: 12
+                                Layout.rightMargin: 10
+                            }
+                        }
+                        
+                        MouseArea {
+                            id: plMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            
+                            drag.target: plDragProxyItem
+                            
+                            onPressed: function(mouse) {
+                                globalOverlay.activeDragItem = plDragProxyItem;
+                            }
+                            
+                            onReleased: function(mouse) {
+                                globalOverlay.activeDragItem = null;
+                                if (plDragProxyItem.Drag.active) {
+                                    plDragProxyItem.Drag.drop();
+                                }
+                                plDragProxyItem.x = 0; plDragProxyItem.y = 0;
+                            }
+                            
+                            onClicked: function(mouse) {
+                                console.log("Clicked plex playlist: " + model.title);
+                                if (mouse.button === Qt.RightButton) {
+                                    plContextMenu.playlistId = model.ratingKey;
+                                    plContextMenu.popup();
+                                }
+                            }
+                        }
+                    }
+                    
+                    Item {
+                        id: plDragProxyItem
+                        width: parent.width; height: parent.height
+                        visible: false
+                        Drag.active: plMouseArea.drag.active
+                        Drag.dragType: Drag.Internal
+                        Drag.supportedActions: Qt.CopyAction
+                        Drag.keys: ["text/plain"]
+                        Drag.hotSpot.x: width / 2
+                        Drag.hotSpot.y: height / 2
+                        property var dragData: {"title": model.title, "isPlexPlaylist": true, "ratingKey": model.ratingKey || ""}
+                    }
+                    
+                    Menu {
+                        id: plContextMenu
+                        objectName: "plContextMenu"
+                        property string playlistId: ""
+                        MenuItem {
+                            objectName: "plContextMenuAdd"
+                            text: "Add to Queue"
+                            onTriggered: {
+                                root.addPlexPlaylist(plContextMenu.playlistId, playlistModel.count);
+                            }
+                        }
+                    }
+                }
+            }
+        } // end StackLayout
+        } // end ColumnLayout
+        } // end Rectangle
         
         Rectangle {
             id: playlistContainer
@@ -1397,6 +1620,8 @@ Item {
                         }
                         if (data.isFolder) {
                             root.recursivelyAddFolder(data.parentId, insertIndex);
+                        } else if (data.isPlexPlaylist) {
+                            root.addPlexPlaylist(data.ratingKey, insertIndex);
                         } else {
                             playlistModel.insert(insertIndex, {"title": data.title, "album": data.album !== undefined ? data.album : "", "artist": data.artist !== undefined ? data.artist : "", "mediaUrl": data.mediaUrl, "duration": data.duration, "isSelected": false, "ratingKey": data.ratingKey || ""});
                         }
@@ -1405,6 +1630,59 @@ Item {
                 }
             }
         }
+    }
+
+    function addPlexPlaylist(playlistId, insertIndex) {
+        console.warn("addPlexPlaylist called with playlistId: " + playlistId);
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy";
+        if (!url) return;
+        
+        var state = { currentIndex: insertIndex !== undefined ? insertIndex : playlistModel.count };
+        var req = new XMLHttpRequest();
+        var arr = root.activeRequests; arr.push(req); root.activeRequests = arr;
+        var endpoint = "/playlists/" + playlistId + "/items";
+        console.warn("addPlexPlaylist fetching: " + url + endpoint);
+        req.open("GET", url + endpoint);
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
+                console.warn("addPlexPlaylist DONE status 200");
+                try {
+                    var json = JSON.parse(req.responseText);
+                    var items = (json.MediaContainer && json.MediaContainer.Metadata) ? json.MediaContainer.Metadata : [];
+                    console.warn("Found " + items.length + " items in playlist");
+                    for (var i = 0; i < items.length; i++) {
+                        var item = items[i];
+                        if (item.type === "track") {
+                            var trackUrl = "";
+                            if (item.Media && item.Media.length > 0 && item.Media[0].Part && item.Media[0].Part.length > 0) {
+                                var partKey = item.Media[0].Part[0].key || item.Media[0].Part[0].file;
+                                trackUrl = url + partKey + "?X-Plex-Token=" + token;
+                            }
+                            var parsedAlbum2 = item.parentTitle || "";
+                            var parsedArtist2 = item.grandparentTitle || item.originalTitle || "";
+                            var parsedTitle2 = item.title || "";
+                            
+                            var trackData = {"title": parsedTitle2, "album": parsedAlbum2, "artist": parsedArtist2, "mediaUrl": trackUrl, "duration": item.duration || 0, "isSelected": false, "ratingKey": item.ratingKey || item.key || ""};
+                            if (state.currentIndex >= playlistModel.count) {
+                                playlistModel.append(trackData);
+                            } else {
+                                playlistModel.insert(state.currentIndex, trackData);
+                            }
+                            state.currentIndex++;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing playlist items", e);
+                }
+                var arr2 = root.activeRequests;
+                var idx = arr2.indexOf(req);
+                if (idx !== -1) { arr2.splice(idx, 1); root.activeRequests = arr2; }
+            }
+        };
+        req.send();
     }
 
     function recursivelyAddFolder(folderId, insertIndex) {

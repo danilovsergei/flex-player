@@ -288,6 +288,27 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     ]
                 }
             }
+        elif path == "/playlists":
+            response_data = {
+                "MediaContainer": {
+                    "size": 2,
+                    "Metadata": [
+                        { "ratingKey": "p1", "title": "Chill Vibes", "playlistType": "audio", "leafCount": 15, "smart": False },
+                        { "ratingKey": "p2", "title": "Workout Mix", "playlistType": "audio", "leafCount": 42, "smart": True },
+                        { "ratingKey": "p3", "title": "Video Playlist", "playlistType": "video", "leafCount": 5, "smart": False }
+                    ]
+                }
+            }
+        elif path.startswith("/playlists/") and path.endswith("/items"):
+            response_data = {
+                "MediaContainer": {
+                    "size": 2,
+                    "Metadata": [
+                        { "ratingKey": "t1", "title": "Playlist Track 1", "parentTitle": "Album 1", "grandparentTitle": "Artist 1", "type": "track", "duration": 150000, "Media": [{"Part": [{"file": "/media/pt1.mp3"}]}] },
+                        { "ratingKey": "t2", "title": "Playlist Track 2", "parentTitle": "Album 2", "grandparentTitle": "Artist 2", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/pt2.mp3"}]}] }
+                    ]
+                }
+            }
         elif path.endswith("/collections"):
             response_data = {
                 "MediaContainer": {
