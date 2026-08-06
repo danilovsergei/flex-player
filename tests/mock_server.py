@@ -289,16 +289,32 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 }
             }
         elif path == "/playlists":
-            response_data = {
-                "MediaContainer": {
-                    "size": 2,
-                    "Metadata": [
-                        { "ratingKey": "p1", "title": "Chill Vibes", "playlistType": "audio", "leafCount": 15, "smart": False },
-                        { "ratingKey": "p2", "title": "Workout Mix", "playlistType": "audio", "leafCount": 42, "smart": True },
-                        { "ratingKey": "p3", "title": "Video Playlist", "playlistType": "video", "leafCount": 5, "smart": False }
-                    ]
+            if self.command == "POST":
+                # Mock creating a playlist
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            { "ratingKey": "p99", "title": "Mock Created Playlist", "playlistType": "audio", "leafCount": 1 }
+                        ]
+                    }
                 }
-            }
+            else:
+                response_data = {
+                    "MediaContainer": {
+                        "size": 5,
+                        "Metadata": [
+                            { "ratingKey": "p1", "title": "Chill Vibes", "playlistType": "audio", "leafCount": 15, "smart": False },
+                            { "ratingKey": "p2", "title": "Workout Mix", "playlistType": "audio", "leafCount": 42, "smart": True },
+                            { "ratingKey": "p3", "title": "Video Playlist", "playlistType": "video", "leafCount": 5, "smart": False },
+                            { "ratingKey": "p4", "title": "Ambient Sounds", "playlistType": "audio", "leafCount": 10, "smart": False },
+                            { "ratingKey": "p5", "title": "Party Time", "playlistType": "audio", "leafCount": 50, "smart": False },
+                            { "ratingKey": "p6", "title": "Classical Focus", "playlistType": "audio", "leafCount": 20, "smart": False }
+                        ]
+                    }
+                }
+        elif path.startswith("/playlists/") and path.endswith("/items") and self.command in ["PUT", "DELETE"]:
+            response_data = {"MediaContainer": {"size": 1, "Metadata": [{"ratingKey": "p1"}]}}
         elif path.startswith("/playlists/") and path.endswith("/items"):
             response_data = {
                 "MediaContainer": {

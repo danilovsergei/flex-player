@@ -215,6 +215,9 @@ Item {
             if (treeModel.count === 0 && appCtrl && appCtrl.currentLibraryId !== "") {
                 loadFolder(appCtrl.currentLibraryId, "", 0, -1, "");
             }
+            if (plexPlaylistsModel.count === 0) {
+                root.loadPlexPlaylists();
+            }
         }
     }
     
@@ -713,12 +716,49 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 
-                Text {
-                    text: "Playlist"
-                    color: "white"
-                    font.pixelSize: 24
-                    font.bold: true
+                RowLayout {
+                    Layout.fillWidth: true
                     Layout.margins: 15
+                    Text {
+                        text: "Playlist"
+                        color: "white"
+                        font.pixelSize: 24
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+                    Rectangle {
+                        id: saveQueueBtn
+                        objectName: "saveQueueBtn"
+                        visible: playlistModel.count > 0
+                        height: 30
+                        width: saveQueueRow.implicitWidth + 30
+                        radius: 6
+                        color: saveQueueMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
+                        
+                        RowLayout {
+                            id: saveQueueRow
+                            anchors.centerIn: parent
+                            spacing: 8
+                            Text {
+                                text: "Save"
+                                color: "white"
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+                        }
+                        
+                        MouseArea {
+                            id: saveQueueMouse
+                            objectName: "saveQueueMouse"
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (plexPlaylistsModel.count === 0) root.loadPlexPlaylists();
+                                saveQueueDialog.open()
+                            }
+                        }
+                    }
                 }
                 
                 RowLayout {
@@ -1817,6 +1857,348 @@ Item {
                     font.pixelSize: 20
                     font.bold: true
                 }
+            }
+        }
+    }
+
+    function getQueueRatingKeys() {
+        var keys = [];
+        for (var i = 0; i < playlistModel.count; i++) {
+            var rk = playlistModel.get(i).ratingKey;
+            if (rk) keys.push(rk);
+        }
+        return keys.join(",");
+    }
+
+    function saveQueueAsNewPlaylist(title) {
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy";
+        if (!url) return;
+        var keysStr = getQueueRatingKeys();
+        if (!keysStr) return;
+        
+        var req = new XMLHttpRequest();
+        req.open("GET", url + "/");
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
+                var json = JSON.parse(req.responseText);
+                var machineId = json.MediaContainer.machineIdentifier;
+                
+                var postReq = new XMLHttpRequest();
+                var uri = "server://" + machineId + "/com.plexapp.plugins.library/library/metadata/" + keysStr;
+                postReq.open("POST", url + "/playlists?type=audio&smart=0&title=" + encodeURIComponent(title) + "&uri=" + encodeURIComponent(uri));
+                postReq.setRequestHeader("X-Plex-Token", token);
+                postReq.setRequestHeader("Accept", "application/json");
+                postReq.onreadystatechange = function() {
+                    if (postReq.readyState === XMLHttpRequest.DONE) {
+                        console.warn("Created playlist:", postReq.status);
+                        root.loadPlexPlaylists();
+                    }
+                };
+                postReq.send();
+            }
+        };
+        req.send();
+    }
+
+    function replacePlaylistWithQueue(playlistId) {
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy";
+        if (!url) return;
+        var keysStr = getQueueRatingKeys();
+        if (!keysStr) return;
+        
+        var req = new XMLHttpRequest();
+        req.open("GET", url + "/");
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
+                var json = JSON.parse(req.responseText);
+                var machineId = json.MediaContainer.machineIdentifier;
+                
+                var delReq = new XMLHttpRequest();
+                delReq.open("DELETE", url + "/playlists/" + playlistId + "/items");
+                delReq.setRequestHeader("X-Plex-Token", token);
+                delReq.setRequestHeader("Accept", "application/json");
+                delReq.onreadystatechange = function() {
+                    if (delReq.readyState === XMLHttpRequest.DONE) {
+                        var putReq = new XMLHttpRequest();
+                        var uri = "server://" + machineId + "/com.plexapp.plugins.library/library/metadata/" + keysStr;
+                        putReq.open("PUT", url + "/playlists/" + playlistId + "/items?uri=" + encodeURIComponent(uri));
+                        putReq.setRequestHeader("X-Plex-Token", token);
+                        putReq.setRequestHeader("Accept", "application/json");
+                        putReq.onreadystatechange = function() {
+                            if (putReq.readyState === XMLHttpRequest.DONE) {
+                                console.warn("Replaced playlist:", putReq.status);
+                                root.loadPlexPlaylists();
+                            }
+                        };
+                        putReq.send();
+                    }
+                };
+                delReq.send();
+            }
+        };
+        req.send();
+    }
+
+    function appendQueueToPlaylist(playlistId) {
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy";
+        if (!url) return;
+        var keysStr = getQueueRatingKeys();
+        if (!keysStr) return;
+        
+        var req = new XMLHttpRequest();
+        req.open("GET", url + "/");
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
+                var json = JSON.parse(req.responseText);
+                var machineId = json.MediaContainer.machineIdentifier;
+                
+                var putReq = new XMLHttpRequest();
+                var uri = "server://" + machineId + "/com.plexapp.plugins.library/library/metadata/" + keysStr;
+                putReq.open("PUT", url + "/playlists/" + playlistId + "/items?uri=" + encodeURIComponent(uri));
+                putReq.setRequestHeader("X-Plex-Token", token);
+                putReq.setRequestHeader("Accept", "application/json");
+                putReq.onreadystatechange = function() {
+                    if (putReq.readyState === XMLHttpRequest.DONE) {
+                        console.warn("Appended to playlist:", putReq.status);
+                        root.loadPlexPlaylists();
+                    }
+                };
+                putReq.send();
+            }
+        };
+        req.send();
+    }
+
+    Popup {
+        id: saveQueueDialog
+        objectName: "saveQueueDialog"
+        property string selectedPlaylistId: ""
+        property string selectedPlaylistTitle: ""
+        
+        onOpened: {
+            playlistNameInput.text = "";
+            selectedPlaylistId = "";
+            selectedPlaylistTitle = "";
+            existingPlaylistsView.forceLayout();
+        }
+
+        anchors.centerIn: parent
+        width: 400
+        height: 550
+        modal: true
+        focus: true
+        padding: 0
+        background: Rectangle {
+            color: "#111"
+            border.color: "#444"
+            radius: 8
+        }
+        
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 15
+            
+            Text {
+                text: "Save Queue to Playlist"
+                color: "white"
+                font.pixelSize: 18
+                font.bold: true
+            }
+            
+            Rectangle {
+                Layout.fillWidth: true
+                height: 40
+                color: "#222"
+                radius: 4
+                border.color: "#444"
+                
+                TextInput {
+                    id: playlistNameInput
+                    objectName: "playlistNameInput"
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    color: "white"
+                    verticalAlignment: TextInput.AlignVCenter
+                    font.pixelSize: 14
+                    clip: true
+                    
+                    onTextChanged: {
+                        if (text !== saveQueueDialog.selectedPlaylistTitle) {
+                            saveQueueDialog.selectedPlaylistId = "";
+                            saveQueueDialog.selectedPlaylistTitle = "";
+                        }
+                    }
+                    
+                    Text {
+                        text: "Search or enter playlist name..."
+                        color: "#888"
+                        font.pixelSize: 14
+                        visible: parent.text === ""
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+            
+            ListView {
+                id: existingPlaylistsView
+                objectName: "existingPlaylistsView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: plexPlaylistsModel
+                
+                ScrollBar.vertical: ScrollBar {
+                    active: hovered || existingPlaylistsView.moving
+                    policy: ScrollBar.AsNeeded
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Rectangle {
+                        implicitWidth: 6
+                        radius: 3
+                        color: parent.active ? "#80ffffff" : "#40ffffff"
+                    }
+                }
+                
+                delegate: ItemDelegate {
+                    objectName: "plOpt_" + model.ratingKey
+                    property string searchText: playlistNameInput.text
+                    property string myTitle: model.title !== undefined ? model.title : ""
+                    property bool match: searchText === "" || (myTitle !== "" && myTitle.toLowerCase().indexOf(searchText.toLowerCase()) !== -1)
+                    width: ListView.view.width
+                    height: match ? 50 : 0
+                    visible: match
+                    text: myTitle !== "" ? myTitle : "Unnamed Playlist"
+                    
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        font.pixelSize: 14
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: 10
+                        elide: Text.ElideRight
+                        font.bold: saveQueueDialog.selectedPlaylistId === model.ratingKey
+                    }
+                    
+                    background: Rectangle {
+                        color: saveQueueDialog.selectedPlaylistId === model.ratingKey ? "#444" : (parent.hovered ? "#333" : "transparent")
+                        radius: 4
+                    }
+                    
+                    onClicked: {
+                        saveQueueDialog.selectedPlaylistId = model.ratingKey;
+                        saveQueueDialog.selectedPlaylistTitle = model.title;
+                        playlistNameInput.text = model.title;
+                    }
+                }
+            }
+            
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                visible: playlistNameInput.text !== "" || saveQueueDialog.selectedPlaylistId !== ""
+                
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 10
+                    
+                    // Create New Button
+                Rectangle {
+                    id: createPlaylistBtn
+                    objectName: "createPlaylistBtn"
+                    Layout.fillWidth: true
+                    height: 40
+                    visible: saveQueueDialog.selectedPlaylistId === "" && playlistNameInput.text !== ""
+                    radius: 4
+                    color: cpMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
+                    
+                    Text {
+                        text: "Save as New Playlist"
+                        color: "white"
+                        font.bold: true
+                        anchors.centerIn: parent
+                    }
+                    
+                    MouseArea {
+                        id: cpMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (playlistNameInput.text !== "") {
+                                root.saveQueueAsNewPlaylist(playlistNameInput.text);
+                                saveQueueDialog.close();
+                            }
+                        }
+                    }
+                }
+                
+                // Replace Button
+                Rectangle {
+                    id: replacePlaylistBtn
+                    objectName: "replacePlaylistBtn"
+                    Layout.fillWidth: true
+                    height: 40
+                    visible: saveQueueDialog.selectedPlaylistId !== ""
+                    radius: 4
+                    color: repMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
+                    
+                    Text {
+                        text: "Replace Playlist"
+                        color: "white"
+                        font.bold: true
+                        anchors.centerIn: parent
+                    }
+                    
+                    MouseArea {
+                        id: repMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.replacePlaylistWithQueue(saveQueueDialog.selectedPlaylistId);
+                            saveQueueDialog.close();
+                        }
+                    }
+                }
+                
+                // Append Button
+                Rectangle {
+                    id: appendPlaylistBtn
+                    objectName: "appendPlaylistBtn"
+                    Layout.fillWidth: true
+                    height: 40
+                    visible: saveQueueDialog.selectedPlaylistId !== ""
+                    radius: 4
+                    color: appMouse.containsMouse ? "#555" : "#444"
+                    
+                    Text {
+                        text: "Append to Playlist"
+                        color: "white"
+                        font.bold: true
+                        anchors.centerIn: parent
+                    }
+                    
+                    MouseArea {
+                        id: appMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.appendQueueToPlaylist(saveQueueDialog.selectedPlaylistId);
+                            saveQueueDialog.close();
+                        }
+                    }
+                }
+            }
             }
         }
     }

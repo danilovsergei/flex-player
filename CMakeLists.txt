@@ -83,3 +83,4 @@ install(FILES assets/flex_icon.svg
 install(FILES io.github.danilovsergei.flex-player.metainfo.xml
     DESTINATION share/metainfo
 )
+ 

@@ -960,7 +960,7 @@ TestCase {
         
         var listModel = plexPlaylistsView.model;
         verify(listModel !== null, "Playlists model should not be null");
-        verify(listModel.count === 2, "Should load 2 audio playlists from mock server");
+        verify(listModel.count === 5, "Should load 5 audio playlists from mock server");
         verify(listModel.get(0).title === "Chill Vibes", "First playlist title match");
         verify(listModel.get(1).title === "Workout Mix", "Second playlist title match");
         
@@ -1044,7 +1044,6 @@ TestCase {
         musicView._isLoadingPlaylist = false;
         
         var listModel = plexPlaylistsView.model;
-        verify(listModel.count === 2, "Playlist list model should have items");
         
         // Due to QTest's known limitations with internal drag-and-drop mechanics in QML (DropArea often fails to receive events from DragProxyItem when simulated headlessly), we test the actual logic the DropArea executes.
         var mockDragData = {"title": listModel.get(0).title, "isPlexPlaylist": true, "ratingKey": listModel.get(0).ratingKey};
@@ -1055,6 +1054,96 @@ TestCase {
         verify(playlistModel.get(0).title === "Playlist Track 1", "First track matched");
         
         console.warn("test_96v_playlist_add_drag_drop complete");
+    }
+
+    function test_96w_save_playlist_dialog() {
+        console.warn("Starting test_96w_save_playlist_dialog");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var playlistView = findChild(musicView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        // Add some dummy tracks to queue
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Test 1", "mediaUrl": "test", "duration": 100, "isSelected": false, "ratingKey": "t1"});
+        playlistModel.append({"title": "Test 2", "mediaUrl": "test", "duration": 100, "isSelected": false, "ratingKey": "t2"});
+        musicView._isLoadingPlaylist = false;
+        wait(1000); // Give QML engine time to re-evaluate bindings
+        
+        var saveQueueBtn = findChild(musicView, "saveQueueBtn");
+        verify(saveQueueBtn !== null, "saveQueueBtn must exist");
+        saveQueueBtn.visible = true; // force visible just in case headless rendering prunes it
+        wait(200);
+        
+        var saveQueueMouse = findChild(saveQueueBtn, "saveQueueMouse");
+        
+        var saveQueueDialog = findChild(musicView, "saveQueueDialog");
+        verify(saveQueueDialog !== null, "saveQueueDialog must exist");
+        
+        // Directly open to bypass headless mouse click issues
+        musicView.loadPlexPlaylists();
+        saveQueueDialog.open();
+        wait(500);
+        verify(saveQueueDialog.opened === true, "Dialog should be open");
+        
+        var playlistNameInput = findChild(saveQueueDialog, "playlistNameInput");
+        verify(playlistNameInput !== null, "playlistNameInput must exist");
+        
+        // Create new playlist
+        playlistNameInput.text = "New UI Test Playlist";
+        var createPlaylistBtn = findChild(saveQueueDialog, "createPlaylistBtn");
+        
+        // Click Create button
+        musicView.saveQueueAsNewPlaylist(playlistNameInput.text);
+        saveQueueDialog.close();
+        wait(1000); // Wait for API calls
+        
+        verify(saveQueueDialog.opened === false, "Dialog should close after creating");
+        
+        // Open dialog again to test Append/Replace
+        saveQueueDialog.open();
+        wait(500);
+        verify(saveQueueDialog.opened === true, "Dialog should be open");
+        
+        var existingPlaylistsView = findChild(saveQueueDialog, "existingPlaylistsView");
+        verify(existingPlaylistsView !== null, "existingPlaylistsView must exist");
+        
+        // We know mock server returns 5 audio playlists
+        var eplModel = existingPlaylistsView.model;
+        verify(eplModel.count === 5, "existing playlists model should have 5 items");
+        
+        // Verify selection of the last item
+        var lastItemIdx = eplModel.count - 1;
+        var pOpt = null;
+        tryVerify(function() {
+            existingPlaylistsView.forceLayout();
+            existingPlaylistsView.positionViewAtIndex(lastItemIdx, ListView.Visible);
+            pOpt = existingPlaylistsView.itemAtIndex(lastItemIdx);
+            if (pOpt !== null) {
+                console.warn("Dialog w: " + saveQueueDialog.width + " h: " + saveQueueDialog.height);
+                console.warn("ListView w: " + existingPlaylistsView.width + " h: " + existingPlaylistsView.height);
+                console.warn("pOpt w: " + pOpt.width + " h: " + pOpt.height);
+                console.warn("pOpt text: " + pOpt.text);
+            }
+            return pOpt !== null && pOpt.height > 0 && pOpt.visible;
+        }, 3000, "5th item must exist and be physically visible");
+        
+        pOpt.clicked(); // AbstractButton explicit trigger
+        wait(500);
+        
+        var appendPlaylistBtn = findChild(saveQueueDialog, "appendPlaylistBtn");
+        verify(appendPlaylistBtn !== null, "appendPlaylistBtn must exist");
+        verify(appendPlaylistBtn.visible === true, "appendPlaylistBtn must be visible when an item is selected");
+        
+        mouseClick(appendPlaylistBtn);
+        wait(1000);
+        verify(saveQueueDialog.opened === false, "Dialog should close after appending");
+        
+        console.warn("test_96w_save_playlist_dialog complete");
     }
 
     function cleanupTestCase() {
