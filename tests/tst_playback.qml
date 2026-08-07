@@ -4214,4 +4214,56 @@ TestCase {
         p.executeSystemCommand("cat /app/tests/mock_server_requests.log > /app/tests/test_90_debug.log")
         wait(500)
     }
+
+    function test_98_minimize_sidebar_on_music() {
+        var fakeEnabled = { 
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server1_2": { "id": "2", "type": "artist", "title": "Music", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" } 
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true, connections: [{address: "127.0.0.1", port: 32400, local: true}]}]);
+        mainWindow.controller.connectionManager.setMockResponse("https://127.0.0.1:32400", true);
+        
+        mainWindow.appSettings.minimizeSidebarOnMusic = true;
+        mainWindow.sidebarCollapsed = false;
+        
+        mainWindow.startupLogic();
+        wait(500);
+        
+        var sidebar = findChild(mainWindow, "sidebarView");
+        var libraryRepeater = findChild(sidebar, "sidebarLibraryRepeater");
+        tryVerify(function() { return libraryRepeater && libraryRepeater.count >= 2; }, 5000);
+        
+        var moviesBtn = libraryRepeater.itemAt(0);
+        mouseClick(moviesBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === false, "Sidebar should not minimize for Movies");
+        
+        var musicBtn = libraryRepeater.itemAt(1);
+        mouseClick(musicBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === true, "Sidebar should minimize for Music");
+        
+        mouseClick(moviesBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === false, "Sidebar should un-minimize when switching back to Movies");
+        
+        // Ensure manual collapse doesn't un-collapse
+        mouseClick(musicBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === true, "Sidebar should minimize for Music again");
+        mainWindow.sidebarCollapsed = false; // user un-minimizes manually
+        mouseClick(moviesBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === false, "Sidebar should remain un-minimized");
+        
+        // User minimizes manually
+        mainWindow.sidebarCollapsed = true;
+        mouseClick(musicBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === true, "Should stay minimized");
+        mouseClick(moviesBtn);
+        wait(500);
+        verify(mainWindow.sidebarCollapsed === true, "Should stay minimized if manually minimized before switching");
+    }
 }

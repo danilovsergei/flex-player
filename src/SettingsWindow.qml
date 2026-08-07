@@ -898,6 +898,20 @@ Rectangle {
                     spacing: 20
                     Text { text: "Playback Configuration"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
                     CheckBox {
+                        id: minimizeSidebarCheckbox
+                        objectName: "minimizeSidebarCheckbox"
+                        text: "Minimize sidebar when switching to \"Music\" library"
+                        checked: appSettings ? appSettings.minimizeSidebarOnMusic : false
+                        onCheckedChanged: { appSettings.minimizeSidebarOnMusic = checked }
+                        contentItem: Text { 
+                            text: parent.text
+                            color: "white"
+                            font.pixelSize: 16
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: parent.indicator.width + parent.spacing 
+                        }
+                    }
+                    CheckBox {
                         id: hdrEnableCheckbox
                         objectName: "hdrEnableCheckbox"
                         text: "Automatically Toggle system HDR on HDR movie playback"

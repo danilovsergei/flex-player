@@ -57,6 +57,15 @@ Window {
 
     property int currentTab: 0
     property bool sidebarCollapsed: false
+    property bool _autoCollapsedForMusic: false
+    
+    onCurrentTabChanged: {
+        if (currentTab !== 7 && _autoCollapsedForMusic) {
+            mainWindow.sidebarCollapsed = false;
+            _autoCollapsedForMusic = false;
+        }
+    }
+    
     property Component globalMovieDelegate: movieDelegate
 
     // Virtual property to allow headless tests to spoof fullscreen states
@@ -66,7 +75,15 @@ Window {
     readonly property color plexOrange: "#E5A00D"
 
     function startupLogic() { controller.startupLogic() }
-    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) { controller.loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) }
+    function loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) { 
+        if (type === "artist" && appSettings && appSettings.minimizeSidebarOnMusic) {
+            if (!mainWindow.sidebarCollapsed) {
+                mainWindow._autoCollapsedForMusic = true;
+                mainWindow.sidebarCollapsed = true;
+            }
+        }
+        controller.loadLibraryContent(id, title, type, serverUrl, uniqueId, serverToken, serverName) 
+    }
     function getLibraryIcon(type) { return controller.getLibraryIcon(type) }
     function formatTime(seconds) { return controller.formatTime(seconds) }
     
