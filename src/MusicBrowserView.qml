@@ -577,8 +577,21 @@ Item {
                         id: contextMenu
                         objectName: "contextMenu"
                         property string folderId: ""
+                        background: Rectangle {
+                            color: "#222"
+                            radius: 4
+                            border.color: "#444"
+                            border.width: 1
+                        }
                         MenuItem {
                             text: "Add to Playlist"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "#E5A00D"
+                                font.pixelSize: 16
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                             onTriggered: {
                                 root.recursivelyAddFolder(contextMenu.folderId, playlistModel.count);
                             }
@@ -689,9 +702,22 @@ Item {
                         id: plContextMenu
                         objectName: "plContextMenu"
                         property string playlistId: ""
+                        background: Rectangle {
+                            color: "#222"
+                            radius: 4
+                            border.color: "#444"
+                            border.width: 1
+                        }
                         MenuItem {
                             objectName: "plContextMenuAdd"
                             text: "Add to Queue"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "#E5A00D"
+                                font.pixelSize: 16
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                             onTriggered: {
                                 root.addPlexPlaylist(plContextMenu.playlistId, playlistModel.count);
                             }
@@ -734,6 +760,11 @@ Item {
                         width: saveQueueRow.implicitWidth + 30
                         radius: 6
                         color: saveQueueMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
+                        
+                        ToolTip.visible: saveQueueMouse.containsMouse
+                        ToolTip.text: "Save as new playlist, append, or update"
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
                         
                         RowLayout {
                             id: saveQueueRow
@@ -1271,9 +1302,22 @@ Item {
                             onClosed: {
                                 isContextMenuOpen = false;
                             }
+                            background: Rectangle {
+                                color: "#222"
+                                radius: 4
+                                border.color: "#444"
+                                border.width: 1
+                            }
                             MenuItem {
                                 objectName: "detailsMenuItem"
                                 text: "Details"
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: "#E5A00D"
+                                    font.pixelSize: 16
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                                 onTriggered: {
                                     var rk = playlistItemContextMenu.trackRatingKey;
                                     detailsDialog.trackPath = "Loading...";
@@ -1340,6 +1384,13 @@ Item {
                             }
                             MenuItem {
                                 text: "Delete"
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: "#E5A00D"
+                                    font.pixelSize: 16
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                                 onTriggered: {
                                     root.deleteSelectedItems();
                                 }
@@ -1485,8 +1536,21 @@ Item {
                                                     }
                                                     Menu {
                                                         id: pathMenu
+                                                        background: Rectangle {
+                                                            color: "#222"
+                                                            radius: 4
+                                                            border.color: "#444"
+                                                            border.width: 1
+                                                        }
                                                         MenuItem {
                                                             text: "Copy"
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                color: "#E5A00D"
+                                                                font.pixelSize: 16
+                                                                verticalAlignment: Text.AlignVCenter
+                                                            }
+                                                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                                                             onTriggered: {
                                                                 if (pathEdit.selectedText !== "") pathEdit.copy();
                                                                 else { pathEdit.selectAll(); pathEdit.copy(); pathEdit.deselect(); }
@@ -1538,8 +1602,21 @@ Item {
                                                     }
                                                     Menu {
                                                         id: sizeMenu
+                                                        background: Rectangle {
+                                                            color: "#222"
+                                                            radius: 4
+                                                            border.color: "#444"
+                                                            border.width: 1
+                                                        }
                                                         MenuItem {
                                                             text: "Copy"
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                color: "#E5A00D"
+                                                                font.pixelSize: 16
+                                                                verticalAlignment: Text.AlignVCenter
+                                                            }
+                                                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                                                             onTriggered: {
                                                                 if (sizeEdit.selectedText !== "") sizeEdit.copy();
                                                                 else { sizeEdit.selectAll(); sizeEdit.copy(); sizeEdit.deselect(); }
@@ -1591,8 +1668,21 @@ Item {
                                                     }
                                                     Menu {
                                                         id: bitrateMenu
+                                                        background: Rectangle {
+                                                            color: "#222"
+                                                            radius: 4
+                                                            border.color: "#444"
+                                                            border.width: 1
+                                                        }
                                                         MenuItem {
                                                             text: "Copy"
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                color: "#E5A00D"
+                                                                font.pixelSize: 16
+                                                                verticalAlignment: Text.AlignVCenter
+                                                            }
+                                                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
                                                             onTriggered: {
                                                                 if (bitrateEdit.selectedText !== "") bitrateEdit.copy();
                                                                 else { bitrateEdit.selectAll(); bitrateEdit.copy(); bitrateEdit.deselect(); }
@@ -2152,7 +2242,7 @@ Item {
                     color: repMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
                     
                     Text {
-                        text: "Replace Playlist"
+                        text: "Update Playlist"
                         color: "white"
                         font.bold: true
                         anchors.centerIn: parent
