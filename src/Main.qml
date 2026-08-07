@@ -112,6 +112,23 @@ Window {
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
         controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
     }
+
+    function openArtist(ratingKey, itemServerUrl, itemServerToken) {
+        if (mainWindow.currentTab !== 8) {
+            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 6) {
+                mainWindow.previousTab = mainWindow.currentTab;
+            } else if (mainWindow.currentTab === 7) {
+                mainWindow.previousTab = mainWindow.currentTab;
+            }
+            artistDetailsView.historyStack = [];
+        } else {
+            var newStack = artistDetailsView.historyStack.slice();
+            newStack.push(artistDetailsView.rawJson);
+            artistDetailsView.historyStack = newStack;
+        }
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
+    }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
     function runHdrCommand(cmd) { controller.runHdrCommand(cmd) }
     function closeSettings() { controller.closeSettings() }
@@ -342,6 +359,12 @@ Window {
                 MusicBrowserView {
                     id: musicBrowserView
                 }
+
+                ArtistDetailsView {
+                    id: artistDetailsView
+                    rootApp: mainWindow
+                    onBackRequested: currentTab = mainWindow.previousTab
+                }
             }
             
 
@@ -351,6 +374,7 @@ Window {
                     try {
                         var parsed = JSON.parse(jsonString);
                         var type = parsed.MediaContainer.Metadata[0].type;
+                        console.warn("onItemDetailsLoaded: got type " + type);
                         
                         if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 2 || mainWindow.currentTab === 7) {
                             mainWindow.previousTab = mainWindow.currentTab;
@@ -362,6 +386,9 @@ Window {
                         } else if (type === "season") {
                             seasonDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 5;
+                        } else if (type === "artist") {
+                            artistDetailsView.rawJson = jsonString;
+                            mainWindow.currentTab = 8;
                         } else {
                             movieDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 3;

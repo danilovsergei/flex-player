@@ -82,6 +82,8 @@ Rectangle {
                         rootApp.openCollection(ratingKey, serverUrl);
                     } else if (type === "show" || type === "season") {
                         rootApp.openShow(ratingKey, serverUrl);
+                    } else if (type === "artist") {
+                        rootApp.openArtist(ratingKey, serverUrl);
                     } else {
                         rootApp.openDetails(ratingKey, serverUrl);
                     }

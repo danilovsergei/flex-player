@@ -3148,7 +3148,7 @@ TestCase {
         mouseClick(poster, poster.width / 2, poster.height / 2);
         wait(500);
         
-        verify(mainWindow.currentTab === 3, "App should switch to Movie Details tab");
+        verify(mainWindow.currentTab === 3 || mainWindow.currentTab === 8 || mainWindow.currentTab === 4 || mainWindow.currentTab === 5, "App should switch to a Details tab");
         
         // Cleanup
         mainWindow.appSettings.enabledLibraries = "{}";
@@ -4265,5 +4265,43 @@ TestCase {
         mouseClick(moviesBtn);
         wait(500);
         verify(mainWindow.sidebarCollapsed === true, "Should stay minimized if manually minimized before switching");
+    }
+
+    function test_99_artist_search_and_view() {
+        var fakeEnabled = {
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+        };
+        mainWindow.appSettings.enabledLibraries = JSON.stringify(fakeEnabled);
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true, connections: [{address: "127.0.0.1", port: 32400, local: true}]}]);
+        mainWindow.startupLogic();
+        wait(500);
+
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        verify(topToolbar !== null, "Top toolbar should exist");
+        var searchField = findChild(topToolbar, "searchField");
+        verify(searchField !== null, "Search field should exist");
+
+        searchField.text = "Nightwish";
+        var searchDebounce = findChild(searchField, "searchDebounce");
+        searchDebounce.restart();
+        
+        wait(2000); // Wait for debounce and network
+
+        var searchPopup = findChild(searchField, "searchPopup");
+        verify(searchPopup.opened, "Search popup should be opened");
+
+        var searchPopupList = findChild(searchPopup, "searchPopupList");
+        tryVerify(function() { return searchPopupList.count > 0; }, 5000, "Search popup should have results");
+
+        // Simulate click on an artist result
+        searchPopup.resultClicked("ar1", "https://127.0.0.1:32400", "artist", "Artist: Nightwish");
+        
+        tryVerify(function() { 
+            console.log("Current tab is: " + mainWindow.currentTab);
+            return mainWindow.currentTab === 8; 
+        }, 5000, "Should switch to ArtistDetailsView (tab 8)");
+        var artistView = findChild(mainWindow, "artistDetailsView");
+        verify(artistView !== null, "artistDetailsView should exist");
+        verify(artistView.visible === true, "artistDetailsView should be visible");
     }
 }

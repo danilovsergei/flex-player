@@ -333,6 +333,8 @@ Item {
                     root.openCollection(mRatingKey, mServerUrl, mServerToken)
                 } else if (mType === "show" || mType === "season") {
                     root.openShow(mRatingKey, mServerUrl, mServerToken)
+                } else if (mType === "artist") {
+                    root.openArtist(mRatingKey, mServerUrl, mServerToken)
                 } else {
                     root.openDetails(mRatingKey, mServerUrl, mServerToken)
                 }

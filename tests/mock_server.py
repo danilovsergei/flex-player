@@ -387,6 +387,20 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         }]
                     }
                 }
+            elif ratingKey == "ar1":
+                response_data = {
+                    "MediaContainer": {
+                        "Metadata": [{
+                            "ratingKey": "ar1",
+                            "title": "Mock Artist",
+                            "summary": "This is a mock artist summary.",
+                            "type": "artist",
+                            "rating": 8.5,
+                            "Country": [{"tag": "Finland"}],
+                            "Style": [{"tag": "Symphonic Metal"}, {"tag": "Power Metal"}]
+                        }]
+                    }
+                }
             else:
                 rtype = "movie"
                 if ratingKey in ["200", "201", "202"]:
