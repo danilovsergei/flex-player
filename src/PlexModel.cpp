@@ -89,6 +89,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == ServerUrlRole) return movie.serverUrl;
     else if (role == ServerTokenRole) return movie.serverToken;
     else if (role == ContentRole) return movie.content;
+    else if (role == YearRole) return QVariant::fromValue(movie.year);
     return QVariant();
 }
 
@@ -113,6 +114,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[ServerUrlRole] = "serverUrl";
     roles[ServerTokenRole] = "serverToken";
     roles[ContentRole] = "content";
+    roles[YearRole] = "year";
     return roles;
 }
 
@@ -358,12 +360,17 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
     QByteArray rawData = reply->readAll();
     qDebug() << "[PlexModel] Received response for:" << reply->url().toString() << "Size:" << rawData.size();
     
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(rawData);
+    QString sanitizedStr = QString::fromUtf8(rawData);
+    rawData = sanitizedStr.toUtf8();
+    
+    QJsonParseError parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(rawData, &parseError);
     if (!jsonDoc.isObject()) {
-        qDebug() << "[PlexModel] Error: Response is not a JSON object";
+        qDebug() << "[PlexModel] Error: Response is not a JSON object. Parse Error:" << parseError.errorString() << "at offset:" << parseError.offset;
         reply->deleteLater();
         return;
-    }    QJsonObject rootObj = jsonDoc.object();
+    }
+    QJsonObject rootObj = jsonDoc.object();
     QJsonObject mediaContainer = rootObj["MediaContainer"].toObject();
     QJsonArray directory = mediaContainer["Metadata"].toArray();
     if (directory.isEmpty()) {
@@ -407,6 +414,7 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         m.childCount = obj["childCount"].toInt();
         m.isSmart = obj["smart"].toString() == "1" || obj["smart"].toBool() == true;
         m.content = obj["content"].toString();
+        m.year = obj["year"].toInt();
         
         // Build absolute thumb URL if needed
         QString thumb = obj["thumb"].toString();

@@ -24,6 +24,8 @@ Item {
     signal openDetails(string ratingKey, string serverUrl, string serverToken)
     signal deleteCollectionRequested(string ratingKey, string serverUrl)
     signal editSmartCollectionRequested(string ratingKey, string title, string content, string serverUrl)
+    signal openAlbum(string ratingKey, string serverUrl, string serverToken)
+    signal openArtist(string ratingKey, string serverUrl, string serverToken)
 
     Rectangle {
         anchors.fill: parent
@@ -45,7 +47,7 @@ Item {
             width: parent.width
             height: {
                 var mType = (typeof model !== "undefined" && model.type !== undefined) ? model.type : type
-                return (mType === "show" || mType === "season") ? 50 : 40
+                return (mType === "show" || mType === "season" || mType === "album") ? 50 : 40
             }
             color: "#cc000000"
 
@@ -62,6 +64,10 @@ Item {
                         var mTitle = (typeof model !== "undefined" && model.title !== undefined) ? model.title : title
                         if (mType === "episode" && (typeof model !== "undefined" && model.grandparentTitle)) {
                             return (typeof model !== "undefined" && model.grandparentTitle) + " - S" + (typeof model !== "undefined" && model.parentIndex)
+                        }
+                        if (mType === "album") {
+                            var mParentTitle = (typeof model !== "undefined" && model.parentTitle !== undefined) ? model.parentTitle : ""
+                            return mParentTitle !== "" ? mParentTitle : mTitle
                         }
                         return mType === "season" && (typeof model !== "undefined" && model.parentTitle) ? (typeof model !== "undefined" && model.parentTitle) : mTitle
                     }
@@ -81,6 +87,17 @@ Item {
                         var mTitle = (typeof model !== "undefined" && model.title !== undefined) ? model.title : title
                         if (mType === "episode") {
                             return mTitle + " - E" + (typeof model !== "undefined" && model.index)
+                        }
+                        if (mType === "album") {
+                            var mParentTitle = (typeof model !== "undefined" && model.parentTitle !== undefined) ? model.parentTitle : ""
+                            var mYear = (typeof model !== "undefined" && model.year !== undefined) ? model.year : 0
+                            var line2 = mParentTitle !== "" ? mTitle : ""
+                            if (line2 !== "" && mYear > 0) {
+                                line2 += " (" + mYear + ")"
+                            } else if (line2 === "" && mYear > 0) {
+                                line2 = mTitle + " (" + mYear + ")"
+                            }
+                            return line2
                         }
                         return mType === "season" ? mTitle : (mType === "show" ? model.childCount + " Season" + (model.childCount !== 1 ? "s" : "") : "")
                     }

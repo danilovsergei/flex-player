@@ -45,6 +45,8 @@ ColumnLayout {
         var endpoint = "";
         if (libraryType === "show") {
             endpoint = "/library/sections/" + libraryId + "/all?type=2&sort=addedAt:desc";
+        } else if (libraryType === "artist") {
+            endpoint = "/library/sections/" + libraryId + "/all?type=9&sort=addedAt:desc";
         } else {
             endpoint = "/library/sections/" + libraryId + "/all?type=1&sort=addedAt:desc";
         }

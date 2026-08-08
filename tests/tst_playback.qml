@@ -4537,4 +4537,67 @@ TestCase {
         mainWindow.height = 720;
     }
 
+
+
+
+
+
+
+
+    function test_105_home_recently_added_music() {
+        console.log("Setting app settings for Recently Added Music test...");
+        var oldLibs = mainWindow.appSettings.enabledLibraries;
+        var oldServerUrl = mainWindow.testAppSettings.serverUrl;
+        
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "server1_1": { "id": "1", "type": "movie", "title": "Movies S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server1_2": { "id": "2", "type": "show", "title": "Series S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" },
+            "server1_3": { "id": "3", "type": "artist", "title": "Music S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" }
+        });
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400";
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true, connections: [{address: "127.0.0.1", port: 32400, local: true}]}]);
+        mainWindow.controller.connectionManager.setMockResponse("https://127.0.0.1:32400", true);
+        
+        mainWindow.startupLogic();
+        wait(500);
+        
+        mainWindow.currentTab = 0; // Home tab
+        wait(500);
+        
+        var homeView = findChild(mainWindow, "homeView");
+        verify(homeView !== null, "Home view should exist");
+        
+        var musicRail = findChild(homeView, "libraryRail_3"); 
+        verify(musicRail !== null, "Music LibraryRail should be found");
+        compare(musicRail.lastFetchedEndpoint, "/library/sections/3/all?type=9&sort=addedAt:desc", "Music rail endpoint should be correct for artist library");
+
+        var musicModel = findChild(musicRail, "delegateRecentModel");
+        verify(musicModel !== null, "Music rail model should be found");
+        
+        tryVerify(function() { return musicModel.rowCount() > 0; }, 5000, "Music rail model should show items (mock data)");
+        
+        var musicList = findChild(musicRail, "recentlyAddedList");
+        verify(musicList !== null, "Recently added list should exist");
+        tryVerify(function() { return musicList.count > 0; }, 5000, "Music rail should show items in UI");
+        verify(musicRail.visible === true, "Music rail should be visible");
+        
+        // Grab the delegate manually
+        var delegate = musicList.contentItem.children[0];
+        verify(delegate !== undefined && delegate !== null, "Delegate should exist in the list");
+        
+        // Find the mouse area to trigger click
+        var posterMouseArea = findChild(delegate, "posterMouseArea");
+        verify(posterMouseArea !== null, "posterMouseArea should exist");
+        
+        // Because of headless ListView issues, we will just manually trigger the delegate's click handler
+        // Pass a mock mouse event to prevent TypeError: Cannot read property 'button' of null
+        mouseClick(posterMouseArea, 10, 10, Qt.LeftButton);
+        
+        tryVerify(function() { return mainWindow.currentTab === 9; }, 5000, "Should navigate to AlbumDetailsView (tab 9) when an album is clicked");
+        
+        // Cleanup
+        mainWindow.testAppSettings.enabledLibraries = oldLibs;
+        mainWindow.testAppSettings.serverUrl = oldServerUrl;
+    }
+
 }

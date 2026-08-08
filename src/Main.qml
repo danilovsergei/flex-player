@@ -225,6 +225,12 @@ ApplicationWindow {
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
                 controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
             }
+            onOpenAlbum: function(ratingKey, itemServerUrl, itemServerToken) {
+                mainWindow.openAlbum(ratingKey, itemServerUrl, itemServerToken);
+            }
+            onOpenArtist: function(ratingKey, itemServerUrl, itemServerToken) {
+                mainWindow.openArtist(ratingKey, itemServerUrl, itemServerToken);
+            }
             onDeleteCollectionRequested: function(ratingKey, itemServerUrl) {
                 console.log("Deleting collection: " + ratingKey);
                 var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
