@@ -401,6 +401,23 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                         }]
                     }
                 }
+            elif ratingKey == "al1":
+                response_data = {
+                    "MediaContainer": {
+                        "Metadata": [{
+                            "ratingKey": "al1",
+                            "parentRatingKey": "ar1",
+                            "title": "Mock Album Medium",
+                            "parentTitle": "Mock Artist",
+                            "summary": "This is a mock album summary.",
+                            "type": "album",
+                            "rating": 9.5,
+                            "year": 1998,
+                            "studio": "Spinefarm Records",
+                            "Style": [{"tag": "Symphonic Metal"}, {"tag": "Heavy Metal"}]
+                        }]
+                    }
+                }
             else:
                 rtype = "movie"
                 if ratingKey in ["200", "201", "202"]:

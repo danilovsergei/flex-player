@@ -129,6 +129,23 @@ Window {
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
         controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
     }
+
+    function openAlbum(ratingKey, itemServerUrl, itemServerToken) {
+        if (mainWindow.currentTab !== 9) {
+            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 6) {
+                mainWindow.previousTab = mainWindow.currentTab;
+            } else if (mainWindow.currentTab === 7 || mainWindow.currentTab === 8) {
+                mainWindow.previousTab = mainWindow.currentTab;
+            }
+            albumDetailsView.historyStack = [];
+        } else {
+            var newStackAlbum = albumDetailsView.historyStack.slice();
+            newStackAlbum.push(albumDetailsView.rawJson);
+            albumDetailsView.historyStack = newStackAlbum;
+        }
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
+    }
     function setLibraryEnabled(id, enabled, type, title) { controller.setLibraryEnabled(id, enabled, type, title) }
     function runHdrCommand(cmd) { controller.runHdrCommand(cmd) }
     function closeSettings() { controller.closeSettings() }
@@ -365,6 +382,12 @@ Window {
                     rootApp: mainWindow
                     onBackRequested: currentTab = mainWindow.previousTab
                 }
+
+                AlbumDetailsView {
+                    id: albumDetailsView
+                    rootApp: mainWindow
+                    onBackRequested: currentTab = mainWindow.previousTab
+                }
             }
             
 
@@ -389,6 +412,9 @@ Window {
                         } else if (type === "artist") {
                             artistDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 8;
+                        } else if (type === "album") {
+                            albumDetailsView.rawJson = jsonString;
+                            mainWindow.currentTab = 9;
                         } else {
                             movieDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 3;

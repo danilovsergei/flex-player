@@ -335,6 +335,8 @@ Item {
                     root.openShow(mRatingKey, mServerUrl, mServerToken)
                 } else if (mType === "artist") {
                     root.openArtist(mRatingKey, mServerUrl, mServerToken)
+                } else if (mType === "album") {
+                    root.openAlbum(mRatingKey, mServerUrl, mServerToken)
                 } else {
                     root.openDetails(mRatingKey, mServerUrl, mServerToken)
                 }

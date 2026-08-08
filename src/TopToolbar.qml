@@ -84,6 +84,8 @@ Rectangle {
                         rootApp.openShow(ratingKey, serverUrl);
                     } else if (type === "artist") {
                         rootApp.openArtist(ratingKey, serverUrl);
+                    } else if (type === "album") {
+                        rootApp.openAlbum(ratingKey, serverUrl);
                     } else {
                         rootApp.openDetails(ratingKey, serverUrl);
                     }

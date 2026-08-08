@@ -376,6 +376,20 @@ Item {
                                     horizontalAlignment: Text.AlignHCenter
                                 }
                             }
+                            
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (rootApp && albumsData && albumsData[index]) {
+                                        var mRatingKey = albumsData[index].ratingKey;
+                                        var mServerUrl = rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerUrl !== "" ? rootApp.controller.detailsModel.currentServerUrl : rootApp.serverUrl;
+                                        var mServerToken = rootApp && rootApp.controller && rootApp.controller.detailsModel && rootApp.controller.detailsModel.currentServerToken !== "" ? rootApp.controller.detailsModel.currentServerToken : rootApp.token;
+                                        rootApp.openAlbum(mRatingKey, mServerUrl, mServerToken);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
