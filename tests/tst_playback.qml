@@ -4496,8 +4496,44 @@ TestCase {
         
         console.warn("Small Window -> Scroll Bottom: " + scrollBottom + ", Queue Y: " + queueY + ", Queue X: " + qX2);
         verify(queueY >= scrollBottom - 1, "Queue should be below the scroll view in vertical layout");        
+    }
 
-
-
+    function test_100c_album_details_layout_setting() {
+        mainWindow.appSettings.albumLayoutMode = 0; // Auto
+        
+        mainWindow.width = 1280;
+        mainWindow.height = 720;
+        
+        mainWindow.openAlbum("al1", "https://127.0.0.1:32400", "dummy");
+        
+        tryVerify(function() { return mainWindow.currentTab === 9; }, 5000, "Should switch to AlbumDetailsView (tab 9)");
+        
+        wait(500);
+        
+        var albumView = findChild(mainWindow, "albumDetailsView");
+        verify(albumView !== null, "albumDetailsView should exist");
+        
+        var mainSplitView = findChild(albumView, "mainSplitView");
+        
+        // Force Vertical
+        mainWindow.appSettings.albumLayoutMode = 1; // Vertical
+        wait(200);
+        
+        mainWindow.width = 1800; // Large window, normally would be horizontal
+        wait(500);
+        verify(mainSplitView.orientation === Qt.Vertical, "Orientation should be forced to Vertical even on large window");
+        
+        // Force Horizontal
+        mainWindow.appSettings.albumLayoutMode = 2; // Horizontal
+        wait(200);
+        
+        mainWindow.width = 600; // Small window, normally would be vertical
+        wait(500);
+        verify(mainSplitView.orientation === Qt.Horizontal, "Orientation should be forced to Horizontal even on small window");
+        
+        // Reset
+        mainWindow.appSettings.albumLayoutMode = 0;
+        mainWindow.width = 1280;
+        mainWindow.height = 720;
     }
 }

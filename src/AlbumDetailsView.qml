@@ -10,6 +10,17 @@ Item {
     objectName: "albumDetailsView"
 
     property var rootApp: null
+    property var appSettings: rootApp ? rootApp.appSettings : null
+    property int albumLayoutMode: appSettings ? appSettings.albumLayoutMode : 0
+    
+    Connections {
+        target: root.appSettings
+        function onAlbumLayoutModeChanged() {
+            if (root.appSettings) {
+                root.albumLayoutMode = root.appSettings.albumLayoutMode;
+            }
+        }
+    }
     property string rawJson: "{}"
     property var detailsData: null
     property var tracksData: null
@@ -158,7 +169,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        orientation: root.width < root.responsiveBreakpoint ? Qt.Vertical : Qt.Horizontal
+        orientation: root.albumLayoutMode === 1 ? Qt.Vertical : (root.albumLayoutMode === 2 ? Qt.Horizontal : (root.width < root.responsiveBreakpoint ? Qt.Vertical : Qt.Horizontal))
         
         ScrollView {
             id: albumScrollView

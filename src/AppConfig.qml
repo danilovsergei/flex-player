@@ -29,6 +29,7 @@ Item {
 
     property alias autoToggleHdr: playbackSettings.autoToggleHdr
     property alias minimizeSidebarOnMusic: playbackSettings.minimizeSidebarOnMusic
+    property alias albumLayoutMode: playbackSettings.albumLayoutMode
     property alias hdrEnableCommand: playbackSettings.hdrEnableCommand
     property alias hdrDisableCommand: playbackSettings.hdrDisableCommand
     property alias defaultPlaylist: musicSettings.defaultPlaylist
@@ -82,6 +83,7 @@ Item {
         location: root.isTestMode ? StandardPaths.writableLocation(StandardPaths.TempLocation) + "/flex-player-test/config.ini" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/flex-player/config.ini"
         property bool autoToggleHdr: false
         property bool minimizeSidebarOnMusic: false
+        property int albumLayoutMode: 0
         property string hdrEnableCommand: "kscreen-doctor output.DP-1.hdr.enable output.DP-1.wcg.enable"
         property string hdrDisableCommand: "kscreen-doctor output.DP-1.hdr.disable output.DP-1.wcg.disable"
     }

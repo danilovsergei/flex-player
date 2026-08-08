@@ -897,6 +897,28 @@ Rectangle {
                 ColumnLayout {
                     spacing: 20
                     Text { text: "Playback Configuration"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
+                    
+                    RowLayout {
+                        spacing: 15
+                        Text {
+                            text: "Keep album playlist always in:"
+                            color: "white"
+                            font.pixelSize: 16
+                        }
+                        ComboBox {
+                            id: albumLayoutModeDropdown
+                            model: ["Auto (Responsive)", "Vertical", "Horizontal"]
+                            currentIndex: appSettings ? appSettings.albumLayoutMode : 0
+                            onActivated: function(index) {
+                                if (appSettings) {
+                                    appSettings.albumLayoutMode = index;
+                                }
+                            }
+                            font.pixelSize: 16
+                            implicitWidth: 200
+                        }
+                    }
+                    
                     CheckBox {
                         id: minimizeSidebarCheckbox
                         objectName: "minimizeSidebarCheckbox"
