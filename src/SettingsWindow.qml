@@ -193,7 +193,7 @@ Rectangle {
                 property int settingsTab: 0
 
                 Repeater {
-                    model: ["Login Configuration", "Manage Libraries", "Hotkeys", "Playback"]
+                    model: ["Login Configuration", "Manage Libraries", "Hotkeys", "Playback", "Appearance"]
                     delegate: Button {
                         text: modelData
                         objectName: "settingsTab" + index
@@ -898,41 +898,6 @@ Rectangle {
                     spacing: 20
                     Text { text: "Playback Configuration"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
                     
-                    RowLayout {
-                        spacing: 15
-                        Text {
-                            text: "Keep album playlist always in:"
-                            color: "white"
-                            font.pixelSize: 16
-                        }
-                        ComboBox {
-                            id: albumLayoutModeDropdown
-                            model: ["Auto (Responsive)", "Vertical", "Horizontal"]
-                            currentIndex: appSettings ? appSettings.albumLayoutMode : 0
-                            onActivated: function(index) {
-                                if (appSettings) {
-                                    appSettings.albumLayoutMode = index;
-                                }
-                            }
-                            font.pixelSize: 16
-                            implicitWidth: 200
-                        }
-                    }
-                    
-                    CheckBox {
-                        id: minimizeSidebarCheckbox
-                        objectName: "minimizeSidebarCheckbox"
-                        text: "Minimize sidebar when switching to \"Music\" library"
-                        checked: appSettings ? appSettings.minimizeSidebarOnMusic : false
-                        onCheckedChanged: { appSettings.minimizeSidebarOnMusic = checked }
-                        contentItem: Text { 
-                            text: parent.text
-                            color: "white"
-                            font.pixelSize: 16
-                            verticalAlignment: Text.AlignVCenter
-                            leftPadding: parent.indicator.width + parent.spacing 
-                        }
-                    }
                     CheckBox {
                         id: hdrEnableCheckbox
                         objectName: "hdrEnableCheckbox"
@@ -1015,6 +980,63 @@ Rectangle {
                             onClicked: mainWindow.runHdrCommand(hdrDisableCommand.text)
                         }
                     }
+                    Item { Layout.fillHeight: true }
+                }
+                // TAB 4: Appearance
+                ColumnLayout {
+                    spacing: 20
+                    Text { text: "Appearance"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
+                    
+                    Text { text: "Music Library:"; color: "#E5A00D"; font.pixelSize: 20; font.bold: true }
+                    
+                    CheckBox {
+                        id: minimizeSidebarCheckbox
+                        objectName: "minimizeSidebarCheckbox"
+                        text: "Minimize sidebar when switching to \"Music\" library"
+                        checked: appSettings ? appSettings.minimizeSidebarOnMusic : false
+                        onCheckedChanged: { appSettings.minimizeSidebarOnMusic = checked }
+                        contentItem: Text { 
+                            text: parent.text
+                            color: "white"
+                            font.pixelSize: 16
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: parent.indicator.width + parent.spacing 
+                        }
+                    }
+
+                    Text { text: "Album Details:"; color: "#E5A00D"; font.pixelSize: 20; font.bold: true; Layout.topMargin: 20 }
+                    
+                    RowLayout {
+                        spacing: 15
+                        Text {
+                            text: "Keep album playlist always in:"
+                            color: "white"
+                            font.pixelSize: 16
+                        }
+                        FlexComboBox {
+                            id: albumLayoutModeDropdown
+                            objectName: "albumLayoutModeDropdown"
+                            Layout.fillWidth: false
+                            Layout.preferredWidth: 200
+                            Layout.preferredHeight: 40
+                            model: {
+                                var v = [];
+                                v.push("Auto (Responsive)");
+                                v.push("Vertical");
+                                v.push("Horizontal");
+                                return v;
+                            }
+                            currentIndex: appSettings ? appSettings.albumLayoutMode : 0
+                            onActivated: function(index) {
+                                if (appSettings) {
+                                    appSettings.albumLayoutMode = index;
+                                }
+                            }
+                            font.pixelSize: 16
+                            implicitWidth: 200
+                        }
+                    }
+
                     Item { Layout.fillHeight: true }
                 }
             }

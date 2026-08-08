@@ -4536,4 +4536,5 @@ TestCase {
         mainWindow.width = 1280;
         mainWindow.height = 720;
     }
+
 }

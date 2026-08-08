@@ -6,7 +6,7 @@ import QtCore
 import flex.mpv 1.0
 import flex.plex 1.0
 
-Window {
+ApplicationWindow {
     id: mainWindow
     width: 1280
     height: 720
@@ -14,6 +14,14 @@ Window {
     title: qsTr("Flex Player")
     color: "#1e1e1e"
     objectName: "mainWindow"
+
+    palette.text: "#E5A00D"
+    palette.windowText: "#E5A00D"
+    palette.highlightedText: "#000000"
+    palette.highlight: "#E5A00D"
+    palette.buttonText: "#E5A00D"
+    palette.base: "#111111"
+    palette.window: "#111111"
 
     property bool isTestMode: false
     property int previousTab: 0

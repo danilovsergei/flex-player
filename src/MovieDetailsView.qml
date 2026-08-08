@@ -303,57 +303,13 @@ Item {
                     RowLayout {
                         spacing: 20
                         Text { text: "Video Stream:"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 120 }
-                                                                        ComboBox {
+                                                                        FlexComboBox {
                             id: videoComboControl
                             onModelChanged: updateMaxComboWidth()
                             objectName: "detailsVideoCombo"
                             Layout.fillWidth: false
                             Layout.preferredWidth: maxComboWidth
                             Layout.preferredHeight: 40
-                            background: Rectangle { color: "#222222"; radius: 4 }
-                            contentItem: Text { 
-                                text: parent.currentText; color: "#E5A00D"; font.pixelSize: 16; 
-                                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; leftPadding: 10; rightPadding: 30 
-                            }
-                            indicator: Canvas {
-                                x: parent.width - width - 10
-                                y: parent.topPadding + (parent.availableHeight - height) / 2
-                                width: 12; height: 8; contextType: "2d"
-                                Connections {
-                                    target: parent
-                                    function onPressedChanged() { parent.indicator.requestPaint() }
-                                }
-                                onPaint: {
-                                    var context = getContext("2d");
-                                    context.reset(); context.moveTo(0, 0); context.lineTo(width, 0); context.lineTo(width / 2, height); context.closePath();
-                                    context.fillStyle = parent.pressed ? "#aaaaaa" : "#E5A00D"; context.fill();
-                                }
-                            }
-                            popup: Popup {
-                                y: parent.height - 1; width: parent.width; implicitHeight: contentItem.implicitHeight; padding: 1
-                                contentItem: ListView {
-                                    clip: true; implicitHeight: contentHeight; model: videoComboControl.delegateModel
-                                    currentIndex: videoComboControl.highlightedIndex; ScrollIndicator.vertical: ScrollIndicator { }
-                                }
-                                background: Rectangle { color: "#111111"; border.color: "#444444"; radius: 4 }
-                            }
-                            delegate: ItemDelegate {
-                                width: ListView.view.width
-                                highlighted: videoComboControl.highlightedIndex === index
-                                onClicked: {
-                                    videoComboControl.currentIndex = index;
-                                    videoComboControl.popup.close();
-                                }
-                                contentItem: Text { 
-                                    text: modelData 
-                                    color: parent.highlighted ? "black" : "#E5A00D"
-                                    font.pixelSize: 16
-                                    verticalAlignment: Text.AlignVCenter 
-                                }
-                                background: Rectangle { 
-                                    color: parent.highlighted ? "#E5A00D" : "transparent" 
-                                }
-                            }
                             model: {
                                 if (!detailsData || !detailsData.Media || detailsData.Media.length === 0) return [];
                                 var streams = detailsData.Media[0].Part[0].Stream;
@@ -371,57 +327,13 @@ Item {
                     RowLayout {
                         spacing: 20
                         Text { text: "Audio Track:"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 120 }
-                                                                        ComboBox {
+                                                                        FlexComboBox {
                             id: audioComboControl
                             onModelChanged: updateMaxComboWidth()
                             objectName: "detailsAudioCombo"
                             Layout.fillWidth: false
                             Layout.preferredWidth: maxComboWidth
                             Layout.preferredHeight: 40
-                            background: Rectangle { color: "#222222"; radius: 4 }
-                            contentItem: Text { 
-                                text: parent.currentText; color: "#E5A00D"; font.pixelSize: 16; 
-                                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; leftPadding: 10; rightPadding: 30 
-                            }
-                            indicator: Canvas {
-                                x: parent.width - width - 10
-                                y: parent.topPadding + (parent.availableHeight - height) / 2
-                                width: 12; height: 8; contextType: "2d"
-                                Connections {
-                                    target: parent
-                                    function onPressedChanged() { parent.indicator.requestPaint() }
-                                }
-                                onPaint: {
-                                    var context = getContext("2d");
-                                    context.reset(); context.moveTo(0, 0); context.lineTo(width, 0); context.lineTo(width / 2, height); context.closePath();
-                                    context.fillStyle = parent.pressed ? "#aaaaaa" : "#E5A00D"; context.fill();
-                                }
-                            }
-                            popup: Popup {
-                                y: parent.height - 1; width: parent.width; implicitHeight: contentItem.implicitHeight; padding: 1
-                                contentItem: ListView {
-                                    clip: true; implicitHeight: contentHeight; model: audioComboControl.delegateModel
-                                    currentIndex: audioComboControl.highlightedIndex; ScrollIndicator.vertical: ScrollIndicator { }
-                                }
-                                background: Rectangle { color: "#111111"; border.color: "#444444"; radius: 4 }
-                            }
-                            delegate: ItemDelegate {
-                                width: ListView.view.width
-                                highlighted: audioComboControl.highlightedIndex === index
-                                onClicked: {
-                                    audioComboControl.currentIndex = index;
-                                    audioComboControl.popup.close();
-                                }
-                                contentItem: Text { 
-                                    text: modelData 
-                                    color: parent.highlighted ? "black" : "#E5A00D"
-                                    font.pixelSize: 16
-                                    verticalAlignment: Text.AlignVCenter 
-                                }
-                                background: Rectangle { 
-                                    color: parent.highlighted ? "#E5A00D" : "transparent" 
-                                }
-                            }
                             model: {
                                 if (!detailsData || !detailsData.Media || detailsData.Media.length === 0) return [];
                                 var streams = detailsData.Media[0].Part[0].Stream;
@@ -439,57 +351,13 @@ Item {
                     RowLayout {
                         spacing: 20
                         Text { text: "Subtitles:"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 120 }
-                                                                        ComboBox {
+                                                                        FlexComboBox {
                             id: subtitleComboControl
                             onModelChanged: updateMaxComboWidth()
                             objectName: "detailsSubtitleCombo"
                             Layout.fillWidth: false
                             Layout.preferredWidth: maxComboWidth
                             Layout.preferredHeight: 40
-                            background: Rectangle { color: "#222222"; radius: 4 }
-                            contentItem: Text { 
-                                text: parent.currentText; color: "#E5A00D"; font.pixelSize: 16; 
-                                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; leftPadding: 10; rightPadding: 30 
-                            }
-                            indicator: Canvas {
-                                x: parent.width - width - 10
-                                y: parent.topPadding + (parent.availableHeight - height) / 2
-                                width: 12; height: 8; contextType: "2d"
-                                Connections {
-                                    target: parent
-                                    function onPressedChanged() { parent.indicator.requestPaint() }
-                                }
-                                onPaint: {
-                                    var context = getContext("2d");
-                                    context.reset(); context.moveTo(0, 0); context.lineTo(width, 0); context.lineTo(width / 2, height); context.closePath();
-                                    context.fillStyle = parent.pressed ? "#aaaaaa" : "#E5A00D"; context.fill();
-                                }
-                            }
-                            popup: Popup {
-                                y: parent.height - 1; width: parent.width; implicitHeight: contentItem.implicitHeight; padding: 1
-                                contentItem: ListView {
-                                    clip: true; implicitHeight: contentHeight; model: subtitleComboControl.delegateModel
-                                    currentIndex: subtitleComboControl.highlightedIndex; ScrollIndicator.vertical: ScrollIndicator { }
-                                }
-                                background: Rectangle { color: "#111111"; border.color: "#444444"; radius: 4 }
-                            }
-                            delegate: ItemDelegate {
-                                width: ListView.view.width
-                                highlighted: subtitleComboControl.highlightedIndex === index
-                                onClicked: {
-                                    subtitleComboControl.currentIndex = index;
-                                    subtitleComboControl.popup.close();
-                                }
-                                contentItem: Text { 
-                                    text: modelData 
-                                    color: parent.highlighted ? "black" : "#E5A00D"
-                                    font.pixelSize: 16
-                                    verticalAlignment: Text.AlignVCenter 
-                                }
-                                background: Rectangle { 
-                                    color: parent.highlighted ? "#E5A00D" : "transparent" 
-                                }
-                            }
                             model: {
                                 if (!detailsData || !detailsData.Media || detailsData.Media.length === 0) return ["None"];
                                 var streams = detailsData.Media[0].Part[0].Stream;
