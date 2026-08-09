@@ -110,6 +110,13 @@ ApplicationWindow {
         controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children");
         mainWindow.currentTab = 2;
     }
+    function openPlaylist(ratingKey, itemServerUrl, itemServerToken) {
+        if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 7) {
+            mainWindow.previousTab = mainWindow.currentTab;
+        }
+        var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
+        controller.detailsModel.fetchItemDetails(url, (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token, ratingKey);
+    }
 
     function openShow(ratingKey, itemServerUrl, itemServerToken) {
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
@@ -226,6 +233,9 @@ ApplicationWindow {
             }
             onOpenArtist: function(ratingKey, itemServerUrl, itemServerToken) {
                 mainWindow.openArtist(ratingKey, itemServerUrl, itemServerToken);
+            }
+            onOpenPlaylist: function(ratingKey, itemServerUrl, itemServerToken) {
+                mainWindow.openPlaylist(ratingKey, itemServerUrl, itemServerToken);
             }
             onDeleteCollectionRequested: function(ratingKey, itemServerUrl) {
                 console.log("Deleting collection: " + ratingKey);
@@ -398,6 +408,12 @@ ApplicationWindow {
                     rootApp: mainWindow
                     onBackRequested: currentTab = mainWindow.previousTab
                 }
+
+                PlaylistDetailsView {
+                    id: playlistDetailsView
+                    rootApp: mainWindow
+                    onBackRequested: currentTab = mainWindow.previousTab
+                }
             }
             
 
@@ -425,6 +441,9 @@ ApplicationWindow {
                         } else if (type === "album") {
                             albumDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 9;
+                        } else if (type === "playlist") {
+                            playlistDetailsView.rawJson = jsonString;
+                            mainWindow.currentTab = 10;
                         } else {
                             movieDetailsView.rawJson = jsonString;
                             mainWindow.currentTab = 3;

@@ -27,6 +27,7 @@ Item {
     signal editSmartCollectionRequested(string ratingKey, string title, string content, string serverUrl)
     signal openAlbum(string ratingKey, string serverUrl, string serverToken)
     signal openArtist(string ratingKey, string serverUrl, string serverToken)
+    signal openPlaylist(string ratingKey, string serverUrl, string serverToken)
 
     Rectangle {
         anchors.fill: parent
@@ -69,6 +70,16 @@ Item {
                         if (mType === "album") {
                             var mParentTitle = (typeof model !== "undefined" && model.parentTitle !== undefined) ? model.parentTitle : ""
                             return mParentTitle !== "" ? mParentTitle : mTitle
+                        }
+                        if (mType === "playlist") {
+                            var mDuration = (typeof model !== "undefined" && model.duration !== undefined) ? model.duration : ((typeof duration !== "undefined") ? duration : 0)
+                            if (mDuration > 0) {
+                                var totalMinutes = Math.floor(mDuration / 60000);
+                                var hours = Math.floor(totalMinutes / 60);
+                                var minutes = totalMinutes % 60;
+                                var durStr = hours > 0 ? (hours + "h" + minutes + "min") : (minutes + "min");
+                                return mTitle + " - " + durStr;
+                            }
                         }
                         return mType === "season" && (typeof model !== "undefined" && model.parentTitle) ? (typeof model !== "undefined" && model.parentTitle) : mTitle
                     }
@@ -132,13 +143,19 @@ Item {
             visible: {
                 var mType = ""
                 try { if (model && model.type !== undefined) mType = model.type; else mType = type; } catch(e) { mType = type; }
-                return (mType === "show" || mType === "season") && root.mLeafCount > 0
+                return ((mType === "show" || mType === "season") || mType === "playlist") && root.mLeafCount > 0
             }
 
             Text {
                 id: episodeCountText
+                objectName: "episodeCountText"
                 anchors.centerIn: parent
-                text: root.mViewedLeafCount + "/" + root.mLeafCount
+                text: {
+                    var mType = ""
+                    try { if (model && model.type !== undefined) mType = model.type; else mType = type; } catch(e) { mType = type; }
+                    if (mType === "playlist") return root.mLeafCount.toString()
+                    return root.mViewedLeafCount + "/" + root.mLeafCount
+                }
                 color: "white"
                 font.pixelSize: 14
                 font.bold: true
@@ -353,6 +370,8 @@ Item {
                     root.openArtist(mRatingKey, mServerUrl, mServerToken)
                 } else if (mType === "album") {
                     root.openAlbum(mRatingKey, mServerUrl, mServerToken)
+                } else if (mType === "playlist") {
+                    root.openPlaylist(mRatingKey, mServerUrl, mServerToken)
                 } else {
                     root.openDetails(mRatingKey, mServerUrl, mServerToken)
                 }

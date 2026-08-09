@@ -633,6 +633,22 @@ Item {
                 Layout.preferredHeight: hasItems ? 400 : 0
                 visible: hasItems
             }
+
+            LibraryRail {
+                libraryTitle: root.appCtrl && root.appCtrl.currentLibraryTitle ? root.appCtrl.currentLibraryTitle : "Music"
+                libraryId: root.appCtrl && root.appCtrl.currentLibraryId ? root.appCtrl.currentLibraryId : ""
+                libraryType: "artist"
+                serverName: root.appCtrl && root.appCtrl.currentServerName ? root.appCtrl.currentServerName : ""
+                serverUrl: root.appCtrl && root.appCtrl.currentServerUrl ? root.appCtrl.currentServerUrl : ""
+                serverToken: root.appCtrl && root.appCtrl.currentServerToken ? root.appCtrl.currentServerToken : ""
+                rootApp: typeof mainWindow !== "undefined" ? mainWindow : null
+                movieDelegate: typeof mainWindow !== "undefined" ? mainWindow.globalMovieDelegate : null
+                customTitle: "Recently Played Playlists"
+                customEndpoint: "/playlists?playlistType=audio&sort=lastViewedAt:desc"
+                Layout.fillWidth: true
+                Layout.preferredHeight: hasItems ? 400 : 0
+                visible: hasItems
+            }
             
             Item { Layout.fillHeight: true }
         }

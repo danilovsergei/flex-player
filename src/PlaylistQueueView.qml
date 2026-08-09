@@ -9,6 +9,7 @@ Item {
     property var appSettings: null
     property bool isActiveView: visible
     property bool isAlbumMode: false
+    property bool hideHeader: false
     property alias playlistModel: playlistModel
     property alias playlistDropArea: playlistDropArea
     property var activeRequests: []
@@ -326,6 +327,7 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.margins: 15
+                visible: !root.hideHeader
                 Text {
                     text: root.isAlbumMode ? "Tracks" : "Playlist"
                     color: "white"

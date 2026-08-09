@@ -170,6 +170,15 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     ]
                 }
             }
+        elif path.startswith("/playlists") and "playlistType=audio" in self.path and "sort=lastViewedAt:desc" in self.path:
+            response_data = {
+                "MediaContainer": {
+                    "size": 1,
+                    "Metadata": [
+                        {"type": "playlist", "title": "Mock Playlist", "ratingKey": "p1", "leafCount": 15, "duration": 5400000}
+                    ]
+                }
+            }
         elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path or "sort=lastViewedAt:desc" in self.path or "sort=lastViewedAt%3Adesc" in self.path:
             if "type=8" in self.path:
                 response_data = {
@@ -444,6 +453,8 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     rtype = "artist"
                 elif ratingKey == "9999":
                     rtype = "album"
+                elif ratingKey == "p1":
+                    rtype = "playlist"
                 response_data = {
                     "MediaContainer": {
                         "Metadata": [{

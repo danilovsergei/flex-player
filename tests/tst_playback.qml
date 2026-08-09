@@ -4622,7 +4622,7 @@ TestCase {
         verify(backButton !== null, "backButton should exist");
         
         tryVerify(function() {
-            backButton.clicked();
+            mouseClick(backButton, backButton.width/2, backButton.height/2, Qt.LeftButton);
             wait(200);
             return mainWindow.currentTab === 7; 
         }, 5000, "Should navigate back to MusicBrowserView (tab 7)");
@@ -4713,7 +4713,104 @@ TestCase {
         verify(backButton !== null, "backButton should exist");
         
         tryVerify(function() {
-            backButton.clicked();
+            mouseClick(backButton, backButton.width/2, backButton.height/2, Qt.LeftButton);
+            wait(200);
+            return mainWindow.currentTab === 7; 
+        }, 5000, "Should navigate back to MusicBrowserView (tab 7)");
+        verify(musicView.libraryTab === 1, "Should remain on Recommended tab");
+        
+        // Cleanup
+        mainWindow.testAppSettings.enabledLibraries = oldLibs;
+        mainWindow.testAppSettings.serverUrl = oldServerUrl;
+        mainWindow.appSettings.serverList = oldServerList;
+    }
+
+
+    function test_108_music_recommended_recently_played_playlists() {
+        console.log("Setting app settings for Recently Played Playlists test...");
+        var oldLibs = mainWindow.appSettings.enabledLibraries;
+        var oldServerUrl = mainWindow.testAppSettings.serverUrl;
+        var oldServerList = mainWindow.appSettings.serverList;
+        
+        mainWindow.testAppSettings.enabledLibraries = JSON.stringify({
+            "server1_3": { "id": "3", "type": "artist", "title": "Music S1", "serverName": "Server 1", "serverUrl": "https://127.0.0.1:32400" }
+        });
+        mainWindow.testAppSettings.serverUrl = "https://127.0.0.1:32400";
+        mainWindow.appSettings.serverList = JSON.stringify([{name: "Server 1", enabled: true, connections: [{address: "127.0.0.1", port: 32400, local: true}]}]);
+        mainWindow.controller.connectionManager.setMockResponse("https://127.0.0.1:32400", true);
+        
+        mainWindow.startupLogic();
+        wait(500);
+        
+        // 1. Open Sidebar and click Music
+        var sidebar = findChild(mainWindow, "sidebarView");
+        var libraryRepeater = findChild(sidebar, "sidebarLibraryRepeater");
+        tryVerify(function() { return libraryRepeater.count === 1; }, 5000);
+        var musicBtn = libraryRepeater.itemAt(0);
+
+        // Reset window size from previous tests
+        mainWindow.width = 1280;
+        mainWindow.height = 1500;
+        wait(200);
+
+        tryVerify(function() { 
+            mouseClick(musicBtn, musicBtn.width/2, musicBtn.height/2);
+            wait(200);
+            return mainWindow.currentTab === 7; 
+        }, 5000, "Should open MusicBrowserView after sidebar click");
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        verify(musicView !== null, "MusicBrowserView was null");
+        
+        // 2. Open recommended tab
+        musicView.libraryTab = 1;
+        wait(500);
+        
+        verify(musicView.libraryTab === 1, "Should switch to Recommended tab");
+        
+        var recommendedContentLayout = findChild(musicView, "recommendedContentLayout");
+        verify(recommendedContentLayout !== null, "recommendedContentLayout should exist");
+        
+        // 3. Find Recently Played Playlists rail
+        var playlistRail = recommendedContentLayout.children[3];
+        verify(playlistRail !== null && playlistRail.customTitle === "Recently Played Playlists", "Playlist rail should exist");
+        compare(playlistRail.lastFetchedEndpoint, "/playlists?playlistType=audio&sort=lastViewedAt:desc", "Playlist rail endpoint should be correct");
+
+        var playlistList = findChild(playlistRail, "recentlyAddedList");
+        verify(playlistList !== null, "Playlist list should exist");
+        
+        tryVerify(function() { return playlistList.count > 0; }, 5000, "Playlist rail should fetch items");
+        
+        // 4. Click playlist poster natively
+        tryVerify(function() { return playlistList.itemAtIndex(0) !== null; }, 5000, "Delegate should instantiate");
+        var playlistPoster = playlistList.itemAtIndex(0);
+        verify(playlistPoster !== null, "Playlist poster should exist natively");
+        var posterMouseArea = findChild(playlistPoster, "posterMouseArea");
+        verify(posterMouseArea !== null, "posterMouseArea should exist");
+        
+        var posterTitle = findChild(playlistPoster, "posterTitle");
+        verify(posterTitle !== null, "posterTitle should exist");
+        compare(posterTitle.text, "Mock Playlist - 1h30min", "Playlist poster title should include formatted duration");
+
+        var episodeCountText = findChild(playlistPoster, "episodeCountText");
+        verify(episodeCountText !== null, "episodeCountText should exist");
+        compare(episodeCountText.text, "15", "Playlist poster should show correct track count");
+        
+        console.warn("TEST 108 currentTab BEFORE poster click is: " + mainWindow.currentTab + " (MusicBrowserView)");
+        mouseClick(posterMouseArea, posterMouseArea.width/2, posterMouseArea.height/2, Qt.LeftButton);
+        wait(500);
+        
+        tryVerify(function() { return mainWindow.currentTab === 10; }, 5000, "Should navigate to PlaylistDetailsView (tab 10) when a playlist is clicked");
+        console.warn("TEST 108 previousTab is: " + mainWindow.previousTab);
+        
+        // 5. Click back and make sure we are back on Recommended page
+        var playlistDetailsView = findChild(mainWindow, "playlistDetailsView");
+        verify(playlistDetailsView !== null, "playlistDetailsView should exist");
+        var backButton = findChild(playlistDetailsView, "backButton");
+        verify(backButton !== null, "backButton should exist");
+        
+        tryVerify(function() {
+            mouseClick(backButton, backButton.width/2, backButton.height/2, Qt.LeftButton);
             wait(200);
             return mainWindow.currentTab === 7; 
         }, 5000, "Should navigate back to MusicBrowserView (tab 7)");

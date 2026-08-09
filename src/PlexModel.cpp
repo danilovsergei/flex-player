@@ -418,6 +418,9 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
         
         // Build absolute thumb URL if needed
         QString thumb = obj["thumb"].toString();
+        if (thumb.isEmpty() && obj.contains("composite")) {
+            thumb = obj["composite"].toString();
+        }
         if (!thumb.isEmpty() && !thumb.startsWith("http")) {
              m.thumbUrl = currentServerUrl() + thumb;
         } else {
