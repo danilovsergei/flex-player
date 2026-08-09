@@ -16,6 +16,7 @@ Item {
     objectName: "movieItem"
 
     property color plexOrange: "#E5A00D"
+    property alias contextMenu: contextMenu
 
     signal posterClicked()
     signal openCollection(string ratingKey, string serverUrl, string serverToken)
@@ -175,10 +176,7 @@ Item {
             radius: 4
             border.color: "#444444"
         }
-    // When true, UI elements sensitive to mouse hover (like the Three-Dots button)
-    // are forced to be visible. This is essential for headless testing where
-    // mouse movements are not always reliably processed by the compositor.
-    property bool isTestMode: false
+
 
         MenuItem {
             id: detailsMenuItem
@@ -319,6 +317,7 @@ Item {
                 var mType = ""
                 if (typeof model !== "undefined" && (typeof model !== "undefined" && model.type !== undefined)) mType = model.type
                 else if (typeof type !== "undefined") mType = type
+                console.warn("MoviePosterDelegate clicked! Resolved mType is: " + mType);
                 
                 var mRatingKey = ""
                 if (typeof model !== "undefined" && (typeof model !== "undefined" && model.ratingKey) !== undefined) mRatingKey = (typeof model !== "undefined" && model.ratingKey)

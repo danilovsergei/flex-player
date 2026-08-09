@@ -123,9 +123,7 @@ ApplicationWindow {
 
     function openArtist(ratingKey, itemServerUrl, itemServerToken) {
         if (mainWindow.currentTab !== 8) {
-            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 6) {
-                mainWindow.previousTab = mainWindow.currentTab;
-            } else if (mainWindow.currentTab === 7) {
+            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 7) {
                 mainWindow.previousTab = mainWindow.currentTab;
             }
             artistDetailsView.historyStack = [];
@@ -140,9 +138,7 @@ ApplicationWindow {
 
     function openAlbum(ratingKey, itemServerUrl, itemServerToken) {
         if (mainWindow.currentTab !== 9) {
-            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 6) {
-                mainWindow.previousTab = mainWindow.currentTab;
-            } else if (mainWindow.currentTab === 7 || mainWindow.currentTab === 8) {
+            if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1 || mainWindow.currentTab === 7 || mainWindow.currentTab === 8) {
                 mainWindow.previousTab = mainWindow.currentTab;
             }
             albumDetailsView.historyStack = [];

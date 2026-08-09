@@ -17,6 +17,8 @@ Item {
     property var appSettings: typeof mainWindow !== "undefined" ? mainWindow.appSettings : null
     
     property var activeRequests: []
+    property color plexOrange: "#E5A00D"
+    property int libraryTab: 0
 
     ListModel { id: treeModel }
     property int leftViewMode: 0
@@ -35,6 +37,7 @@ Item {
     function replacePlaylistWithQueue(id) { playlistQueue.replacePlaylistWithQueue(id); }
     function appendQueueToPlaylist(id) { playlistQueue.appendQueueToPlaylist(id); }
     
+    function getPlayerView() { return playlistQueue; }
     onVisibleChanged: {
         if (visible) {
             if (treeModel.count === 0 && appCtrl && appCtrl.currentLibraryId !== "") {
@@ -183,8 +186,74 @@ Item {
         treeModel.setProperty(index, "expanded", false);
     }
 
-    SplitView {
+    ColumnLayout {
         anchors.fill: parent
+        spacing: 0
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 60
+            color: "#1a1a1a"
+            
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 20
+                spacing: 30
+                
+                Text {
+                    id: libraryTitleText
+                    text: typeof mainWindow !== "undefined" && mainWindow.controller ? mainWindow.controller.currentLibraryTitle : "Music"
+                    color: "white"
+                    font.pixelSize: 24
+                    font.bold: true
+                    renderType: Text.NativeRendering
+                    anchors.baseline: playerTab.baseline
+                }
+
+                Text {
+                    id: playerTab
+                    text: "Player"
+                    color: root.libraryTab === 0 ? root.plexOrange : "gray"
+                    font.pixelSize: 18
+                    font.bold: root.libraryTab === 0
+                    renderType: Text.NativeRendering
+                    anchors.baseline: recommendedTab.baseline
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: root.libraryTab = 0
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                }
+
+                Text {
+                    id: recommendedTab
+                    objectName: "recommendedTab"
+                    text: "Recommended"
+                    color: root.libraryTab === 1 ? root.plexOrange : "gray"
+                    font.pixelSize: 18
+                    font.bold: root.libraryTab === 1
+                    renderType: Text.NativeRendering
+                    anchors.baseline: playerTab.baseline
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: root.libraryTab = 1
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                }
+            }
+        }
+
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            currentIndex: root.libraryTab
+
+            SplitView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
         
         Rectangle {
             SplitView.preferredWidth: 350
@@ -514,6 +583,62 @@ Item {
             appSettings: root.appSettings
         }
     }
+    
+    ScrollView {
+        id: musicRecommendedTab
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        contentWidth: availableWidth
+        contentHeight: recommendedContentLayout.implicitHeight
+        clip: true
+        
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        ColumnLayout {
+            id: recommendedContentLayout
+            objectName: "recommendedContentLayout"
+            width: musicRecommendedTab.availableWidth
+            spacing: 30
+            
+            Item { Layout.preferredHeight: 10 }
+            
+            LibraryRail {
+                libraryTitle: root.appCtrl && root.appCtrl.currentLibraryTitle ? root.appCtrl.currentLibraryTitle : "Music"
+                libraryId: root.appCtrl && root.appCtrl.currentLibraryId ? root.appCtrl.currentLibraryId : ""
+                libraryType: "artist"
+                serverName: root.appCtrl && root.appCtrl.currentServerName ? root.appCtrl.currentServerName : ""
+                serverUrl: root.appCtrl && root.appCtrl.currentServerUrl ? root.appCtrl.currentServerUrl : ""
+                serverToken: root.appCtrl && root.appCtrl.currentServerToken ? root.appCtrl.currentServerToken : ""
+                rootApp: typeof mainWindow !== "undefined" ? mainWindow : null
+                movieDelegate: typeof mainWindow !== "undefined" ? mainWindow.globalMovieDelegate : null
+                customTitle: "Recently Played Artists"
+                customEndpoint: libraryId !== "" ? "/library/sections/" + libraryId + "/all?type=8&sort=lastViewedAt:desc" : ""
+                Layout.fillWidth: true
+                Layout.preferredHeight: hasItems ? 400 : 0
+                visible: hasItems
+            }
+
+            LibraryRail {
+                libraryTitle: root.appCtrl && root.appCtrl.currentLibraryTitle ? root.appCtrl.currentLibraryTitle : "Music"
+                libraryId: root.appCtrl && root.appCtrl.currentLibraryId ? root.appCtrl.currentLibraryId : ""
+                libraryType: "artist"
+                serverName: root.appCtrl && root.appCtrl.currentServerName ? root.appCtrl.currentServerName : ""
+                serverUrl: root.appCtrl && root.appCtrl.currentServerUrl ? root.appCtrl.currentServerUrl : ""
+                serverToken: root.appCtrl && root.appCtrl.currentServerToken ? root.appCtrl.currentServerToken : ""
+                rootApp: typeof mainWindow !== "undefined" ? mainWindow : null
+                movieDelegate: typeof mainWindow !== "undefined" ? mainWindow.globalMovieDelegate : null
+                customTitle: "Recently Added in " + libraryTitle
+                customEndpoint: libraryId !== "" ? "/library/sections/" + libraryId + "/all?type=9&sort=addedAt:desc" : ""
+                Layout.fillWidth: true
+                Layout.preferredHeight: hasItems ? 400 : 0
+                visible: hasItems
+            }
+            
+            Item { Layout.fillHeight: true }
+        }
+    }
+    } // StackLayout
+    } // ColumnLayout
 
     Item {
         id: globalOverlay

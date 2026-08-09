@@ -170,8 +170,26 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     ]
                 }
             }
-        elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path:
-            if any(query.get(f, [''])[0] == '1' for f in ['unwatched', 'inProgress', 'hdr', 'dovi', 'atmos', 'unmatched', 'duplicate']):
+        elif path == "/library/recentlyAdded" or path.endswith("/recentlyAdded") or "sort=addedAt:desc" in self.path or "sort=addedAt%3Adesc" in self.path or "sort=lastViewedAt:desc" in self.path or "sort=lastViewedAt%3Adesc" in self.path:
+            if "type=8" in self.path:
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "artist", "title": "Mock Artist", "ratingKey": "ar1", "duration": 50000, "viewOffset": 0}
+                        ]
+                    }
+                }
+            elif "type=9" in self.path:
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            {"type": "album", "title": "Mock Album", "ratingKey": "al1", "duration": 50000, "viewOffset": 0, "parentTitle": "Mock Artist"}
+                        ]
+                    }
+                }
+            elif any(query.get(f, [''])[0] == '1' for f in ['unwatched', 'inProgress', 'hdr', 'dovi', 'atmos', 'unmatched', 'duplicate']):
                 response_data = {
                     "MediaContainer": {
                         "size": 1,
@@ -422,6 +440,10 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 rtype = "movie"
                 if ratingKey in ["200", "201", "202"]:
                     rtype = "show"
+                elif ratingKey == "8888":
+                    rtype = "artist"
+                elif ratingKey == "9999":
+                    rtype = "album"
                 response_data = {
                     "MediaContainer": {
                         "Metadata": [{

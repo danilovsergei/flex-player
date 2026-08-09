@@ -21,6 +21,8 @@ ColumnLayout {
     property string serverUrl: ""
     property string serverToken: ""
     
+    property string customEndpoint: ""
+    property string customTitle: ""
     property string lastFetchedEndpoint: ""
     property Component movieDelegate
     property bool hasItems: delegateRecentList.count > 0
@@ -43,7 +45,9 @@ ColumnLayout {
         }
         
         var endpoint = "";
-        if (libraryType === "show") {
+        if (customEndpoint !== "") {
+            endpoint = customEndpoint;
+        } else if (libraryType === "show") {
             endpoint = "/library/sections/" + libraryId + "/all?type=2&sort=addedAt:desc";
         } else if (libraryType === "artist") {
             endpoint = "/library/sections/" + libraryId + "/all?type=9&sort=addedAt:desc";
@@ -84,7 +88,7 @@ ColumnLayout {
     Component.onCompleted: refresh()
 
     Text {
-        text: "Recently Added in " + libraryTitle
+        text: customTitle !== "" ? customTitle : "Recently Added in " + libraryTitle
         color: "white"
         font.pixelSize: 22
         font.bold: true
