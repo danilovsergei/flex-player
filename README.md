@@ -65,10 +65,16 @@ Flex Player uses the Plex server API directly to fetch and display your library.
   - Collections tab support
   - Filters and Advanced Filters
   - Saving filtered Movies as Collection and Smart collection
+- **Music library**
+  - Player view
+  - Recommendations
+  - Artist Details
+  - Album Details
+  - Playlist details
 - **Movie Posters:**
   - Watched progress bars
   - Watched status checkmarks
-- **Moview Details:**
+- **Movie Details:**
   - Movie year , rating , description
   - Select video , audio streams and subtitles
   - Cast crew list
@@ -84,7 +90,9 @@ Flex Player uses the Plex server API directly to fetch and display your library.
   - Search field with search as you type
   - Search popup
   - Search page wwith filters
-- **Playback:** Fully featured embedded playback with auto-hiding controls.
+- **Playback:**
+  - Fully featured video playback with auto-hiding controls , audio track and subtitles selection
+  - Audio Playback with configurable view
 
 ### Player
 - Report already played time to the plex server during video playback
