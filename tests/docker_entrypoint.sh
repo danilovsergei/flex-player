@@ -50,7 +50,9 @@ cd /app/build_container
 
 # Run the test(s)
 # If no arguments are passed, it runs all tests.
-./flex_player_test "$@"
+./flex_player_test "$@" > /app/tests/results/qt_output.log 2>&1
+cat /app/tests/results/qt_output.log
+cat /app/tests/mock_server_requests.log
 RET=$?
 
 # Cleanup

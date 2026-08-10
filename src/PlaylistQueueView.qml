@@ -368,6 +368,8 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            saveQueueDialog.targetKeys = root.getQueueRatingKeys();
+                            saveQueueDialog.isSelectionMode = false;
                             if (plexPlaylistsModel.count === 0) root.loadPlexPlaylists();
                             saveQueueDialog.open()
                         }
@@ -822,6 +824,7 @@ Item {
                     }
                     
                     MouseArea {
+                        objectName: "itemMouseArea"
                         anchors.fill: parent
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: function(mouse) {
@@ -955,6 +958,23 @@ Item {
                                     detailsDialog.trackSize = "Unknown";
                                     detailsDialog.trackBitrate = "Unknown";
                                 }
+                            }
+                        }
+                        MenuItem {
+                            objectName: "appendContextMenuBtn"
+                            text: "Append to Playlist"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "#E5A00D"
+                                font.pixelSize: 16
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
+                            onTriggered: {
+                                saveQueueDialog.targetKeys = root.getSelectedOrCurrentRatingKeys();
+                                saveQueueDialog.isSelectionMode = true;
+                                if (plexPlaylistsModel.count === 0) root.loadPlexPlaylists();
+                                saveQueueDialog.open();
                             }
                         }
                         MenuItem {
@@ -1488,11 +1508,28 @@ Item {
         return keys.join(",");
     }
 
-    function saveQueueAsNewPlaylist(title) {
+    function getSelectedOrCurrentRatingKeys() {
+        var keys = [];
+        var hasSelection = false;
+        for (var i = 0; i < playlistModel.count; i++) {
+            var m = playlistModel.get(i);
+            if (m && m.isSelected && m.ratingKey) {
+                hasSelection = true;
+                keys.push(m.ratingKey);
+            }
+        }
+        if (!hasSelection && playlistView.currentIndex >= 0 && playlistView.currentIndex < playlistModel.count) {
+            var cm = playlistModel.get(playlistView.currentIndex);
+            if (cm && cm.ratingKey) keys.push(cm.ratingKey);
+        }
+        return keys.join(",");
+    }
+
+    function saveQueueAsNewPlaylist(title, keysStr) {
         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
         var token = appCtrl.currentServerToken || "dummy";
         if (!url) return;
-        var keysStr = getQueueRatingKeys();
+        if (!keysStr) keysStr = getQueueRatingKeys();
         if (!keysStr) return;
         
         var req = new XMLHttpRequest();
@@ -1521,11 +1558,11 @@ Item {
         req.send();
     }
 
-    function replacePlaylistWithQueue(playlistId) {
+    function replacePlaylistWithQueue(playlistId, keysStr) {
         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
         var token = appCtrl.currentServerToken || "dummy";
         if (!url) return;
-        var keysStr = getQueueRatingKeys();
+        if (!keysStr) keysStr = getQueueRatingKeys();
         if (!keysStr) return;
         
         var req = new XMLHttpRequest();
@@ -1563,11 +1600,11 @@ Item {
         req.send();
     }
 
-    function appendQueueToPlaylist(playlistId) {
+    function appendQueueToPlaylist(playlistId, keysStr) {
         var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
         var token = appCtrl.currentServerToken || "dummy";
         if (!url) return;
-        var keysStr = getQueueRatingKeys();
+        if (!keysStr) keysStr = getQueueRatingKeys();
         if (!keysStr) return;
         
         var req = new XMLHttpRequest();
@@ -1601,6 +1638,8 @@ Item {
         objectName: "saveQueueDialog"
         property string selectedPlaylistId: ""
         property string selectedPlaylistTitle: ""
+        property bool isSelectionMode: false
+        property string targetKeys: ""
         
         onOpened: {
             playlistNameInput.text = "";
@@ -1627,7 +1666,7 @@ Item {
             spacing: 15
             
             Text {
-                text: "Save Queue to Playlist"
+                text: saveQueueDialog.isSelectionMode ? "Append or Create playlist" : "Save Queue to Playlist"
                 color: "white"
                 font.pixelSize: 18
                 font.bold: true
@@ -1752,7 +1791,7 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (playlistNameInput.text !== "") {
-                                root.saveQueueAsNewPlaylist(playlistNameInput.text);
+                                root.saveQueueAsNewPlaylist(playlistNameInput.text, saveQueueDialog.targetKeys);
                                 saveQueueDialog.close();
                             }
                         }
@@ -1765,7 +1804,7 @@ Item {
                     objectName: "replacePlaylistBtn"
                     Layout.fillWidth: true
                     height: 40
-                    visible: saveQueueDialog.selectedPlaylistId !== ""
+                    visible: saveQueueDialog.selectedPlaylistId !== "" && !saveQueueDialog.isSelectionMode
                     radius: 4
                     color: repMouse.containsMouse ? Qt.lighter(typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d", 1.1) : (typeof mainWindow !== "undefined" ? mainWindow.plexOrange : "#e5a00d")
                     
@@ -1782,7 +1821,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.replacePlaylistWithQueue(saveQueueDialog.selectedPlaylistId);
+                            root.replacePlaylistWithQueue(saveQueueDialog.selectedPlaylistId, saveQueueDialog.targetKeys);
                             saveQueueDialog.close();
                         }
                     }
@@ -1811,7 +1850,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.appendQueueToPlaylist(saveQueueDialog.selectedPlaylistId);
+                            root.appendQueueToPlaylist(saveQueueDialog.selectedPlaylistId, saveQueueDialog.targetKeys);
                             saveQueueDialog.close();
                         }
                     }

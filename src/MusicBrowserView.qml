@@ -431,7 +431,7 @@ Item {
                             border.width: 1
                         }
                         MenuItem {
-                            text: "Add to Playlist"
+                            text: "Add to Queue"
                             contentItem: Text {
                                 text: parent.text
                                 color: "#E5A00D"

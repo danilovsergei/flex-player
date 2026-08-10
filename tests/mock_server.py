@@ -12,6 +12,16 @@ COLLECTIONS = {
 }
 NEXT_COLLECTION_ID = 301
 
+PLAYLIST_ITEMS = {
+    "p1": [
+        { "ratingKey": "t1", "title": "Playlist Track 1", "parentTitle": "Album 1", "grandparentTitle": "Artist 1", "type": "track", "duration": 150000, "Media": [{"Part": [{"file": "/media/pt1.mp3"}]}] },
+        { "ratingKey": "t2", "title": "Playlist Track 2", "parentTitle": "Album 2", "grandparentTitle": "Artist 2", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/pt2.mp3"}]}] }
+    ],
+    "p5": [
+        { "ratingKey": "pt1", "title": "Party Track 1", "parentTitle": "Album P", "grandparentTitle": "Artist P", "type": "track", "duration": 120000, "Media": [{"Part": [{"file": "/media/p1.mp3"}]}] }
+    ]
+}
+
 class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
@@ -25,6 +35,30 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         query = parse_qs(parsed_path.query)
+
+        if path.startswith("/playlists/") and path.endswith("/items"):
+            pid = path.split("/")[2]
+            uri = query.get('uri', [''])[0]
+            if uri:
+                keys_str = uri.split("/")[-1]
+                keys = keys_str.split(",")
+                if pid not in PLAYLIST_ITEMS:
+                    PLAYLIST_ITEMS[pid] = []
+                for k in keys:
+                    # just append a mock track based on the key
+                    PLAYLIST_ITEMS[pid].append({
+                        "ratingKey": k, "title": "Appended " + k, "parentTitle": "Appended Album", "grandparentTitle": "Appended Artist", "type": "track", "duration": 100000, "Media": [{"Part": [{"file": "/media/appended.mp3"}]}]
+                    })
+                    
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Connection', 'close')
+            json_bytes = b"{}"
+            self.send_header('Content-Length', str(len(json_bytes)))
+            self.end_headers()
+            self.wfile.write(json_bytes)
+            return
 
         if "/library/collections/" in path and not path.endswith("/children"):
             cid = path.split("/")[-1]
@@ -343,13 +377,14 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         elif path.startswith("/playlists/") and path.endswith("/items") and self.command in ["PUT", "DELETE"]:
             response_data = {"MediaContainer": {"size": 1, "Metadata": [{"ratingKey": "p1"}]}}
         elif path.startswith("/playlists/") and path.endswith("/items"):
+            pid = path.split("/")[2]
+            items = PLAYLIST_ITEMS.get(pid, PLAYLIST_ITEMS.get("p1", []))
+            with open("/app/tests/mock_server_requests.log", "a") as logf:
+                logf.write("Returning items for pid " + pid + ": " + json.dumps(items) + "\n")
             response_data = {
                 "MediaContainer": {
-                    "size": 2,
-                    "Metadata": [
-                        { "ratingKey": "t1", "title": "Playlist Track 1", "parentTitle": "Album 1", "grandparentTitle": "Artist 1", "type": "track", "duration": 150000, "Media": [{"Part": [{"file": "/media/pt1.mp3"}]}] },
-                        { "ratingKey": "t2", "title": "Playlist Track 2", "parentTitle": "Album 2", "grandparentTitle": "Artist 2", "type": "track", "duration": 180000, "Media": [{"Part": [{"file": "/media/pt2.mp3"}]}] }
-                    ]
+                    "size": len(items),
+                    "Metadata": items
                 }
             }
         elif path.endswith("/collections"):
@@ -453,7 +488,7 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     rtype = "artist"
                 elif ratingKey == "9999":
                     rtype = "album"
-                elif ratingKey == "p1":
+                elif ratingKey.startswith("p"):
                     rtype = "playlist"
                 response_data = {
                     "MediaContainer": {
