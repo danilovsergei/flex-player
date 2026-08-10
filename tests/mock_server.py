@@ -349,8 +349,17 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                     ]
                 }
             }
-        elif path == "/playlists":
-            if self.command == "POST":
+        elif path == "/playlists" or path.startswith("/playlists?"):
+            if "sort=updatedAt:desc" in self.path or "sort=updatedAt%3Adesc" in self.path:
+                response_data = {
+                    "MediaContainer": {
+                        "size": 1,
+                        "Metadata": [
+                            { "ratingKey": "p1", "title": "Burito", "playlistType": "audio", "leafCount": 15, "smart": False }
+                        ]
+                    }
+                }
+            elif self.command == "POST":
                 # Mock creating a playlist
                 response_data = {
                     "MediaContainer": {

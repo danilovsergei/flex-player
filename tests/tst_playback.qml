@@ -1280,7 +1280,7 @@ TestCase {
         var playlistItemContextMenu = findChild(trackDel, "playlistItemContextMenu");
         verify(playlistItemContextMenu !== null, "playlistItemContextMenu must exist");
 
-        var appendContextMenuBtn = playlistItemContextMenu.itemAt(1);
+        var appendContextMenuBtn = playlistItemContextMenu.itemAt(2);
         verify(appendContextMenuBtn !== null, "appendContextMenuBtn must exist");
 
         // NOTE(Testing Exemption): We are explicitly using .triggered() here instead of mouseClick().
@@ -1356,6 +1356,75 @@ TestCase {
         }
 
         console.warn("test_96y_playlist_queue_append_context_menu complete");
+    }
+
+
+    function test_96z_append_latest_playlist_context_menu() {
+        console.warn("Starting test_96z_append_latest_playlist_context_menu");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var playlistQueueView = findChild(musicView, "playlistQueueView");
+        var playlistView = findChild(playlistQueueView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Test 1", "mediaUrl": "test", "duration": 100, "isSelected": false, "ratingKey": "t1"});
+        musicView._isLoadingPlaylist = false;
+        wait(1000);
+        
+        var trackDel = playlistView.itemAtIndex(0);
+        verify(trackDel !== null, "track delegate 0 must exist");
+
+        // Open menu
+        playlistModel.setProperty(0, "isSelected", true);
+        var playlistItemContextMenu = findChild(trackDel, "playlistItemContextMenu");
+        verify(playlistItemContextMenu !== null, "playlistItemContextMenu must exist");
+        
+        // Emulate menu opening which triggers fetchLatestPlaylist
+        playlistQueueView.fetchLatestPlaylist();
+        wait(1000); // give time for the mock server to return Burito
+
+        var appendLatestContextMenuBtn = playlistItemContextMenu.itemAt(1);
+        verify(appendLatestContextMenuBtn !== null, "appendLatestContextMenuBtn must exist at index 1");
+        
+        tryVerify(function() { return appendLatestContextMenuBtn.text === "Append to \"Burito\" Playlist"; }, 3000, "Menu text should format dynamically");
+
+        // trigger
+        appendLatestContextMenuBtn.triggered();
+        wait(1500); // Wait for PUT request to finish
+        
+        // Verify playlist updated via api
+        mainWindow.openPlaylist("p1", "https://127.0.0.1:32400", "mocktoken");
+        wait(1500);
+        
+        var playlistDetailsView = findChild(mainWindow, "playlistDetailsView");
+        verify(playlistDetailsView !== null, "playlistDetailsView must exist");
+        
+        var pqv = findChild(playlistDetailsView, "playlistQueueView");
+        verify(pqv !== null, "PlaylistQueueView in Details must exist");
+        
+        var pv = findChild(pqv, "musicPlaylistView");
+        verify(pv !== null, "musicPlaylistView in Details must exist");
+        
+        var appendedModel = pv.model;
+        tryVerify(function() { return appendedModel.count >= 2; }, 3000, "Playlist p1 should have tracks appended");
+        
+        var lastTrack = appendedModel.get(appendedModel.count - 1);
+        var firstTrack = appendedModel.get(0);
+        verify(lastTrack.ratingKey === "t1" || firstTrack.ratingKey === "t1", "One of the tracks should be t1");
+
+        // Navigate back
+        var backBtn = findChild(playlistDetailsView, "backButton");
+        if (backBtn) {
+            mouseClick(backBtn);
+            wait(500);
+        }
+
+        console.warn("test_96z_append_latest_playlist_context_menu complete");
     }
 
     function cleanupTestCase() {

@@ -10,6 +10,8 @@ Item {
     property bool isActiveView: visible
     property bool isAlbumMode: false
     property bool hideHeader: false
+    property string latestPlaylistId: ""
+    property string latestPlaylistTitle: "" 
     property alias playlistModel: playlistModel
     property alias playlistDropArea: playlistDropArea
     property var activeRequests: []
@@ -93,6 +95,41 @@ Item {
     ListModel {
         id: plexPlaylistsModel
         objectName: "plexPlaylistsModel"
+    }
+
+    function fetchLatestPlaylist() {
+        if (!appCtrl) return;
+        var url = appCtrl.currentServerUrl !== "" ? appCtrl.currentServerUrl : appCtrl.connectionManager.activeUrl;
+        var token = appCtrl.currentServerToken || "dummy_token";
+        if (!url) return;
+
+        var req = new XMLHttpRequest();
+        req.open("GET", url + "/playlists?playlistType=audio&sort=updatedAt:desc&limit=1");
+        req.setRequestHeader("X-Plex-Token", token);
+        req.setRequestHeader("Accept", "application/json");
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE) {
+                console.warn("fetchLatestPlaylist DONE, status:", req.status);
+                if (req.status === 200) {
+                    try {
+                        var json = JSON.parse(req.responseText);
+                        var items = (json.MediaContainer && json.MediaContainer.Metadata) ? json.MediaContainer.Metadata : [];
+                        console.warn("fetchLatestPlaylist items length:", items.length);
+                        if (items.length > 0) {
+                            root.latestPlaylistId = items[0].ratingKey;
+                            root.latestPlaylistTitle = items[0].title;
+                            console.warn("Set latest to", root.latestPlaylistId, root.latestPlaylistTitle);
+                        } else {
+                            root.latestPlaylistId = "";
+                            root.latestPlaylistTitle = "";
+                        }
+                    } catch (e) {
+                        console.warn("fetchLatestPlaylist catch error:", e);
+                    }
+                }
+            }
+        };
+        req.send();
     }
 
     function loadPlexPlaylists() {
@@ -861,6 +898,7 @@ Item {
                                 playlistItemContextMenu.trackRatingKey = playlistModel.get(index).ratingKey || "";
                                 playlistItemContextMenu.clickX = pt.x;
                                 playlistItemContextMenu.clickY = pt.y;
+                                root.fetchLatestPlaylist();
                                 playlistItemContextMenu.popup();
                             }
                         }
@@ -958,6 +996,22 @@ Item {
                                     detailsDialog.trackSize = "Unknown";
                                     detailsDialog.trackBitrate = "Unknown";
                                 }
+                            }
+                        }
+                        MenuItem {
+                            objectName: "appendLatestContextMenuBtn"
+                            visible: root.latestPlaylistId !== ""
+                            text: "Append to \"" + root.latestPlaylistTitle + "\" Playlist"
+                            contentItem: Text {
+                                text: parent.text
+                                color: "#E5A00D"
+                                font.pixelSize: 16
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle { color: parent.highlighted ? "#444" : "transparent"; radius: 4 }
+                            onTriggered: {
+                                var keysStr = root.getSelectedOrCurrentRatingKeys();
+                                root.appendQueueToPlaylist(root.latestPlaylistId, keysStr);
                             }
                         }
                         MenuItem {
