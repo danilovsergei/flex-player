@@ -1427,6 +1427,156 @@ TestCase {
         console.warn("test_96z_append_latest_playlist_context_menu complete");
     }
 
+
+    function test_97_queue_auto_advance() {
+        console.warn("Starting test_97_queue_auto_advance");
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var playlistQueueView = findChild(musicView, "playlistQueueView");
+        var playlistView = findChild(playlistQueueView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Dummy 1", "mediaUrl": "/app/tests/dummy1.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t1"});
+        playlistModel.append({"title": "Dummy 2", "mediaUrl": "/app/tests/dummy2.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t2"});
+        musicView._isLoadingPlaylist = false;
+        wait(500);
+        
+        var trackDel = playlistView.itemAtIndex(0);
+        verify(trackDel !== null, "track delegate 0 must exist");
+
+        var itemMouseArea = findChild(trackDel, "itemMouseArea");
+        verify(itemMouseArea !== null, "itemMouseArea must exist");
+
+        // Play track via Space hotkey
+        playlistView.forceActiveFocus();
+        playlistView.currentIndex = 0;
+        playlistQueueView.triggerShortcut("PlayPause");
+        
+        var playerView = findChild(mainWindow, "playerView");
+        verify(playerView !== null, "playerView must exist");
+        
+        var mpvObject = findChild(playerView, "mpvObject");
+        verify(mpvObject !== null, "mpvObject must exist");
+        tryVerify(function() { return mpvObject.duration > 0; }, 10000, "Playback active");
+        
+        console.warn("Track 1 playing, duration: " + mpvObject.duration + ". Seeking to end...");
+        
+        // Seek near the end to let it naturally finish
+        mpvObject.command(["seek", mpvObject.duration - 0.5, "absolute"]);
+        
+        // Wait for it to advance to the next track naturally
+        tryVerify(function() { return playlistView.currentIndex === 1; }, 5000, "Queue should automatically advance to next track (index 1)");
+        
+        console.warn("Track 2 active, stopping.");
+        mpvObject.command(["stop"]);
+        wait(500);
+        
+        console.warn("test_97_queue_auto_advance complete");
+    }
+
+
+    function test_97b_queue_repeat_all() {
+        console.warn("Starting test_97b_queue_repeat_all");
+        
+        mainWindow.appSettings.musicRepeatMode = 1; // Repeat All
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var playlistQueueView = findChild(musicView, "playlistQueueView");
+        var playlistView = findChild(playlistQueueView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Dummy 1", "mediaUrl": "/app/tests/dummy1.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t1"});
+        playlistModel.append({"title": "Dummy 2", "mediaUrl": "/app/tests/dummy2.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t2"});
+        musicView._isLoadingPlaylist = false;
+        wait(500);
+        
+        // Play the LAST track via Space hotkey
+        playlistView.forceActiveFocus();
+        playlistView.currentIndex = 1;
+        playlistQueueView.triggerShortcut("PlayPause");
+        
+        var playerView = findChild(mainWindow, "playerView");
+        verify(playerView !== null, "playerView must exist");
+        
+        var mpvObject = findChild(playerView, "mpvObject");
+        verify(mpvObject !== null, "mpvObject must exist");
+        tryVerify(function() { return mpvObject.duration > 0; }, 10000, "Playback active");
+        
+        console.warn("Track 2 playing, duration: " + mpvObject.duration + ". Seeking to end...");
+        
+        // Seek near the end to let it naturally finish
+        mpvObject.command(["seek", mpvObject.duration - 0.5, "absolute"]);
+        
+        // Wait for it to loop back to the first track naturally
+        tryVerify(function() { return playlistView.currentIndex === 0; }, 5000, "Queue should automatically loop to first track (index 0)");
+        
+        console.warn("Track 1 active again, stopping.");
+        mpvObject.command(["stop"]);
+        wait(500);
+        
+        mainWindow.appSettings.musicRepeatMode = 0; // Restore
+        console.warn("test_97b_queue_repeat_all complete");
+    }
+
+    function test_97c_queue_repeat_one() {
+        console.warn("Starting test_97c_queue_repeat_one");
+        
+        mainWindow.appSettings.musicRepeatMode = 2; // Repeat One
+        
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        var musicView = findChild(mainWindow, "musicBrowserView");
+        var playlistQueueView = findChild(musicView, "playlistQueueView");
+        var playlistView = findChild(playlistQueueView, "musicPlaylistView");
+        var playlistModel = playlistView.model;
+        
+        musicView._isLoadingPlaylist = true;
+        playlistModel.clear();
+        playlistModel.append({"title": "Dummy 1", "mediaUrl": "/app/tests/dummy1.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t1"});
+        playlistModel.append({"title": "Dummy 2", "mediaUrl": "/app/tests/dummy2.mkv", "duration": 60000, "isSelected": false, "ratingKey": "t2"});
+        musicView._isLoadingPlaylist = false;
+        wait(500);
+        
+        // Play the FIRST track via Space hotkey
+        playlistView.forceActiveFocus();
+        playlistView.currentIndex = 0;
+        playlistQueueView.triggerShortcut("PlayPause");
+        
+        var playerView = findChild(mainWindow, "playerView");
+        verify(playerView !== null, "playerView must exist");
+        
+        var mpvObject = findChild(playerView, "mpvObject");
+        verify(mpvObject !== null, "mpvObject must exist");
+        tryVerify(function() { return mpvObject.duration > 0; }, 10000, "Playback active");
+        
+        console.warn("Track 1 playing, duration: " + mpvObject.duration + ". Seeking to end...");
+        
+        // Seek near the end to let it naturally finish
+        mpvObject.command(["seek", mpvObject.duration - 0.5, "absolute"]);
+        
+        // Wait for it to restart the track (position should drop below duration - 1)
+        tryVerify(function() { return mpvObject.position < 2; }, 5000, "Queue should restart the same track (position < 2)");
+        verify(playlistView.currentIndex === 0, "Queue should remain on track 1 (index 0)");
+        
+        console.warn("Track 1 restarted successfully, stopping.");
+        mpvObject.command(["stop"]);
+        wait(500);
+        
+        mainWindow.appSettings.musicRepeatMode = 0; // Restore
+        console.warn("test_97c_queue_repeat_one complete");
+    }
+
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()

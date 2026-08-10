@@ -30,7 +30,12 @@ public:
         setProperty("msg-level", "all=v");
         // Headless CI stabilization: Use "null" video output when testing to avoid
         // initialization failures when no physical GPU or display context is present.
-        if (qEnvironmentVariableIsSet("FLEX_PLAYER_TEST_MODE")) setProperty("vo", "null"); else setProperty("vo", "libmpv");
+        if (qEnvironmentVariableIsSet("FLEX_PLAYER_TEST_MODE")) {
+            setProperty("vo", "null");
+            setProperty("ao", "null");
+        } else {
+            setProperty("vo", "libmpv");
+        }
         setProperty("target-colorspace-hint", "yes");
         setProperty("hwdec", "auto-safe");
 

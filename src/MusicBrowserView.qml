@@ -45,12 +45,7 @@ Item {
             }
         }
     }
-    Connections {
-        target: root.getPlayerView()
-        function onMediaEnded() {
-            mediaEndedHandler();
-        }
-    }
+
 
     Connections {
         target: appCtrl

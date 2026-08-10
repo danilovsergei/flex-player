@@ -13,6 +13,15 @@ Item {
     property string latestPlaylistId: ""
     property string latestPlaylistTitle: "" 
     property alias playlistModel: playlistModel
+    property var boundPlayerView: null
+    
+    Connections {
+        target: root.boundPlayerView
+        function onMediaEnded() {
+            console.warn("PlaylistQueueView onMediaEnded triggered");
+            root.mediaEndedHandler();
+        }
+    }
     property alias playlistDropArea: playlistDropArea
     property var activeRequests: []
 
@@ -86,6 +95,7 @@ Item {
                 pw.playMedia(item.mediaUrl, 0, item.ratingKey, item.duration, "auto", "none", streams);
                 root.currentlyPlayingMediaUrl = item.mediaUrl;
                 root.currentlyPlayingIndex = idx;
+                root.boundPlayerView = pw;
             }
         }
     }
@@ -219,9 +229,10 @@ Item {
                     pw.mpvObject.paused = !pw.mpvObject.paused;
                 } else if (modelItem) {
                     var streams = [{"id": 0, "streamType": 2, "codec": "mp3", "displayTitle": "Audio"}];
-                    pw.playMedia(modelItem.mediaUrl, 0, "", modelItem.duration, "auto", "none", streams);
+                    pw.playMedia(modelItem.mediaUrl, 0, "", modelItem.duration, "auto", "no", streams);
                     root.currentlyPlayingMediaUrl = modelItem.mediaUrl;
                     root.currentlyPlayingIndex = playlistView.currentIndex;
+                    root.boundPlayerView = pw;
                 }
             }
         } else if (name === "Ctrl+A") {
