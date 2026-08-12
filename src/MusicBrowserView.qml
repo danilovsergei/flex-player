@@ -320,6 +320,17 @@ Item {
                         model: treeModel
                         clip: true
                         Layout.margins: 10
+                        
+                        ScrollBar.vertical: ScrollBar {
+                            active: hovered || treeListView.moving
+                            policy: ScrollBar.AsNeeded
+                            background: Rectangle { color: "transparent" }
+                            contentItem: Rectangle {
+                                implicitWidth: 6
+                                radius: 3
+                                color: parent.active ? "#80ffffff" : "#40ffffff"
+                            }
+                        }
                 
                 delegate: Item {
                     width: treeListView.width
