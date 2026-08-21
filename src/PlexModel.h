@@ -29,6 +29,7 @@ struct Movie {
     QString serverToken;
     QString content;
     int year = 0;
+    QString filePath;
 };
 
 class PlexModel : public QAbstractListModel {
@@ -59,7 +60,8 @@ public:
         ServerUrlRole,
         ServerTokenRole,
         ContentRole,
-        YearRole
+        YearRole,
+        FilePathRole
     };
 
     explicit PlexModel(QObject *parent = nullptr);

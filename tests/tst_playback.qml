@@ -1577,6 +1577,156 @@ TestCase {
         console.warn("test_97c_queue_repeat_one complete");
     }
 
+
+    function triggerF5() {
+        mainWindow.triggerShortcut("Refresh");
+    }
+
+    function setMockRefreshMode(enabled) {
+        var req = new XMLHttpRequest();
+        req.open("GET", "http://127.0.0.1:32400/tests/set_refresh_mode?enabled=" + (enabled ? "1" : "0"), false);
+        req.send();
+    }
+
+    function verifyToast() {
+        var toast = findChild(mainWindow, "refreshToast");
+        verify(toast !== null, "refreshToast should exist");
+        tryVerify(function() { return toast.yOffset > 0; }, 2000, "Toast should slide into view");
+    }
+
+    function test_110_refresh_f5_home() {
+        console.warn("Starting test_110_refresh_f5_home");
+        mainWindow.currentTab = 0;
+        wait(500);
+        
+        var spy = Qt.createQmlObject('import QtTest 1.0; SignalSpy { target: mainWindow; signalName: "globalRefreshTriggered" }', mainWindow, "refreshSpy");
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        spy.wait(2000);
+        verify(spy.count > 0, "F5 hotkey should trigger globalRefreshTriggered signal on Home tab");
+        verifyToast();
+        setMockRefreshMode(false);
+        
+        // Let's verify data changed if possible.
+        spy.destroy();
+    }
+    
+    function test_111_refresh_f5_library() {
+        console.warn("Starting test_111_refresh_f5_library");
+        mainWindow.loadLibraryContent("1", "Mock Movies", "movie", "https://127.0.0.1:32400", "uuid-movies", "dummy_token", "Mock Server");
+        mainWindow.currentTab = 1;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_112_refresh_f5_collection() {
+        console.warn("Starting test_112_refresh_f5_collection");
+        mainWindow.openCollection("300", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 2;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_113_refresh_f5_details() {
+        console.warn("Starting test_113_refresh_f5_details");
+        mainWindow.openDetails("100", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 3;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_114_refresh_f5_series() {
+        console.warn("Starting test_114_refresh_f5_series");
+        mainWindow.openShow("200", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 4;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+
+    function test_115_refresh_f5_music() {
+        console.warn("Starting test_115_refresh_f5_music");
+        mainWindow.currentTab = 7;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_116_refresh_f5_artist() {
+        console.warn("Starting test_116_refresh_f5_artist");
+        mainWindow.openArtist("ar1", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 8;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_117_refresh_f5_album() {
+        console.warn("Starting test_117_refresh_f5_album");
+        mainWindow.openAlbum("al1", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 9;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
+    
+    function test_119_refresh_button_click() {
+        console.warn("Starting test_119_refresh_button_click");
+        mainWindow.currentTab = 0;
+        wait(500);
+        
+        var topToolbar = findChild(mainWindow, "topToolbar");
+        verify(topToolbar !== null, "topToolbar should exist");
+        
+        var refreshBtn = findChild(topToolbar, "refreshButton");
+        verify(refreshBtn !== null, "refreshButton should exist");
+        
+        var spy = Qt.createQmlObject('import QtTest 1.0; SignalSpy { target: mainWindow; signalName: "globalRefreshTriggered" }', mainWindow, "refreshSpy");
+        
+        mouseClick(refreshBtn);
+        spy.wait(2000);
+        
+        verify(spy.count > 0, "Refresh button click should trigger globalRefreshTriggered signal");
+        verifyToast();
+        spy.destroy();
+    }
+
+    function test_118_refresh_f5_playlist() {
+        console.warn("Starting test_118_refresh_f5_playlist");
+        mainWindow.openPlaylist("p1", "https://127.0.0.1:32400", "dummy_token");
+        mainWindow.currentTab = 10;
+        wait(500);
+        
+        setMockRefreshMode(true);
+        triggerF5();
+        verifyToast();
+        setMockRefreshMode(false);
+    }
     function cleanupTestCase() {
         if (mainWindow) {
             mainWindow.destroy()

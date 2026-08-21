@@ -28,6 +28,23 @@ Item {
     property alias currentlyPlayingIndex: playlistQueue.currentlyPlayingIndex
     property alias _isLoadingPlaylist: playlistQueue._isLoadingPlaylist
     function playTrackAtIndex(idx) { playlistQueue.playTrackAtIndex(idx); }
+
+    function refreshPage() {
+        if (root.leftViewMode === 0 && appCtrl && appCtrl.currentLibraryId !== "") {
+            loadFolder(appCtrl.currentLibraryId, "", 0, -1, "");
+        } else if (root.leftViewMode === 1) {
+            loadPlexPlaylists();
+        }
+        
+        if (typeof recommendedContentLayout !== "undefined" && recommendedContentLayout) {
+            for (var i = 0; i < recommendedContentLayout.children.length; i++) {
+                var child = recommendedContentLayout.children[i];
+                if (typeof child.refresh === "function") {
+                    child.refresh();
+                }
+            }
+        }
+    }
     function deleteSelectedItems() { playlistQueue.deleteSelectedItems(); }
     function triggerShortcut(name) { playlistQueue.triggerShortcut(name); }
     function recursivelyAddFolder(id, idx) { playlistQueue.recursivelyAddFolder(id, idx); }

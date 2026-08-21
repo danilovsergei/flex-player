@@ -90,6 +90,7 @@ QVariant PlexModel::data(const QModelIndex &index, int role) const {
     else if (role == ServerTokenRole) return movie.serverToken;
     else if (role == ContentRole) return movie.content;
     else if (role == YearRole) return QVariant::fromValue(movie.year);
+    else if (role == FilePathRole) return movie.filePath;
     return QVariant();
 }
 
@@ -115,6 +116,7 @@ QHash<int, QByteArray> PlexModel::roleNames() const {
     roles[ServerTokenRole] = "serverToken";
     roles[ContentRole] = "content";
     roles[YearRole] = "year";
+    roles[FilePathRole] = "filePath";
     return roles;
 }
 
@@ -441,6 +443,9 @@ void PlexModel::onReplyFinished(QNetworkReply *reply) {
                     QJsonArray parts = mediaObj["Part"].toArray();
                     if (!parts.isEmpty()) {
                         QJsonObject partObj = parts.first().toObject();
+                        if (partObj.contains("file")) {
+                            m.filePath = partObj["file"].toString();
+                        }
                         if (partObj.contains("key")) {
                             QString keyStr = partObj["key"].toString();
                             if (!keyStr.isEmpty() && !keyStr.startsWith("http")) {

@@ -57,8 +57,10 @@ Item {
     property var searchResultsModel: ListModel {}
     property int currentSearchId: 0
     property bool isSearching: false
+    property string lastSearchQuery: ""
 
     function performSearch(query) {
+        lastSearchQuery = query;
         currentSearchId++;
         var reqId = currentSearchId;
         

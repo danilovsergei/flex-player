@@ -18,6 +18,7 @@ Item {
     property alias volumeDownHotkey: hotkeySettings.volumeDownHotkey
     property alias seekForwardHotkey: hotkeySettings.seekForwardHotkey
     property alias seekBackwardHotkey: hotkeySettings.seekBackwardHotkey
+    property alias refreshHotkey: hotkeySettings.refreshHotkey
     
     property alias musicUpHotkey: hotkeySettings.musicUpHotkey
     property alias musicDownHotkey: hotkeySettings.musicDownHotkey
@@ -67,6 +68,7 @@ Item {
         property string volumeDownHotkey: "Down"
         property string seekForwardHotkey: "Right"
         property string seekBackwardHotkey: "Left"
+        property string refreshHotkey: "F5"
         
         property string musicUpHotkey: "Up"
         property string musicDownHotkey: "Down"

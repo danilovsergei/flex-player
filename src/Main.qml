@@ -102,12 +102,21 @@ ApplicationWindow {
         }
     }
 
-    function openCollection(ratingKey, itemServerUrl) {
+    property string currentCollectionId: ""
+    property string currentCollectionServerUrl: ""
+    property string currentCollectionServerToken: ""
+
+    function openCollection(ratingKey, itemServerUrl, itemServerToken) {
         if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
             mainWindow.previousTab = mainWindow.currentTab;
         }
+        currentCollectionId = ratingKey;
+        currentCollectionServerUrl = itemServerUrl;
+        currentCollectionServerToken = itemServerToken;
         var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-        controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children");
+        var token = (itemServerToken && itemServerToken !== "") ? itemServerToken : appSettings.token;
+        console.warn("openCollection called with ratingKey:", ratingKey, "url:", url);
+        controller.collectionMoviesModel.fetchEndpoint(url, token, "/library/collections/" + ratingKey + "/children");
         mainWindow.currentTab = 2;
     }
     function openPlaylist(ratingKey, itemServerUrl, itemServerToken) {
@@ -188,6 +197,70 @@ ApplicationWindow {
         onActivated: toggleFullScreen()
     }
     
+    function triggerShortcut(action) {
+        if (action === "Refresh") {
+            refreshPage();
+        } else if (action === "Fullscreen") {
+            toggleFullScreen();
+        }
+    }
+
+    signal globalRefreshTriggered()
+
+    function refreshPage() {
+        console.warn("Global refresh triggered for tab:", currentTab);
+        globalRefreshTriggered();
+        refreshToast.show();
+        if (currentTab === 0) {
+            controller.startupLogic();
+        } else if (currentTab === 1) {
+            controller.loadLibraryContent(controller.currentLibraryId, controller.currentLibraryTitle, controller.currentLibraryType, controller.currentServerUrl, controller.currentLibraryUniqueId, controller.currentServerToken, controller.currentServerName);
+        } else if (currentTab === 2) {
+            openCollection(currentCollectionId, currentCollectionServerUrl, currentCollectionServerToken);
+        } else if (currentTab === 3) {
+            if (movieDetailsView.detailsData && movieDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, movieDetailsView.detailsData.ratingKey);
+            }
+        } else if (currentTab === 4) {
+            if (seriesDetailsView.detailsData && seriesDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, seriesDetailsView.detailsData.ratingKey);
+                if (typeof seriesDetailsView.fetchSeasons === "function") seriesDetailsView.fetchSeasons();
+                if (typeof seriesDetailsView.fetchEpisodes === "function") seriesDetailsView.fetchEpisodes();
+            }
+        } else if (currentTab === 5) {
+            if (seasonDetailsView.detailsData && seasonDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, seasonDetailsView.detailsData.ratingKey);
+                if (typeof seasonDetailsView.fetchEpisodes === "function") seasonDetailsView.fetchEpisodes();
+            }
+        } else if (currentTab === 6) {
+            controller.performSearch(controller.lastSearchQuery || "");
+        } else if (currentTab === 7) {
+            if (typeof musicBrowserView.refreshPage === "function") {
+                musicBrowserView.refreshPage();
+            }
+        } else if (currentTab === 8) {
+            if (artistDetailsView.detailsData && artistDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, artistDetailsView.detailsData.ratingKey);
+                if (typeof artistDetailsView.fetchAlbums === "function") artistDetailsView.fetchAlbums();
+                if (typeof artistDetailsView.fetchSimilarArtists === "function") artistDetailsView.fetchSimilarArtists();
+            }
+        } else if (currentTab === 9) {
+            if (albumDetailsView.detailsData && albumDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, albumDetailsView.detailsData.ratingKey);
+                if (typeof albumDetailsView.fetchTracks === "function") albumDetailsView.fetchTracks();
+            }
+        } else if (currentTab === 10) {
+            if (playlistDetailsView.detailsData && playlistDetailsView.detailsData.ratingKey) {
+                controller.detailsModel.fetchItemDetails(controller.detailsModel.currentServerUrl, controller.detailsModel.currentServerToken, playlistDetailsView.detailsData.ratingKey);
+                if (typeof playlistDetailsView.fetchTracks === "function") playlistDetailsView.fetchTracks();
+            }
+        }
+    }
+    Shortcut {
+        sequence: appSettings.refreshHotkey
+        onActivated: refreshPage()
+    }
+    
 
 
 
@@ -204,13 +277,7 @@ ApplicationWindow {
         id: movieDelegate
         MoviePosterDelegate {
             onOpenCollection: function(ratingKey, itemServerUrl, itemServerToken) {
-                console.log("Opening collection: " + ratingKey)
-                if (mainWindow.currentTab === 0 || mainWindow.currentTab === 1) {
-                    mainWindow.previousTab = mainWindow.currentTab;
-                }
-                var url = (itemServerUrl && itemServerUrl !== "") ? itemServerUrl : (controller.currentServerUrl !== "" ? controller.currentServerUrl : controller.connectionManager.activeUrl);
-                controller.collectionMoviesModel.fetchEndpoint(url, appSettings.token, "/library/collections/" + ratingKey + "/children")
-                mainWindow.currentTab = 2
+                mainWindow.openCollection(ratingKey, itemServerUrl, itemServerToken);
             }
             onOpenShow: function(ratingKey, itemServerUrl, itemServerToken) {
                 console.log("Opening show/season: " + ratingKey)
@@ -491,5 +558,44 @@ ApplicationWindow {
         allLibrariesModel: controller.allLibrariesModel
         collectionsModel: controller.collectionsModel
     }
+
+    Rectangle {
+        id: refreshToast
+        objectName: "refreshToast"
+        width: toastText.width + 40
+        height: 40
+        color: "#333333"
+        radius: 20
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: yOffset
+        anchors.horizontalCenter: parent.horizontalCenter
+        property real yOffset: -50 // hidden by default
+        z: 9999
+
+        Behavior on yOffset {
+            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+        }
+
+        Text {
+            id: toastText
+            anchors.centerIn: parent
+            text: qsTr("Refreshing...")
+            color: mainWindow.plexOrange
+            font.pixelSize: 16
+            font.bold: true
+        }
+
+        Timer {
+            id: hideToastTimer
+            interval: 2000
+            onTriggered: refreshToast.yOffset = -50
+        }
+
+        function show() {
+            yOffset = 30
+            hideToastTimer.restart()
+        }
+    }
 }
+
 

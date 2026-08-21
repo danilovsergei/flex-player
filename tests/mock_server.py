@@ -8,10 +8,12 @@ from urllib.parse import urlparse, parse_qs
 
 COLLECTIONS = {
     "300": {"title": "Mock Collection", "items": ["102"], "smart": False, "content": ""},
-    "301": {"title": "Smart Mock Collection", "items": [], "smart": True, "content": "server://1234/com.plexapp.plugins.library/library/sections/1/all?genre=action&year=2024&or=1"}
+    "301": {"title": "Smart Mock Collection", "items": [], "smart": True, "content": "server://1234/com.plexapp.plugins.library/library/sections/1/all?genre=action&year=2024&or=1"},
+    "400": {"title": "Refresh Test Collection", "items": ["999"], "smart": False, "content": ""}
 }
 NEXT_COLLECTION_ID = 301
 
+COLLECTION_FETCH_COUNT = 0
 PLAYLIST_ITEMS = {
     "p1": [
         { "ratingKey": "t1", "title": "Playlist Track 1", "parentTitle": "Album 1", "grandparentTitle": "Artist 1", "type": "track", "duration": 150000, "Media": [{"Part": [{"file": "/media/pt1.mp3"}]}] },
@@ -22,6 +24,7 @@ PLAYLIST_ITEMS = {
     ]
 }
 
+GLOBAL_FETCH_COUNT = 0
 class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         with open("/app/tests/mock_server_requests.log", "a") as logf:
@@ -158,7 +161,22 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json_bytes)
 
+    REFRESH_MODE_ENABLED = False
+
     def do_GET(self):
+        global REFRESH_MODE_ENABLED
+        if self.path.startswith("/tests/set_refresh_mode"):
+            REFRESH_MODE_ENABLED = "enabled=1" in self.path
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b"{}")
+            return
+
+        global GLOBAL_FETCH_COUNT
+        GLOBAL_FETCH_COUNT += 1
+        vstr = f" (v{GLOBAL_FETCH_COUNT})"
+        
         with open("/app/tests/mock_server_requests.log", "a") as logf:
             logf.write("GET " + self.path + "\n")
 
@@ -404,11 +422,13 @@ class MockPlexHandler(http.server.SimpleHTTPRequestHandler):
                 }
             }
         elif "/library/collections/" in path and path.endswith("/children"):
+            global COLLECTION_FETCH_COUNT
+            COLLECTION_FETCH_COUNT += 1
             cid = path.split("/")[3]
             if cid in COLLECTIONS:
                 items = []
                 for item_id in COLLECTIONS[cid]["items"]:
-                    items.append({"type": "movie", "title": "Collection Movie " + item_id, "ratingKey": item_id, "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]})
+                    items.append({"type": "movie", "title": "Collection Movie " + item_id + " (v" + str(COLLECTION_FETCH_COUNT) + ")", "ratingKey": item_id, "duration": 60000, "viewOffset": 0, "Media": [{"Part": [{"file": "/app/tests/dummy1.mkv"}]}]})
                 response_data = {
                     "MediaContainer": {
                         "size": len(items),

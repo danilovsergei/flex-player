@@ -715,6 +715,38 @@ Rectangle {
                         spacing: 20
                         Text { text: "Hotkeys"; color: "white"; font.pixelSize: 32; font.bold: true; Layout.bottomMargin: 10 }
                         
+                        Text { text: "Global"; color: "#E5A00D"; font.pixelSize: 24; font.bold: true; Layout.topMargin: 10 }
+                        RowLayout {
+                            Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                            Text { text: "Action Name"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 200 }
+                            Text { text: "Description"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true }
+                            Text { text: "Assigned Hotkey"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 150 }
+                            Text { text: "Assign"; color: "gray"; font.pixelSize: 16; font.bold: true; Layout.preferredWidth: 100 }
+                        }
+                        Rectangle { Layout.fillWidth: true; Layout.maximumWidth: 800; height: 1; color: "#444444" }
+                        
+                        RowLayout {
+                            Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
+                            Text { text: "Refresh Page"; color: "white"; font.pixelSize: 16; Layout.preferredWidth: 200 }
+                            Text { text: "Reload current page data"; color: "#aaaaaa"; font.pixelSize: 14; Layout.fillWidth: true }
+                            Text { 
+                                id: refreshHotkeyText
+                                objectName: "refreshHotkeyText"
+                                text: appSettings.refreshHotkey
+                                color: "#E5A00D"
+                                font.pixelSize: 18
+                                font.bold: true
+                                Layout.preferredWidth: 150 
+                            }
+                            Button {
+                                text: "Set"
+                                objectName: "setRefreshHotkeyBtn"
+                                contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                background: Rectangle { implicitWidth: 80; implicitHeight: 32; color: "#444444"; radius: 6 }
+                                onClicked: { hotkeyOverlay.actionToBind = "refresh"; hotkeyOverlay.visible = true; hotkeyOverlay.forceActiveFocus() }
+                            }
+                        }
+                        
                         Text { text: "Video Player"; color: "#E5A00D"; font.pixelSize: 24; font.bold: true; Layout.topMargin: 10 }
                         RowLayout {
                             Layout.fillWidth: true; Layout.maximumWidth: 800; spacing: 20
@@ -1116,7 +1148,8 @@ Rectangle {
         focus: visible
         function bindKey(newKey) {
             if (!newKey || newKey === "") return
-            if (actionToBind === "fullscreen") appSettings.fullscreenHotkey = newKey
+            if (actionToBind === "refresh") appSettings.refreshHotkey = newKey
+            else if (actionToBind === "fullscreen") appSettings.fullscreenHotkey = newKey
             else if (actionToBind === "playpause") appSettings.playPauseHotkey = newKey
             else if (actionToBind === "volup") appSettings.volumeUpHotkey = newKey
             else if (actionToBind === "voldown") appSettings.volumeDownHotkey = newKey
